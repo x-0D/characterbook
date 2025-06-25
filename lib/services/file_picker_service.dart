@@ -45,7 +45,7 @@ class FilePickerService {
         'dialogTitle': 'Select the file',
         'fileExtension': fileExtension,
       });
-    } on PlatformException catch (e) {
+    } on PlatformException {
       return null;
     }
   }

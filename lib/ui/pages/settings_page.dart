@@ -168,41 +168,66 @@ class SettingsPage extends StatelessWidget {
             const SizedBox(height: 12),
             StatefulBuilder(
               builder: (context, setState) {
-                bool isBackingUp = false;
-                bool isRestoring = false;
+                bool isProcessing = false;
+                String? processingText;
 
                 return Column(
                   children: [
                     FilledButton.tonalIcon(
                       icon: const Icon(Icons.cloud_upload),
                       label: Text(s.createBackup),
-                      onPressed: isBackingUp || isRestoring
+                      onPressed: isProcessing
                           ? null
-                          : () => _handleBackupAction(
-                          context,
-                          cloudBackupService.exportAllToCloud,
-                          setState,
-                              (v) => isBackingUp = v
-                      ),
+                          : () async {
+                              setState(() {
+                                isProcessing = true;
+                                processingText = s.creatingBackup;
+                              });
+                              await _handleBackupAction(
+                                context,
+                                cloudBackupService.exportAllToCloud,
+                              );
+                              setState(() {
+                                isProcessing = false;
+                                processingText = null;
+                              });
+                            },
                     ),
                     const SizedBox(height: 8),
                     FilledButton.tonalIcon(
                       icon: const Icon(Icons.cloud_download),
                       label: Text(s.restoreData),
-                      onPressed: isBackingUp || isRestoring
+                      onPressed: isProcessing
                           ? null
-                          : () => _handleBackupAction(
-                          context,
-                          cloudBackupService.importAllFromCloud,
-                          setState,
-                              (v) => isRestoring = v
-                      ),
+                          : () async {
+                              setState(() {
+                                isProcessing = true;
+                                processingText = s.restoringBackup;
+                              });
+                              await _handleBackupAction(
+                                context,
+                                cloudBackupService.importAllFromCloud,
+                              );
+                              setState(() {
+                                isProcessing = false;
+                                processingText = null;
+                              });
+                            },
                     ),
-                    if (isBackingUp || isRestoring) ...[
+                    if (isProcessing) ...[
                       const SizedBox(height: 16),
-                      LinearProgressIndicator(
-                        color: colorScheme.primary,
-                        backgroundColor: colorScheme.primaryContainer,
+                      Column(
+                        children: [
+                          LinearProgressIndicator(
+                            color: colorScheme.primary,
+                            backgroundColor: colorScheme.primaryContainer,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            processingText ?? s.processing,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
                       ),
                     ],
                   ],
@@ -396,42 +421,37 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Future<void> _handleBackupAction(
+    Future<void> _handleBackupAction(
       BuildContext context,
       Future Function(BuildContext) action,
-      StateSetter setState,
-      Function(bool) stateUpdater,
-      ) async {
-    setState(() => stateUpdater(true));
-    try {
-      await action(context);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(S.of(context).operationCompleted),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+    ) async {
+      try {
+        await action(context);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(S.of(context).operationCompleted),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${S.of(context).error}: ${e.toString()}'),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${S.of(context).error}: ${e.toString()}'),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
-    } finally {
-      setState(() => stateUpdater(false));
     }
-  }
 
   Future<String> _getAppVersion() async {
     final packageInfo = await PackageInfo.fromPlatform();

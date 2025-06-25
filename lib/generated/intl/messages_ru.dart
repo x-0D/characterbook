@@ -139,6 +139,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Создать шаблон"),
         "create_template_tooltip":
             MessageLookupByLibrary.simpleMessage("Создать шаблон"),
+        "creatingBackup":
+            MessageLookupByLibrary.simpleMessage("Создать резервную копию"),
         "custom_fields":
             MessageLookupByLibrary.simpleMessage("Пользовательские поля"),
         "dark": MessageLookupByLibrary.simpleMessage("Тёмная"),
@@ -246,6 +248,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "personality": MessageLookupByLibrary.simpleMessage("Характер"),
         "pink": MessageLookupByLibrary.simpleMessage("Розовый"),
         "posts": MessageLookupByLibrary.simpleMessage("Посты"),
+        "processing": MessageLookupByLibrary.simpleMessage("Загрузка..."),
         "purple": MessageLookupByLibrary.simpleMessage("Фиолетовый"),
         "race": MessageLookupByLibrary.simpleMessage("Раса"),
         "race_copied":
@@ -274,6 +277,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Обязательное поле"),
         "restoreData":
             MessageLookupByLibrary.simpleMessage("Восстановить данные"),
+        "restoringBackup": MessageLookupByLibrary.simpleMessage(
+            "Восстановить из резервной копии"),
         "save": MessageLookupByLibrary.simpleMessage("Сохранить"),
         "save_error": MessageLookupByLibrary.simpleMessage("Ошибка сохранения"),
         "save_race": MessageLookupByLibrary.simpleMessage("Сохранить расу"),

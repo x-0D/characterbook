@@ -190,5 +190,8 @@
   "years": "years",
   "young": "Young",
   "a_to_z": "A-Z",
-  "z_to_a": "Z-A"
+  "z_to_a": "Z-A",
+  "creatingBackup": "Create a backup copy",
+  "restoringBackup": "Restore from backup",
+  "processing": "Loading..."
 }

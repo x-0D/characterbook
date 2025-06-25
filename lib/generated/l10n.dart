@@ -2020,6 +2020,36 @@ class S {
       args: [],
     );
   }
+
+  /// `Создать резервную копию`
+  String get creatingBackup {
+    return Intl.message(
+      'Создать резервную копию',
+      name: 'creatingBackup',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Восстановить из резервной копии`
+  String get restoringBackup {
+    return Intl.message(
+      'Восстановить из резервной копии',
+      name: 'restoringBackup',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Загрузка...`
+  String get processing {
+    return Intl.message(
+      'Загрузка...',
+      name: 'processing',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

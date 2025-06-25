@@ -196,5 +196,8 @@
   "a_to_z": "А-Я",
   "z_to_a": "Я-А",
   "additional_images": "Доп. изображения",
-  "backstory": "Предыстория"
+  "backstory": "Предыстория",
+  "creatingBackup": "Создать резервную копию",
+  "restoringBackup": "Восстановить из резервной копии",
+  "processing": "Загрузка..."
 }
