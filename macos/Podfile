@@ -1,6 +1,6 @@
 platform :osx, '10.15'
+use_frameworks!
 
-# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
 project 'Runner', {
@@ -37,6 +37,16 @@ end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    flutter_additional_macos_build_settings(target)
+    target.build_configurations.each do |config|
+      config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '10.15'
+      config.build_settings['FRAMEWORK_SEARCH_PATHS'] = [
+        '$(inherited)',
+        '$(PROJECT_DIR)/../Flutter/ephemeral'
+      ]
+      config.build_settings['LIBRARY_SEARCH_PATHS'] = [
+        '$(inherited)',
+        '$(PROJECT_DIR)/../Flutter/ephemeral'
+      ]
+    end
   end
 end

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../providers/locale_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -283,13 +282,12 @@ class SettingsPage extends StatelessWidget {
               leading: const Icon(Icons.info_outline),
               title: Text(s.version),
               trailing: FutureBuilder<String>(
-                future: _getAppVersion(),
                 builder: (context, snapshot) {
                   return Text(
                     snapshot.data ?? '1.6.2',
                     style: Theme.of(context).textTheme.bodyLarge,
                   );
-                },
+                }, future: null,
               ),
             ),
             const SizedBox(height: 8),
@@ -452,11 +450,6 @@ class SettingsPage extends StatelessWidget {
         }
       }
     }
-
-  Future<String> _getAppVersion() async {
-    final packageInfo = await PackageInfo.fromPlatform();
-    return packageInfo.version;
-  }
 
   Future<void> _launchUrl(String url) async {
     final Uri uri = Uri.parse(url);
