@@ -1,36 +1,43 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
-import 'package:characterbook/ui/pages/home_page.dart';
-import 'package:characterbook/services/file_handler.dart';
-
 import 'adapters/custom_field_adapter.dart';
-import 'services/file_handler_wrapper.dart';
 import 'generated/l10n.dart';
 import 'models/character_model.dart';
 import 'models/note_model.dart';
 import 'models/race_model.dart';
 import 'models/template_model.dart';
-import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
+import 'providers/theme_provider.dart';
+import 'services/file_handler.dart';
+import 'services/file_handler_wrapper.dart';
+import 'ui/pages/home_page.dart';
+
+Future<void> _initializeHive() async {
+  await Hive.initFlutter();
+  
+
+  Hive
+    ..registerAdapter(CharacterAdapter())
+    ..registerAdapter(CustomFieldAdapter())
+    ..registerAdapter(NoteAdapter())
+    ..registerAdapter(RaceAdapter())
+    ..registerAdapter(QuestionnaireTemplateAdapter());
+
+  await Future.wait([
+    Hive.openBox<Character>('characters'),
+    Hive.openBox<Note>('notes'),
+    Hive.openBox<Race>('races'),
+    Hive.openBox<QuestionnaireTemplate>('templates'),
+  ]);
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await Hive.initFlutter();
-  Hive.registerAdapter(CharacterAdapter());
-  Hive.registerAdapter(CustomFieldAdapter());
-  Hive.registerAdapter(NoteAdapter());
-  Hive.registerAdapter(RaceAdapter());
-  Hive.registerAdapter(QuestionnaireTemplateAdapter());
-
-  await Hive.openBox<Character>('characters');
-  await Hive.openBox<Note>('notes');
-  await Hive.openBox<Race>('races');
-  await Hive.openBox<QuestionnaireTemplate>('templates');
-
+  
+  await _initializeHive();
   FileHandler.initialize();
 
   runApp(
@@ -39,23 +46,29 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ],
-      child: const MyApp(),
+      child: const _App(),
     ),
   );
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+class _App extends StatefulWidget {
+  const _App();
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<_App> createState() => _AppState();
 }
 
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+class _AppState extends State<_App> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   @override
@@ -71,18 +84,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     final themeProvider = context.watch<ThemeProvider>();
 
     return MaterialApp(
-      localizationsDelegates: [
+      debugShowCheckedModeBanner: false,
+      title: 'CharacterBook',
+      locale: localeProvider.locale ?? const Locale('ru'),
+      theme: themeProvider.lightTheme,
+      darkTheme: themeProvider.darkTheme,
+      themeMode: themeProvider.themeMode,
+      localizationsDelegates: const [
         S.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: S.delegate.supportedLocales,
-      locale: localeProvider.locale ?? const Locale('ru'),
-      title: 'CharacterBook',
-      theme: themeProvider.lightTheme,
-      darkTheme: themeProvider.darkTheme,
-      themeMode: themeProvider.themeMode,
       home: const FileHandlerWrapper(child: HomePage()),
     );
   }

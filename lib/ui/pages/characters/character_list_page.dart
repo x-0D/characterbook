@@ -4,7 +4,6 @@ import 'package:characterbook/ui/widgets/character_list_card.dart';
 import 'package:characterbook/ui/widgets/tag_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-
 import '../../../generated/l10n.dart';
 import '../../../models/character_model.dart';
 import '../../../models/template_model.dart';
@@ -41,7 +40,11 @@ class _CharacterListPageState extends State<CharacterListPage> {
     super.dispose();
   }
 
-  List<String> _generateTags(BuildContext context, List<Character> characters) {
+  static const _genderMale = 'male';
+  static const _genderFemale = 'female';
+  static const _genderAnother = 'another';
+
+  List<String> _generateTags(List<Character> characters) {
     final s = S.of(context);
     return [
       s.male, s.female, s.another,
@@ -53,29 +56,27 @@ class _CharacterListPageState extends State<CharacterListPage> {
 
   void _filterCharacters(String query, List<Character> allCharacters) {
     final s = S.of(context);
+    final queryLower = query.toLowerCase();
     
     setState(() {
       _filteredCharacters = allCharacters.where((character) {
         final matchesSearch = query.isEmpty ||
-            character.name.toLowerCase().contains(query.toLowerCase()) ||
+            character.name.toLowerCase().contains(queryLower) ||
             character.age.toString().contains(query);
 
-        bool matchesTag = true;
-        if (_selectedTag != null) {
-          matchesTag = switch (_selectedTag) {
-            _ when _selectedTag == s.male => character.gender == 'male',
-            _ when _selectedTag == s.female => character.gender == 'female',
-            _ when _selectedTag == s.another => character.gender == 'another',
-            _ when _selectedTag == s.short_name => character.name.length <= 4,
-            _ when _selectedTag == s.children => character.age < 18,
-            _ when _selectedTag == s.young => character.age < 30,
-            _ when _selectedTag == s.adults => character.age < 50,
-            _ when _selectedTag == s.elderly => character.age >= 50,
-            _ => true,
-          };
-        }
+        if (_selectedTag == null) return matchesSearch;
 
-        return matchesSearch && matchesTag;
+        return matchesSearch && switch (_selectedTag) {
+          _ when _selectedTag == s.male => character.gender == _genderMale,
+          _ when _selectedTag == s.female => character.gender == _genderFemale,
+          _ when _selectedTag == s.another => character.gender == _genderAnother,
+          _ when _selectedTag == s.short_name => character.name.length <= 4,
+          _ when _selectedTag == s.children => character.age < 18,
+          _ when _selectedTag == s.young => character.age < 30,
+          _ when _selectedTag == s.adults => character.age < 50,
+          _ when _selectedTag == s.elderly => character.age >= 50,
+          _ => true,
+        };
       }).toList();
 
       if (_selectedTag == s.a_to_z) {
@@ -93,16 +94,6 @@ class _CharacterListPageState extends State<CharacterListPage> {
         _selectedCharacter = null;
       }
     });
-  }
-
-  String _getLocalizedGender(BuildContext context, String genderKey) {
-    final s = S.of(context);
-    return switch (genderKey) {
-      'male' => s.male,
-      'female' => s.female,
-      'another' => s.another,
-      _ => genderKey,
-    };
   }
 
   Future<void> _importCharacter() async {
@@ -138,7 +129,7 @@ class _CharacterListPageState extends State<CharacterListPage> {
         content: Text(message),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
+      )
     );
   }
 
@@ -151,9 +142,8 @@ class _CharacterListPageState extends State<CharacterListPage> {
     );
     
     if (result == true && mounted) {
-      final characters = Hive.box<Character>('characters')
-        .values.toList().cast<Character>();
-      _filterCharacters(_searchController.text, characters);
+      final characters = Hive.box<Character>('characters').values.cast<Character>();
+      _filterCharacters(_searchController.text, characters.toList());
     }
   }
 
@@ -202,12 +192,12 @@ class _CharacterListPageState extends State<CharacterListPage> {
         content: Text(S.of(context).character_delete_confirm),
         actions: [
           TextButton(
-            child: Text(S.of(context).cancel),
             onPressed: () => Navigator.of(context).pop(false),
+            child: Text(S.of(context).cancel),
           ),
           TextButton(
-            child: Text(S.of(context).delete),
             onPressed: () => Navigator.of(context).pop(true),
+            child: Text(S.of(context).delete),
           ),
         ],
       ),
@@ -219,7 +209,7 @@ class _CharacterListPageState extends State<CharacterListPage> {
     }
   }
 
-  void _showCharacterContextMenu(Character character, BuildContext context) {
+  void _showCharacterContextMenu(Character character) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -232,22 +222,20 @@ class _CharacterListPageState extends State<CharacterListPage> {
   }
 
   Widget _buildCharacterCard(Character character, ThemeData theme) {
-    final isSelected = _selectedCharacter?.key == character.key;
-
     return CharacterListCard(
       character: character,
-      isSelected: isSelected,
+      isSelected: _selectedCharacter?.key == character.key,
       onTap: () => _handleCharacterTap(character),
-      onLongPress: () => _showCharacterContextMenu(character, context),
-      onMenuPressed: () => _showCharacterContextMenu(character, context),
+      onLongPress: () => _showCharacterContextMenu(character),
+      onMenuPressed: () => _showCharacterContextMenu(character),
     );
   }
 
-  Widget _buildCharacterTile(Character character, ThemeData theme) {
+  Widget _buildCharacterTile(Character character) {
     return CharacterGridTile(
       character: character,
       onTap: () => _handleCharacterTap(character),
-      onLongPress: () => _showCharacterContextMenu(character, context),
+      onLongPress: () => _showCharacterContextMenu(character),
     );
   }
 
@@ -277,6 +265,7 @@ class _CharacterListPageState extends State<CharacterListPage> {
   }
 
   Widget _buildEmptyState(ThemeData theme) {
+    final s = S.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -289,8 +278,8 @@ class _CharacterListPageState extends State<CharacterListPage> {
           const SizedBox(height: 16),
           Text(
             _isSearching && _searchController.text.isNotEmpty
-                ? S.of(context).nothing_found
-                : S.of(context).no_characters,
+                ? s.nothing_found
+                : s.no_characters,
             style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.colorScheme.onSurface,
             ),
@@ -298,7 +287,7 @@ class _CharacterListPageState extends State<CharacterListPage> {
           if (!_isSearching)
             TextButton(
               onPressed: _importCharacter,
-              child: Text(S.of(context).import_character),
+              child: Text(s.import_character),
             ),
         ],
       ),
@@ -312,17 +301,12 @@ class _CharacterListPageState extends State<CharacterListPage> {
       key: const ValueKey('characters_reorderable_list'),
       padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: characters.length,
-      itemBuilder: (context, index) {
-        final character = characters[index];
-        return KeyedSubtree(
-          key: ValueKey('character_item_${character.key}'),
-          child: _buildCharacterCard(character, theme),
-        );
-      },
+      itemBuilder: (context, index) => KeyedSubtree(
+        key: ValueKey('character_item_${characters[index].key}'),
+        child: _buildCharacterCard(characters[index], theme),
+      ),
       onReorder: (oldIndex, newIndex) {
         if (oldIndex < newIndex) newIndex -= 1;
-        final character = characters.removeAt(oldIndex);
-        characters.insert(newIndex, character);
         _reorderCharacters(oldIndex, newIndex);
       },
       buildDefaultDragHandles: false,
@@ -346,7 +330,7 @@ class _CharacterListPageState extends State<CharacterListPage> {
         mainAxisSpacing: 8,
       ),
       itemCount: characters.length,
-      itemBuilder: (context, index) => _buildCharacterTile(characters[index], theme),
+      itemBuilder: (context, index) => _buildCharacterTile(characters[index]),
     );
   }
 
@@ -426,9 +410,8 @@ class _CharacterListPageState extends State<CharacterListPage> {
           }
         }),
         onSearchChanged: (query) {
-          final allCharacters = Hive.box<Character>('characters')
-            .values.toList().cast<Character>();
-          _filterCharacters(query, allCharacters);
+          final allCharacters = Hive.box<Character>('characters').values.cast<Character>();
+          _filterCharacters(query, allCharacters.toList());
         },
         onTemplatesPressed: _createFromTemplate,
         additionalActions: [
@@ -472,8 +455,8 @@ class _CharacterListPageState extends State<CharacterListPage> {
             child: ValueListenableBuilder<Box<Character>>(
               valueListenable: Hive.box<Character>('characters').listenable(),
               builder: (context, box, _) {
-                final allCharacters = box.values.toList().cast<Character>();
-                final tags = _generateTags(context, allCharacters);
+                final allCharacters = box.values.cast<Character>().toList();
+                final tags = _generateTags(allCharacters);
                 final characters = _isSearching || _selectedTag != null
                     ? _filteredCharacters
                     : allCharacters;

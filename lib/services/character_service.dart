@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
-import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -10,6 +9,8 @@ import '../models/character_model.dart';
 
 class CharacterService {
   static const String _boxName = 'characters';
+  static const String _regularFontPath = 'assets/fonts/NotoSans-Regular.ttf';
+  static const String _boldFontPath = 'assets/fonts/NotoSans-Bold.ttf';
 
   final Character? character;
 
@@ -17,26 +18,20 @@ class CharacterService {
 
   CharacterService.forExport(this.character);
 
-  Future<Box<Character>> _openBox() async {
-    return await Hive.openBox<Character>(_boxName);
-  }
+  Future<Box<Character>> get _box => Hive.openBox<Character>(_boxName);
 
   Future<void> saveCharacter(Character character, {int? key}) async {
-    final box = await _openBox();
-    if (key != null) {
-      await box.put(key, character);
-    } else {
-      await box.add(character);
-    }
+    final box = await _box;
+    key != null ? await box.put(key, character) : await box.add(character);
   }
 
   Future<List<Character>> getAllCharacters() async {
-    final box = await _openBox();
+    final box = await _box;
     return box.values.toList();
   }
 
   Future<void> deleteCharacter(int key) async {
-    final box = await _openBox();
+    final box = await _box;
     await box.delete(key);
   }
 
@@ -44,181 +39,164 @@ class CharacterService {
     if (character == null) throw Exception("Character is not set for export");
 
     try {
-      final fontData = await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
-      final font = pw.Font.ttf(fontData);
-      final fontBold = await rootBundle.load('assets/fonts/NotoSans-Bold.ttf');
-      final boldFont = pw.Font.ttf(fontBold);
+      final font = await _loadFont(_regularFontPath);
+      final boldFont = await _loadFont(_boldFontPath);
+      final theme = pw.ThemeData.withFont(base: font, bold: boldFont);
 
       final pdf = pw.Document();
-
-      pw.Widget? buildImageFromBytes(Uint8List? bytes) {
-        if (bytes == null || bytes.isEmpty) return null;
-        return pw.Center(
-          child: pw.Image(
-            pw.MemoryImage(bytes),
-            fit: pw.BoxFit.contain,
-            width: 300,
-            height: 300,
-          ),
-        );
-      }
-
-
-    final theme = pw.ThemeData.withFont(
-      base: font,
-      bold: boldFont,
-    );
-
-      void addSection(String title, List<pw.Widget> children) {
-        pdf.addPage(
-          pw.MultiPage(
-            margin: const pw.EdgeInsets.all(20),
-            theme: theme,
-            build: (pw.Context context) => [
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    title,
-                    style: pw.TextStyle(
-                      fontSize: 18,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                  pw.Divider(),
-                  ...children,
-                ],
-              ),
-            ],
-          ),
-        );
-      }
-
-      pdf.addPage(
-        pw.MultiPage(
-          margin: const pw.EdgeInsets.all(20),
-          theme: theme,
-          build: (pw.Context context) {
-            return [
-              pw.Header(
-                level: 0,
-                child: pw.Text(
-                  'Характеристика персонажа',
-                  style: pw.TextStyle(
-                    fontSize: 24,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ),
-              pw.SizedBox(height: 20),
-
-              if (character!.imageBytes != null)
-                pw.Column(
-                  children: [
-                    buildImageFromBytes(character!.imageBytes)!,
-                    pw.SizedBox(height: 20),
-                  ],
-                ),
-
-              _buildSection('Основная информация', [
-                _buildInfoRow('Имя:', character!.name),
-                _buildInfoRow('Возраст:', character!.age.toString()),
-                if (character!.gender.isNotEmpty)
-                  _buildInfoRow('Пол:', character!.gender),
-                if (character!.race != null)
-                  _buildInfoRow('Раса:', character!.race!.name),
-              ]),
-            ];
-          },
-        ),
-      );
-
-      if (character!.biography.isNotEmpty) {
-        addSection('Биография', [
-          pw.Text(character!.biography, softWrap: true),
-        ]);
-      }
-
-      if (character!.personality.isNotEmpty) {
-        addSection('Характер', [
-          pw.Text(character!.personality, softWrap: true),
-        ]);
-      }
-
-      if (character!.appearance.isNotEmpty) {
-        addSection('Внешность', [
-          pw.Text(character!.appearance, softWrap: true),
-        ]);
-      }
-
-      if (character!.referenceImageBytes != null) {
-        addSection('Референс изображение', [
-          buildImageFromBytes(character!.referenceImageBytes)!,
-        ]);
-      }
-
-      if (character!.abilities.isNotEmpty) {
-        addSection('Способности', [
-          pw.Text(character!.abilities, softWrap: true),
-        ]);
-      }
-
-      if (character!.other.isNotEmpty) {
-        addSection('Другое', [
-          pw.Text(character!.other, softWrap: true),
-        ]);
-      }
-
-      if (character!.customFields.isNotEmpty) {
-        addSection('Дополнительные поля',
-          character!.customFields.map((field) =>
-              _buildInfoRow('${field.key}:', field.value)
-          ).toList(),
-        );
-      }
-
-      if (character!.additionalImages.isNotEmpty) {
-        pdf.addPage(
-          pw.MultiPage(
-            margin: const pw.EdgeInsets.all(20),
-            theme: theme,
-            build: (pw.Context context) {
-              return [
-                pw.Header(
-                  level: 1,
-                  child: pw.Text(
-                    'Дополнительные изображения',
-                    style: pw.TextStyle(
-                      fontSize: 18,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                ),
-                pw.SizedBox(height: 20),
-                ...character!.additionalImages.map((imageBytes) =>
-                    pw.Column(
-                      children: [
-                        buildImageFromBytes(imageBytes)!,
-                        pw.SizedBox(height: 20),
-                      ],
-                    )
-                ),
-              ];
-            },
-          ),
-        );
-      }
+      _addMainPage(pdf, theme);
+      _addOptionalSections(pdf, theme);
 
       final bytes = await pdf.save();
-      final fileName = '${character!.name}.pdf';
-      await _saveAndShareFile(bytes, fileName,
-        text: 'Характеристика персонажа ${character!.name}',
-        subject: 'PDF с характеристикой персонажа',
-      );
-
+      await _sharePdf(bytes);
     } catch (e) {
       throw Exception('Ошибка экспорта в PDF: ${e.toString()}');
     }
+  }
+
+  Future<pw.Font> _loadFont(String path) async {
+    final fontData = await rootBundle.load(path);
+    return pw.Font.ttf(fontData);
+  }
+
+  void _addMainPage(pw.Document pdf, pw.ThemeData theme) {
+    pdf.addPage(
+      pw.MultiPage(
+        margin: const pw.EdgeInsets.all(20),
+        theme: theme,
+        build: (pw.Context context) => [
+          pw.Header(
+            level: 0,
+            child: pw.Text(
+              'Характеристика персонажа',
+              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+            ),
+          ),
+          pw.SizedBox(height: 20),
+          if (character!.imageBytes != null) ...[
+            _buildImage(character!.imageBytes!),
+            pw.SizedBox(height: 20),
+          ],
+          _buildSection('Основная информация', [
+            _buildInfoRow('Имя:', character!.name),
+            _buildInfoRow('Возраст:', character!.age.toString()),
+            if (character!.gender.isNotEmpty) _buildInfoRow('Пол:', character!.gender),
+            if (character!.race != null) _buildInfoRow('Раса:', character!.race!.name),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  void _addOptionalSections(pw.Document pdf, pw.ThemeData theme) {
+    final sections = [
+      _Section('Биография', character!.biography),
+      _Section('Характер', character!.personality),
+      _Section('Внешность', character!.appearance),
+      _Section('Способности', character!.abilities),
+      _Section('Другое', character!.other),
+    ];
+
+    for (final section in sections) {
+      if (section.content.isNotEmpty) {
+        _addTextSection(pdf, theme, section.title, section.content);
+      }
+    }
+
+    if (character!.referenceImageBytes != null) {
+      _addImageSection(pdf, theme, 'Референс изображение', character!.referenceImageBytes!);
+    }
+
+    if (character!.customFields.isNotEmpty) {
+      _addCustomFieldsSection(pdf, theme);
+    }
+
+    if (character!.additionalImages.isNotEmpty) {
+      _addAdditionalImagesSection(pdf, theme);
+    }
+  }
+
+  void _addTextSection(pw.Document pdf, pw.ThemeData theme, String title, String content) {
+    pdf.addPage(
+      pw.MultiPage(
+        margin: const pw.EdgeInsets.all(20),
+        theme: theme,
+        build: (pw.Context context) => [
+          pw.Header(
+            level: 1,
+            child: pw.Text(title),
+          ),
+          pw.SizedBox(height: 20),
+          pw.Text(content, softWrap: true),
+        ],
+      ),
+    );
+  }
+
+  void _addImageSection(pw.Document pdf, pw.ThemeData theme, String title, Uint8List imageBytes) {
+    pdf.addPage(
+      pw.MultiPage(
+        margin: const pw.EdgeInsets.all(20),
+        theme: theme,
+        build: (pw.Context context) => [
+          pw.Header(
+            level: 1,
+            child: pw.Text(title),
+          ),
+          pw.SizedBox(height: 20),
+          _buildImage(imageBytes),
+        ],
+      ),
+    );
+  }
+
+  void _addCustomFieldsSection(pw.Document pdf, pw.ThemeData theme) {
+    pdf.addPage(
+      pw.MultiPage(
+        margin: const pw.EdgeInsets.all(20),
+        theme: theme,
+        build: (pw.Context context) => [
+          pw.Header(
+            level: 1,
+            child: pw.Text('Дополнительные поля'),
+          ),
+          pw.SizedBox(height: 20),
+          ...character!.customFields.map((field) => 
+            _buildInfoRow('${field.key}:', field.value)
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addAdditionalImagesSection(pw.Document pdf, pw.ThemeData theme) {
+    pdf.addPage(
+      pw.MultiPage(
+        margin: const pw.EdgeInsets.all(20),
+        theme: theme,
+        build: (pw.Context context) => [
+          pw.Header(
+            level: 1,
+            child: pw.Text('Дополнительные изображения'),
+          ),
+          pw.SizedBox(height: 20),
+          ...character!.additionalImages.map((imageBytes) => 
+            pw.Column(children: [_buildImage(imageBytes!), pw.SizedBox(height: 20)])
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildImage(Uint8List bytes) {
+    return pw.Center(
+      child: pw.Image(
+        pw.MemoryImage(bytes),
+        fit: pw.BoxFit.contain,
+        width: 300,
+        height: 300,
+      ),
+    );
   }
 
   pw.Widget _buildSection(String title, List<pw.Widget> children) {
@@ -228,10 +206,7 @@ class CharacterService {
         pw.SizedBox(height: 15),
         pw.Text(
           title,
-          style: pw.TextStyle(
-            fontSize: 18,
-            fontWeight: pw.FontWeight.bold,
-          ),
+          style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
         ),
         pw.Divider(),
         ...children,
@@ -242,21 +217,13 @@ class CharacterService {
 
   pw.Widget _buildInfoRow(String label, String value) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 5),
+      padding: pw.EdgeInsets.only(bottom: 5),
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text(
-            label,
-            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-          ),
+          pw.Text(label, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(width: 10),
-          pw.Expanded(
-            child: pw.Text(
-              value,
-              softWrap: true,
-            ),
-          ),
+          pw.Expanded(child: pw.Text(value, softWrap: true)),
         ],
       ),
     );
@@ -268,7 +235,7 @@ class CharacterService {
     try {
       final jsonStr = jsonEncode(character!.toJson());
       final fileName = '${character!.name}_${DateTime.now().millisecondsSinceEpoch}.character';
-      await _saveAndShareFile(
+      await _shareFile(
         Uint8List.fromList(jsonStr.codeUnits),
         fileName,
         text: 'Персонаж: ${character!.name}',
@@ -278,12 +245,16 @@ class CharacterService {
     }
   }
 
-  Future<void> _saveAndShareFile(
-      Uint8List bytes,
-      String fileName, {
-        String? text,
-        String? subject,
-      }) async {
+  Future<void> _sharePdf(Uint8List bytes) async {
+    await _shareFile(
+      bytes,
+      '${character!.name}.pdf',
+      text: 'Характеристика персонажа ${character!.name}',
+      subject: 'PDF с характеристикой персонажа',
+    );
+  }
+
+  Future<void> _shareFile(Uint8List bytes, String fileName, {String? text, String? subject}) async {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/$fileName');
     await file.writeAsBytes(bytes);
@@ -293,4 +264,11 @@ class CharacterService {
       subject: subject,
     );
   }
+}
+
+class _Section {
+  final String title;
+  final String content;
+
+  _Section(this.title, this.content);
 }
