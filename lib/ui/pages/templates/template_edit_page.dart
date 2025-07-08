@@ -5,7 +5,7 @@ import '../../../generated/l10n.dart';
 import '../../../models/custom_field_model.dart';
 import '../../widgets/fields/custom_fields_editor.dart';
 import '../../widgets/fields/custom_text_field.dart';
-import '../../widgets/unsaved_changes_dialog.dart';
+import '../../dialogs/unsaved_changes_dialog.dart';
 
 class TemplateEditPage extends StatefulWidget {
   final QuestionnaireTemplate? template;

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:characterbook/generated/l10n.dart';
-import 'package:characterbook/ui/widgets/loading_dialog.dart';
+import 'package:characterbook/ui/dialogs/loading_dialog.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';

@@ -9,7 +9,7 @@ import '../../../services/clipboard_service.dart';
 import '../../widgets/fields/custom_text_field.dart';
 import '../../widgets/markdown_context_menu.dart';
 import '../../widgets/save_button_widget.dart';
-import '../../widgets/unsaved_changes_dialog.dart';
+import '../../dialogs/unsaved_changes_dialog.dart';
 
 class NoteEditPage extends StatefulWidget {
   final Note? note;
