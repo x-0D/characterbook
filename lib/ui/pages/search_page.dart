@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'package:characterbook/ui/widgets/debouncer.dart';
+import 'package:characterbook/ui/widgets/search_result_item.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
@@ -13,6 +16,7 @@ import 'races/race_management_page.dart';
 import 'templates/template_edit_page.dart';
 import 'settings_page.dart';
 
+
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
 
@@ -22,30 +26,34 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
-  late final List<Character> _characters;
-  late final List<Race> _races;
-  late final List<Note> _notes;
-  late final List<QuestionnaireTemplate> _templates;
-  late List<dynamic> _filteredResults;
+  List<Character> _characters = [];
+  List<Race> _races = [];
+  List<Note> _notes = [];
+  List<QuestionnaireTemplate> _templates = [];
+  List<dynamic> _filteredResults = [];
   bool _isLoading = true;
   late final FocusNode _searchFocusNode;
+  bool _isSearching = false;
+  Debouncer _searchDebouncer = Debouncer(milliseconds: 300);
 
   @override
   void initState() {
     super.initState();
     _searchFocusNode = FocusNode();
     _searchController.addListener(_onSearchChanged);
-    _loadData();
+    _loadInitialData();
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _searchDebouncer.dispose();
     super.dispose();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadInitialData() async {
     try {
       final characterBox = await Hive.openBox<Character>('characters');
       final raceBox = await Hive.openBox<Race>('races');
@@ -54,11 +62,11 @@ class _SearchPageState extends State<SearchPage> {
 
       if (mounted) {
         setState(() {
-          _characters = characterBox.values.toList();
-          _races = raceBox.values.toList();
-          _notes = noteBox.values.toList();
-          _templates = templateBox.values.toList();
-          _filteredResults = [..._characters, ..._races, ..._notes, ..._templates];
+          _characters = characterBox.values.cast<Character>().toList();
+          _races = raceBox.values.cast<Race>().toList();
+          _notes = noteBox.values.cast<Note>().toList();
+          _templates = templateBox.values.cast<QuestionnaireTemplate>().toList();
+          _filteredResults = [];
           _isLoading = false;
         });
       }
@@ -70,18 +78,39 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _onSearchChanged() {
-    final query = _searchController.text.trim().toLowerCase();
+    if (_searchController.text.isEmpty) {
+      setState(() {
+        _isSearching = false;
+        _filteredResults = [];
+      });
+      return;
+    }
 
-    setState(() {
+    setState(() => _isSearching = true);
+    _searchDebouncer.run(() {
+      if (!mounted) return;
+      
+      final query = _searchController.text.trim().toLowerCase();
       if (query.isEmpty) {
-        _filteredResults = [..._characters, ..._races, ..._notes, ..._templates];
-      } else {
-        _filteredResults = [
-          ..._filterCharacters(query),
-          ..._filterRaces(query),
-          ..._filterNotes(query),
-          ..._filterTemplates(query),
-        ];
+        setState(() {
+          _isSearching = false;
+          _filteredResults = [];
+        });
+        return;
+      }
+
+      final filteredResults = [
+        ..._filterCharacters(query),
+        ..._filterRaces(query),
+        ..._filterNotes(query),
+        ..._filterTemplates(query),
+      ];
+
+      if (mounted) {
+        setState(() {
+          _filteredResults = filteredResults;
+          _isSearching = false;
+        });
       }
     });
   }
@@ -89,11 +118,11 @@ class _SearchPageState extends State<SearchPage> {
   List<Character> _filterCharacters(String query) {
     return _characters.where((character) {
       return character.name.toLowerCase().contains(query) ||
-          character.biography.toLowerCase().contains(query) ||
-          character.personality.toLowerCase().contains(query) ||
-          character.appearance.toLowerCase().contains(query) ||
-          character.abilities.toLowerCase().contains(query) ||
-          character.other.toLowerCase().contains(query) ||
+          (character.biography.toLowerCase().contains(query)) ||
+          (character.personality.toLowerCase().contains(query)) ||
+          (character.appearance.toLowerCase().contains(query)) ||
+          (character.abilities.toLowerCase().contains(query)) ||
+          (character.other.toLowerCase().contains(query)) ||
           (character.race?.name.toLowerCase().contains(query) ?? false);
     }).toList();
   }
@@ -101,9 +130,9 @@ class _SearchPageState extends State<SearchPage> {
   List<Race> _filterRaces(String query) {
     return _races.where((race) {
       return race.name.toLowerCase().contains(query) ||
-          race.description.toLowerCase().contains(query) ||
-          race.biology.toLowerCase().contains(query) ||
-          race.backstory.toLowerCase().contains(query);
+          (race.description.toLowerCase().contains(query)) ||
+          (race.biology.toLowerCase().contains(query)) ||
+          (race.backstory.toLowerCase().contains(query));
     }).toList();
   }
 
@@ -120,21 +149,20 @@ class _SearchPageState extends State<SearchPage> {
       return template.name.toLowerCase().contains(query) ||
           template.standardFields.any((field) => field.toLowerCase().contains(query)) ||
           template.customFields.any((field) =>
-          field.key.toLowerCase().contains(query) ||
+              field.key.toLowerCase().contains(query) ||
               field.value.toLowerCase().contains(query));
     }).toList();
   }
 
   Future<void> _refreshData() async {
     setState(() => _isLoading = true);
-    await _loadData();
+    await _loadInitialData();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -168,73 +196,101 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        child: CustomScrollView(
-          slivers: [
-            if (_isLoading)
-              SliverFillRemaining(
-                child: Center(
-                    child: CircularProgressIndicator(
-                      color: colorScheme.primary,
-                    )),
-              )
-            else if (_filteredResults.isEmpty)
-              SliverFillRemaining(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _searchController.text.isEmpty
-                            ? Icons.search_off
-                            : Icons.no_sim_outlined,
-                        size: 48,
-                        color: colorScheme.outline,
+      body: _buildBody(context),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    if (_isLoading) {
+      return Center(
+        child: CircularProgressIndicator(color: colorScheme.primary),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _refreshData,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          if (_isSearching)
+            const SliverToBoxAdapter(
+              child: LinearProgressIndicator(),
+            ),
+          if (!_isSearching && _filteredResults.isEmpty && _searchController.text.isNotEmpty)
+            SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.search_off,
+                      size: 48,
+                      color: colorScheme.outline,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      S.of(context).nothing_found,
+                      style: textTheme.titleMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _searchController.text.isEmpty
-                            ? S.of(context).no_data_found
-                            : S.of(context).nothing_found,
-                        style: textTheme.titleMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        '"${_searchController.text}"',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.outline,
                         ),
                       ),
-                      if (_searchController.text.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            '"${_searchController.text}"',
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.outline,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                sliver: SliverList.separated(
-                  itemCount: _filteredResults.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final item = _filteredResults[index];
-                    return _SearchResultItem(
-                      item: item,
-                      onTap: () async {
-                        final result = await _navigateToEditPage(item);
-                        if (result == true) await _refreshData();
-                      },
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ),
-          ],
-        ),
+            )
+          else if (!_isSearching && _filteredResults.isEmpty)
+            SliverFillRemaining(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.search,
+                      size: 48,
+                      color: colorScheme.outline,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      S.of(context).search_hint,
+                      style: textTheme.titleMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              sliver: SliverList.builder(
+                itemCount: _filteredResults.length,
+                itemBuilder: (context, index) {
+                  final item = _filteredResults[index];
+                  return SearchResultItem(
+                    item: item,
+                    onTap: () async {
+                      final result = await _navigateToEditPage(item);
+                      if (result == true) await _refreshData();
+                    },
+                  );
+                },
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -270,140 +326,5 @@ class _SearchPageState extends State<SearchPage> {
       );
     }
     return null;
-  }
-}
-
-class _SearchResultItem extends StatelessWidget {
-  final dynamic item;
-  final VoidCallback onTap;
-
-  const _SearchResultItem({
-    required this.item,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-
-    final isCharacter = item is Character;
-    final isRace = item is Race;
-    final isNote = item is Note;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Card(
-        color: colorScheme.surfaceContainerLow,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12.0),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                _buildLeadingIcon(context),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isCharacter
-                            ? item.name
-                            : isRace
-                            ? item.name
-                            : isNote
-                            ? item.title
-                            : item.name,
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        isCharacter
-                            ? item.race?.name ?? S.of(context).no_race
-                            : isRace
-                            ? item.description.isNotEmpty
-                            ? item.description
-                            : S.of(context).no_description
-                            : isNote
-                            ? item.content.isNotEmpty
-                            ? item.content
-                            : S.of(context).no_content
-                            : S.of(context).fields_count({item.standardFields.length + item.customFields.length}),
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  color: colorScheme.outline,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLeadingIcon(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    if (item is Character) {
-      return item.imageBytes != null
-          ? CircleAvatar(
-        backgroundImage: MemoryImage(item.imageBytes!),
-      )
-          : CircleAvatar(
-        backgroundColor: colorScheme.surfaceContainerHigh,
-        child: Icon(
-          Icons.person_outline,
-          color: colorScheme.primary,
-        ),
-      );
-    } else if (item is Race) {
-      return item.logo != null
-          ? CircleAvatar(
-        backgroundImage: MemoryImage(item.logo!),
-      )
-          : CircleAvatar(
-        backgroundColor: colorScheme.surfaceContainerHigh,
-        child: Icon(
-          Icons.emoji_people_outlined,
-          color: colorScheme.primary,
-        ),
-      );
-    } else if (item is Note) {
-      return CircleAvatar(
-        backgroundColor: colorScheme.surfaceContainerHigh,
-        child: Icon(
-          Icons.note_outlined,
-          color: colorScheme.primary,
-        ),
-      );
-    } else {
-      return CircleAvatar(
-        backgroundColor: colorScheme.surfaceContainerHigh,
-        child: Icon(
-          Icons.library_books_outlined,
-          color: colorScheme.primary,
-        ),
-      );
-    }
   }
 }
