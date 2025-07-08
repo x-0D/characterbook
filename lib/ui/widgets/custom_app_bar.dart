@@ -58,7 +58,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
 
     final bool needToHideActions = additional.length > 3;
-    
+
     final List<Widget> visibleActions = [
       ...baseActions,
       if (!needToHideActions) ...additional,
@@ -69,14 +69,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     final List<PopupMenuEntry<Widget>> hiddenMenuItems = needToHideActions
         ? additional.skip(3).map((action) {
             return PopupMenuItem<Widget>(
-              child: action,
-              onTap: () {
-                if (action is IconButton) {
-                  action.onPressed?.call();
-                } else if (action is ActionChip) {
-                  action.onPressed?.call();
-                }
-              },
+              child: _getActionWidget(action),
+              onTap: () => _triggerAction(action),
             );
           }).toList()
         : [];
@@ -104,14 +98,47 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
       centerTitle: true,
       actions: [
-        ...visibleActions,
+        baseActions.last,
+        
+        if (!isSearching && onTemplatesPressed != null) baseActions.first,
+        
+        if (!needToHideActions) ...additional,
+        if (needToHideActions) ...additional.take(3),
+
         if (hiddenMenuItems.isNotEmpty)
           PopupMenuButton<Widget>(
             icon: const Icon(Icons.more_vert),
             itemBuilder: (context) => hiddenMenuItems,
           ),
+        
+        settingsAction,
       ],
     );
+  }
+
+  Widget _getActionWidget(Widget action) {
+    if (action is IconButton) {
+      return ListTile(
+        leading: action.icon,
+        title: Text(action.tooltip ?? ''),
+      );
+    } else if (action is ActionChip) {
+      return ListTile(
+        leading: action.avatar,
+        title: Text(action.label?.toString() ?? ''),
+      );
+    }
+    return action;
+  }
+
+  void _triggerAction(Widget action) {
+    if (action is IconButton) {
+      action.onPressed?.call();
+    } else if (action is ActionChip) {
+      action.onPressed?.call();
+    } else if (action is GestureDetector && action.onTap != null) {
+      action.onTap?.call();
+    }
   }
 
   @override
