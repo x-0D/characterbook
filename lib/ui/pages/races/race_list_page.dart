@@ -60,9 +60,11 @@ class _RaceListPageState extends State<RaceListPage> {
     
     final usingCharacter = characters.firstWhere(
       (character) => character.race?.key == race.key,
+      // ignore: cast_from_null_always_fails
       orElse: () => null as Character,
     );
     
+    // ignore: unnecessary_null_comparison
     return usingCharacter != null;
   }
 
