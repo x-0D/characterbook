@@ -30,28 +30,52 @@ class _LanguageSelector extends StatelessWidget {
     return ListTile(
       leading: const Icon(Icons.language),
       title: Text(s.language),
-      trailing: DropdownButton<Locale>(
-        value: localeProvider.locale,
-        onChanged: (Locale? newLocale) {
-          if (newLocale != null) {
-            localeProvider.setLocale(newLocale);
-          }
-        },
-        items: S.delegate.supportedLocales.map((Locale locale) {
-          return DropdownMenuItem<Locale>(
-            value: locale,
-            child: Text(
-              _displayName(locale),
-              style: Theme.of(context).textTheme.bodyLarge,
+      trailing: SizedBox(
+        width: 120,
+        child: DropdownButton<Locale>(
+          value: localeProvider.locale,
+          onChanged: (Locale? newLocale) {
+            if (newLocale != null) {
+              localeProvider.setLocale(newLocale);
+            }
+          },
+          items: S.delegate.supportedLocales.map((Locale locale) {
+            return DropdownMenuItem<Locale>(
+              value: locale,
+              child: Text(
+                _displayName(locale),
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            );
+          }).toList(),
+          selectedItemBuilder: (BuildContext context) {
+            return S.delegate.supportedLocales.map<Widget>((Locale locale) {
+              return Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  _displayName(locale),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.copyWith(color: colorScheme.onSurface),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }).toList();
+          },
+          isExpanded: true,
+          underline: Container(),
+          borderRadius: BorderRadius.circular(12),
+          dropdownColor: colorScheme.surfaceContainerHigh,
+          icon: Padding(
+            padding: const EdgeInsets.only(left: 8.0),
+            child: Icon(
+              Icons.arrow_drop_down,
+              color: colorScheme.onSurfaceVariant,
             ),
-          );
-        }).toList(),
-        underline: Container(),
-        borderRadius: BorderRadius.circular(12),
-        dropdownColor: colorScheme.surfaceContainerHigh,
-        icon: Icon(
-          Icons.arrow_drop_down,
-          color: colorScheme.onSurfaceVariant,
+          ),
+          iconSize: 24,
+          alignment: Alignment.centerRight,
         ),
       ),
       shape: RoundedRectangleBorder(

@@ -36,17 +36,20 @@ class LocalBackupService {
   }
 
   Future<void> exportAllToFile(BuildContext context) async {
-    if (!context.mounted) return;
-    
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final s = S.of(context);
+
     try {
       await _ensureBoxesAreOpen();
       final hasData = Hive.box<Character>('characters').isNotEmpty ||
-        Hive.box<Note>('notes').isNotEmpty ||
-        Hive.box<Race>('races').isNotEmpty ||
-        Hive.box<QuestionnaireTemplate>('templates').isNotEmpty;
+          Hive.box<Note>('notes').isNotEmpty ||
+          Hive.box<Race>('races').isNotEmpty ||
+          Hive.box<QuestionnaireTemplate>('templates').isNotEmpty;
 
       if (!hasData) {
-        _showSnackBar(context, 'Нет данных для экспорта', isError: true);
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Нет данных для экспорта'), backgroundColor: Colors.red),
+        );
         return;
       }
 
@@ -72,6 +75,10 @@ class LocalBackupService {
           ..setAttribute('download', 'characterbook_backup_${DateTime.now().millisecondsSinceEpoch}.json')
           ..click();
         html.Url.revokeObjectUrl(url);
+        
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text(s.local_backup_success)),
+        );
       } else {
         final directory = await getApplicationDocumentsDirectory();
         final fileName = 'characterbook_backup_${DateTime.now().millisecondsSinceEpoch}.json';
@@ -80,25 +87,36 @@ class LocalBackupService {
         await file.writeAsBytes(utf8.encode(backupJson));
         
         try {
+          // Исправленная строка - создаем XFile из File
           await Share.shareXFiles(
             [XFile(file.path)], 
-            text: S.of(context).share_backup_file,
+            text: s.share_backup_file,
             subject: fileName,
           );
+          scaffoldMessenger.showSnackBar(
+            SnackBar(content: Text(s.local_backup_success)),
+          );
         } catch (e) {
-          if (context.mounted) {
-            _showSnackBar(context, 'Файл сохранён: ${file.path}');
-          }
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('Файл сохранён: ${file.path}'),
+            ),
+          );
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text('${s.local_backup_error}: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
-
-      if (context.mounted) {
-        _showSnackBar(context, S.of(context).local_backup_success);
-      }
     } catch (e) {
-      if (context.mounted) {
-        _showSnackBar(context, '${S.of(context).local_backup_error}: $e', isError: true);
-      }
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('${s.local_backup_error}: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
       debugPrint('Export error: $e');
     }
   }

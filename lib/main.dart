@@ -22,11 +22,20 @@ void main() async {
   await _initializeHive();
   FileHandler.initialize();
 
+  final themeProvider = ThemeProvider();
+  final localeProvider = LocaleProvider();
+
+  /*await Future.wait([
+    themeProvider._loadPreferences(),
+    localeProvider._loadPreferences(),
+  ]);*/
+
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider.value(value: localeProvider),
       ],
       child: const _App(),
     ),
@@ -62,13 +71,12 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final localeProvider = context.watch<LocaleProvider>();
-    final themeProvider = context.watch<ThemeProvider>();
-
+    final localeProvider = Provider.of<LocaleProvider>(context, listen: true);
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: true);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'CharacterBook',
-      locale: localeProvider.locale ?? const Locale('ru'),
+      locale: localeProvider.locale,
       theme: themeProvider.lightTheme,
       darkTheme: themeProvider.darkTheme,
       themeMode: themeProvider.themeMode,

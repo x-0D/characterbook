@@ -39,6 +39,9 @@ class CloudBackupService {
   }
 
   Future<void> exportAllToCloud(BuildContext context) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final s = S.of(context);
+    
     try {
       _startProcessing();
       
@@ -51,13 +54,16 @@ class CloudBackupService {
       };
 
       final backupJson = await compute(_jsonEncodeInIsolate, backupData);
-
       await _exportToGoogleDrive(context, backupJson, 'characterbook_backup');
-      _showSnackBar(context, S.of(context).cloud_backup_full_success);
+      
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text(s.cloud_backup_full_success)),
+      );
     } catch (e) {
-      if (context.mounted) {
-        _showSnackBar(context, '${S.of(context).cloud_backup_error}: $e', isError: true);
-      }
+      scaffoldMessenger.showSnackBar(
+        SnackBar(content: Text('${s.cloud_backup_error}: $e')),
+      );
+      debugPrint('Export error: $e');
     } finally {
       _endProcessing();
     }
