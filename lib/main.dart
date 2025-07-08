@@ -25,12 +25,6 @@ void main() async {
   final themeProvider = ThemeProvider();
   final localeProvider = LocaleProvider();
 
-  /*await Future.wait([
-    themeProvider._loadPreferences(),
-    localeProvider._loadPreferences(),
-  ]);*/
-
-
   runApp(
     MultiProvider(
       providers: [

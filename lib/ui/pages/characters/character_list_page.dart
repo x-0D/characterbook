@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../../generated/l10n.dart';
 import '../../../models/character_model.dart';
@@ -33,10 +34,29 @@ class _CharacterListPageState extends State<CharacterListPage> {
   String? _selectedTag;
   String? _errorMessage;
 
+  final ScrollController _scrollController = ScrollController();
+  bool _isFabVisible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_handleScroll);
+  }
+
   @override
   void dispose() {
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _handleScroll() {
+    if (_scrollController.position.userScrollDirection == ScrollDirection.reverse) {
+      if (_isFabVisible) setState(() => _isFabVisible = false);
+    } else if (_scrollController.position.userScrollDirection == ScrollDirection.forward) {
+      if (!_isFabVisible) setState(() => _isFabVisible = true);
+    }
   }
 
   List<String> _generateTags(List<Character> characters) {
@@ -248,17 +268,17 @@ class _CharacterListPageState extends State<CharacterListPage> {
       return true;
     }());
 
-  return ReorderableListView.builder(
-    key: const ValueKey('characters_reorderable_list'),
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    itemCount: characters.length,
-    itemBuilder: (context, index) => _buildCharacterCard(characters[index], index),
-    onReorder: (oldIndex, newIndex) {
-      if (oldIndex < newIndex) newIndex -= 1;
-      _reorderCharacters(oldIndex, newIndex);
-    },
-    buildDefaultDragHandles: false,
-  );
+    return ReorderableListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        for (int i = 0; i < characters.length; i++)
+          _buildCharacterCard(characters[i], i),
+      ],
+      onReorder: (oldIndex, newIndex) {
+        if (oldIndex < newIndex) newIndex -= 1;
+        _reorderCharacters(oldIndex, newIndex);
+      },
+    );
 }
 
   Widget _buildCharacterTile(Character character) {
@@ -419,14 +439,15 @@ class _CharacterListPageState extends State<CharacterListPage> {
           ),
         ],
       ),
-      floatingActionButton: CustomFloatingButtons(
+      floatingActionButton: _isFabVisible 
+          ? CustomFloatingButtons(
         onImport: _importCharacter,
         onAdd: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const CharacterEditPage()),
         ),
         onTemplate: _createFromTemplate,
-      ),
+      ) : null,
     );
   }
 }

@@ -87,7 +87,6 @@ class LocalBackupService {
         await file.writeAsBytes(utf8.encode(backupJson));
         
         try {
-          // Исправленная строка - создаем XFile из File
           await Share.shareXFiles(
             [XFile(file.path)], 
             text: s.share_backup_file,
@@ -161,13 +160,29 @@ class LocalBackupService {
       final data = await compute(_parseJsonInIsolate, jsonStr);
 
       await _ensureBoxesAreOpen();
+      
+      final counts = {
+        'characters': (data['characters'] as List?)?.length ?? 0,
+        'notes': (data['notes'] as List?)?.length ?? 0,
+        'races': (data['races'] as List?)?.length ?? 0,
+        'templates': (data['templates'] as List?)?.length ?? 0,
+      };
+
       await _clearAndImportBox<Race>('races', data['races'] ?? [], Race.fromJson);
       await _clearAndImportBox<QuestionnaireTemplate>('templates', data['templates'] ?? [], QuestionnaireTemplate.fromJson);
       await _clearAndImportBox<Character>('characters', data['characters'] ?? [], Character.fromJson);
       await _clearAndImportBox<Note>('notes', data['notes'] ?? [], Note.fromJson);
 
       if (context.mounted) {
-        _showSnackBar(context, S.of(context).local_restore_success('', '', '', ''));
+        _showSnackBar(
+          context,
+          S.of(context).local_restore_success(
+            counts['characters'].toString(),
+            counts['notes'].toString(),
+            counts['races'].toString(),
+            counts['templates'].toString(),
+          ),
+        );
       }
     } catch (e) {
       if (context.mounted) {
