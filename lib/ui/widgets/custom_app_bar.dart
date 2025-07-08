@@ -32,49 +32,84 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     final colorScheme = theme.colorScheme;
     final s = S.of(context);
 
+    final List<Widget> baseActions = [
+      if (!isSearching && onTemplatesPressed != null)
+        IconButton(
+          icon: const Icon(Icons.library_books_outlined),
+          onPressed: onTemplatesPressed,
+          tooltip: s.templates,
+        ),
+      IconButton(
+        icon: Icon(isSearching ? Icons.close : Icons.search),
+        onPressed: onSearchToggle,
+        tooltip: s.search,
+      ),
+    ];
+
+    final additional = additionalActions ?? [];
+    
+    final settingsAction = IconButton(
+      icon: const Icon(Icons.settings_outlined),
+      onPressed: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const SettingsPage()),
+      ),
+      tooltip: s.settings,
+    );
+
+    final bool needToHideActions = additional.length > 3;
+    
+    final List<Widget> visibleActions = [
+      ...baseActions,
+      if (!needToHideActions) ...additional,
+      if (needToHideActions) ...additional.take(3),
+      settingsAction,
+    ];
+
+    final List<PopupMenuEntry<Widget>> hiddenMenuItems = needToHideActions
+        ? additional.skip(3).map((action) {
+            return PopupMenuItem<Widget>(
+              child: action,
+              onTap: () {
+                if (action is IconButton) {
+                  action.onPressed?.call();
+                } else if (action is ActionChip) {
+                  action.onPressed?.call();
+                }
+              },
+            );
+          }).toList()
+        : [];
+
     return AppBar(
       title: isSearching
           ? TextField(
-        controller: searchController,
-        autofocus: true,
-        decoration: InputDecoration(
-          hintText: searchHint ?? s.search_hint,
-          border: InputBorder.none,
-          hintStyle: textTheme.bodyLarge?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        style: textTheme.bodyLarge,
-        onChanged: onSearchChanged,
-      )
+              controller: searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: searchHint ?? s.search_hint,
+                border: InputBorder.none,
+                hintStyle: textTheme.bodyLarge?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              style: textTheme.bodyLarge,
+              onChanged: onSearchChanged,
+            )
           : Text(
-        title,
-        style: textTheme.headlineSmall?.copyWith(
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+              title,
+              style: textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
       centerTitle: true,
       actions: [
-        if (!isSearching && onTemplatesPressed != null)
-          IconButton(
-            icon: const Icon(Icons.library_books_outlined),
-            onPressed: onTemplatesPressed,
-            tooltip: s.templates,
+        ...visibleActions,
+        if (hiddenMenuItems.isNotEmpty)
+          PopupMenuButton<Widget>(
+            icon: const Icon(Icons.more_vert),
+            itemBuilder: (context) => hiddenMenuItems,
           ),
-        IconButton(
-          icon: Icon(isSearching ? Icons.close : Icons.search),
-          onPressed: onSearchToggle,
-          tooltip: s.search,
-        ),
-        ...?additionalActions,
-        IconButton(
-          icon: const Icon(Icons.settings_outlined),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const SettingsPage()),
-          ),
-          tooltip: s.settings,
-        ),
       ],
     );
   }
