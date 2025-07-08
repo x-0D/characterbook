@@ -1,18 +1,16 @@
 import 'dart:async';
 
+import 'package:characterbook/ui/widgets/context_menu.dart';
+import 'package:characterbook/ui/widgets/custom_app_bar.dart';
+import 'package:characterbook/ui/widgets/custom_floating_buttons.dart';
+import 'package:characterbook/ui/widgets/race_list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../../generated/l10n.dart';
 import '../../../models/character_model.dart';
 import '../../../models/race_model.dart';
-
 import '../../../services/file_picker_service.dart';
-
-import '../../widgets/context_menu.dart';
-import '../../widgets/custom_app_bar.dart';
-import '../../widgets/custom_floating_buttons.dart';
-
 import 'race_management_page.dart';
 
 class RaceListPage extends StatefulWidget {
@@ -30,7 +28,6 @@ class _RaceListPageState extends State<RaceListPage> {
   String? _selectedTag;
   bool _isImporting = false;
   String? _errorMessage;
-  Race? _selectedRace;
 
   List<String> _generateTags(List<Race> races) {
     final tags = <String>{};
@@ -58,8 +55,15 @@ class _RaceListPageState extends State<RaceListPage> {
   }
 
   Future<bool> _isRaceUsed(Race race) async {
-    final characters = Hive.box<Character>('characters').values;
-    return characters.any((character) => character.race?.key == race.key);
+    final charactersBox = Hive.box<Character>('characters');
+    final characters = charactersBox.values;
+    
+    final usingCharacter = characters.firstWhere(
+      (character) => character.race?.key == race.key,
+      orElse: () => null as Character,
+    );
+    
+    return usingCharacter != null;
   }
 
   Future<void> _deleteRace(Race race) async {
@@ -88,15 +92,21 @@ class _RaceListPageState extends State<RaceListPage> {
       final box = Hive.box<Race>('races');
       await box.add(race);
 
-      _showSnackBar(S.of(context).race_imported(race.name));
+      if (mounted) {
+        _showSnackBar(S.of(context).race_imported(race.name));
+      }
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
     } finally {
-      setState(() {
-        _isImporting = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isImporting = false;
+        });
+      }
     }
   }
 
@@ -148,13 +158,14 @@ class _RaceListPageState extends State<RaceListPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
+        duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
 
-  void _showRaceContextMenu(Race race, BuildContext context) {
+  void _showRaceContextMenu(Race race) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -201,11 +212,6 @@ class _RaceListPageState extends State<RaceListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    final isWideScreen = MediaQuery.of(context).size.width > 1000;
-
     return Scaffold(
       appBar: CustomAppBar(
         title: S.of(context).races,
@@ -230,21 +236,21 @@ class _RaceListPageState extends State<RaceListPage> {
           if (_errorMessage != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: theme.colorScheme.errorContainer,
+              color: Theme.of(context).colorScheme.errorContainer,
               child: Row(
                 children: [
-                  Icon(Icons.error, color: theme.colorScheme.error),
+                  Icon(Icons.error, color: Theme.of(context).colorScheme.error),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       _errorMessage!,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onErrorContainer,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onErrorContainer,
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.close, color: theme.colorScheme.onErrorContainer),
+                    icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onErrorContainer),
                     onPressed: () => setState(() => _errorMessage = null),
                   ),
                 ],
@@ -260,9 +266,17 @@ class _RaceListPageState extends State<RaceListPage> {
                     ? _filteredRaces
                     : allRaces;
 
-                return isWideScreen
-                    ? _buildWideLayout(allRaces, racesToShow, tags, colorScheme, textTheme)
-                    : _buildMobileLayout(allRaces, racesToShow, tags, colorScheme, textTheme);
+                return RaceListView(
+                  allRaces: allRaces,
+                  racesToShow: racesToShow,
+                  tags: tags,
+                  searchController: _searchController,
+                  isSearching: _isSearching,
+                  selectedTag: _selectedTag,
+                  onReorder: _reorderRaces,
+                  onRaceTap: _editRace,
+                  onRaceLongPress: _showRaceContextMenu,
+                );
               },
             ),
           ),
@@ -281,273 +295,6 @@ class _RaceListPageState extends State<RaceListPage> {
           }
         },
       ),
-    );
-  }
-
-  Widget _buildWideLayout(
-      List<Race> allRaces,
-      List<Race> racesToShow,
-      List<String> tags,
-      ColorScheme colorScheme,
-      TextTheme textTheme,
-      ) {
-    return Row(
-      children: [
-        Container(
-          width: 400,
-          decoration: BoxDecoration(
-            border: Border(right: BorderSide(color: colorScheme.outline)),
-          ),
-          child: Column(
-            children: [
-              if (tags.isNotEmpty)
-                SizedBox(
-                  height: 56,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: tags.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 4),
-                    itemBuilder: (context, index) {
-                      final tag = tags[index];
-                      return FilterChip(
-                        label: Text(tag),
-                        selected: _selectedTag == tag,
-                        onSelected: (selected) => setState(() {
-                          _selectedTag = selected ? tag : null;
-                          _filterRaces(_searchController.text, allRaces);
-                        }),
-                        shape: StadiumBorder(
-                          side: BorderSide(color: colorScheme.outline),
-                        ),
-                        showCheckmark: false,
-                        side: BorderSide.none,
-                        selectedColor: colorScheme.secondaryContainer,
-                        labelStyle: textTheme.labelLarge?.copyWith(
-                          color: _selectedTag == tag
-                              ? colorScheme.onSecondaryContainer
-                              : colorScheme.onSurface,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              Expanded(
-                child: racesToShow.isEmpty
-                    ? _buildEmptyState(colorScheme, textTheme)
-                    : ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: racesToShow.length,
-                  itemBuilder: (context, index) => _buildRaceItem(
-                    racesToShow[index],
-                    colorScheme,
-                    textTheme,
-                    isSelected: _selectedRace?.key == racesToShow[index].key,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: _selectedRace != null
-              ? RaceManagementPage(race: _selectedRace!)
-              : Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.emoji_people,
-                  size: 48,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  S.of(context).select_race,
-                  style: textTheme.bodyLarge,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyState(ColorScheme colorScheme, TextTheme textTheme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.emoji_people,
-            size: 48,
-            color: colorScheme.onSurface,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _isSearching && _searchController.text.isNotEmpty
-                ? S.of(context).nothing_found
-                : S.of(context).no_races_created,
-            style: textTheme.bodyLarge?.copyWith(color: colorScheme.onSurface),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMobileLayout(
-      List<Race> allRaces,
-      List<Race> racesToShow,
-      List<String> tags,
-      ColorScheme colorScheme,
-      TextTheme textTheme,
-      ) {
-    return Column(
-      children: [
-        if (tags.isNotEmpty)
-          SizedBox(
-            height: 56,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              scrollDirection: Axis.horizontal,
-              itemCount: tags.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 4),
-              itemBuilder: (context, index) {
-                final tag = tags[index];
-                return FilterChip(
-                  label: Text(tag),
-                  selected: _selectedTag == tag,
-                  onSelected: (selected) => setState(() {
-                    _selectedTag = selected ? tag : null;
-                    _filterRaces(_searchController.text, allRaces);
-                  }),
-                  shape: StadiumBorder(side: BorderSide(color: colorScheme.outline)),
-                  showCheckmark: false,
-                  side: BorderSide.none,
-                  selectedColor: colorScheme.secondaryContainer,
-                  labelStyle: textTheme.labelLarge?.copyWith(
-                    color: _selectedTag == tag
-                        ? colorScheme.onSecondaryContainer
-                        : colorScheme.onSurface,
-                  ),
-                );
-              },
-            ),
-          ),
-        Expanded(
-          child: _buildRacesList(racesToShow),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRaceItem(
-      Race race,
-      ColorScheme colorScheme,
-      TextTheme textTheme, {
-        bool isSelected = false,
-      }) {
-    return Card(
-      key: ValueKey(race.key),
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-      elevation: 0,
-      color: isSelected ? colorScheme.secondaryContainer : colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isSelected ? colorScheme.secondary : colorScheme.outlineVariant,
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          if (MediaQuery.of(context).size.width > 1000) {
-            setState(() => _selectedRace = race);
-          } else {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => RaceManagementPage(race: race)),
-            );
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              _buildRaceAvatar(race, colorScheme),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(race.name, style: textTheme.bodyLarge),
-                    Text(
-                      race.description.isNotEmpty ? race.description : S.of(context).no_description,
-                      style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
-                onPressed: () => _showRaceContextMenu(race, context),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRacesList(List<Race> races) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-
-    if (races.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.emoji_people, size: 48, color: colorScheme.onSurface),
-            const SizedBox(height: 16),
-            Text(
-              _isSearching && _searchController.text.isNotEmpty
-                  ? S.of(context).nothing_found
-                  : S.of(context).no_races_created,
-              style: textTheme.bodyLarge?.copyWith(color: colorScheme.onSurface),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ReorderableListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: races.length,
-      itemBuilder: (context, index) => _buildRaceItem(
-        races[index],
-        colorScheme,
-        textTheme,
-        isSelected: _selectedRace?.key == races[index].key,
-      ),
-      onReorder: (oldIndex, newIndex) async {
-        await _reorderRaces(oldIndex, newIndex);
-      },
-    );
-  }
-
-  Widget _buildRaceAvatar(Race race, ColorScheme colorScheme) {
-    return race.logo != null
-        ? CircleAvatar(backgroundImage: MemoryImage(race.logo!), radius: 28)
-        : CircleAvatar(
-      radius: 28,
-      backgroundColor: colorScheme.surfaceContainerHighest,
-      child: Icon(Icons.emoji_people, color: colorScheme.onSurfaceVariant),
     );
   }
 }

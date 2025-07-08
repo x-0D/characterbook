@@ -1,6 +1,6 @@
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/character_model.dart';
-import 'package:characterbook/ui/widgets/character_avatar.dart';
+import 'package:characterbook/ui/widgets/avatar_widget.dart';
 import 'package:flutter/material.dart';
 
 class CharacterGridTile extends StatelessWidget {
@@ -44,7 +44,7 @@ class CharacterGridTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              CharacterAvatar(character: character, size: 40),
+              AvatarWidget.character(imageBytes: character.imageBytes, size: 28),
               const SizedBox(height: 12),
               Text(
                 character.name,

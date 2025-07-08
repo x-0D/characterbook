@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:characterbook/ui/widgets/avatar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import '../../../generated/l10n.dart';
@@ -317,29 +318,6 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
     );
   }
 
-  Widget _buildAvatar() {
-    final theme = Theme.of(context);
-    return widget.character.imageBytes != null
-        ? InkWell(
-            onTap: () => _showFullImage(
-              widget.character.imageBytes!, 
-              S.of(context).character_avatar),
-            child: CircleAvatar(
-              radius: 80,
-              backgroundImage: MemoryImage(widget.character.imageBytes!),
-            ),
-          )
-        : CircleAvatar(
-            radius: 80,
-            backgroundColor: theme.colorScheme.surfaceContainerHighest,
-            child: Icon(
-              Icons.person,
-              size: 60,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          );
-  }
-
   Widget _buildReferenceImage() {
     final theme = Theme.of(context);
     return InkWell(
@@ -438,7 +416,7 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
           fontWeight: FontWeight.bold)),
         actions: [
           PopupMenuButton<String>(
-            icon: Icon(Icons.share),
+            icon: const Icon(Icons.share),
             onSelected: (value) => switch (value) {
               'file' => _exportToJson(),
               'pdf' => _exportToPdf(),
@@ -451,12 +429,12 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
             ],
           ),
           IconButton(
-            icon: Icon(Icons.copy),
+            icon: const Icon(Icons.copy),
             onPressed: _copyToClipboard,
             tooltip: S.of(context).copy_character,
           ),
           IconButton(
-            icon: Icon(Icons.edit),
+            icon: const Icon(Icons.edit),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -488,7 +466,19 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
 
             _buildSectionTitle(S.of(context).basic_info, 'basic', Icons.info),
             if (_expandedSections['basic']!) ...[
-              Center(child: _buildAvatar()),
+              Center(
+                child: InkWell(
+                  onTap: widget.character.imageBytes != null
+                      ? () => _showFullImage(
+                          widget.character.imageBytes!, 
+                          S.of(context).character_avatar)
+                      : null,
+                  child: AvatarWidget.character(
+                    imageBytes: widget.character.imageBytes,
+                    size: 80,
+                  ),
+                ),
+              ),
               const SizedBox(height: 24),
               _buildInfoRow(S.of(context).name, widget.character.name, Icons.badge),
               _buildInfoRow(S.of(context).age, '${widget.character.age} ${S.of(context).years}', Icons.cake),

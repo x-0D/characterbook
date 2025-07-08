@@ -1,6 +1,6 @@
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/character_model.dart';
-import 'package:characterbook/ui/widgets/character_avatar.dart';
+import 'package:characterbook/ui/widgets/avatar_widget.dart';
 import 'package:flutter/material.dart';
 
 class CharacterListCard extends StatelessWidget {
@@ -49,7 +49,7 @@ class CharacterListCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              CharacterAvatar(character: character, size: 28),
+              AvatarWidget.character(imageBytes: character.imageBytes, size: 28),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
