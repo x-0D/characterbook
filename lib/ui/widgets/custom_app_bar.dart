@@ -12,6 +12,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final ValueChanged<String>? onSearchChanged;
   final List<Widget>? additionalActions;
   final VoidCallback? onTemplatesPressed;
+  final VoidCallback? onViewModePressed;
 
   const CustomAppBar({
     super.key,
@@ -23,6 +24,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onSearchChanged,
     this.additionalActions,
     this.onTemplatesPressed,
+    this.onViewModePressed,
   });
 
   @override
@@ -32,22 +34,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     final colorScheme = theme.colorScheme;
     final s = S.of(context);
 
-    final List<Widget> baseActions = [
-      if (!isSearching && onTemplatesPressed != null)
-        IconButton(
-          icon: const Icon(Icons.library_books_outlined),
-          onPressed: onTemplatesPressed,
-          tooltip: s.templates,
-        ),
-      IconButton(
-        icon: Icon(isSearching ? Icons.close : Icons.search),
-        onPressed: onSearchToggle,
-        tooltip: s.search,
-      ),
-    ];
+    final searchAction = IconButton(
+      icon: Icon(isSearching ? Icons.close : Icons.search),
+      onPressed: onSearchToggle,
+      tooltip: s.search,
+    );
 
-    final additional = additionalActions ?? [];
-    
     final settingsAction = IconButton(
       icon: const Icon(Icons.settings_outlined),
       onPressed: () => Navigator.push(
@@ -57,22 +49,31 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       tooltip: s.settings,
     );
 
-    final bool needToHideActions = additional.length > 3;
-
-    final List<Widget> visibleActions = [
-      ...baseActions,
-      if (!needToHideActions) ...additional,
-      if (needToHideActions) ...additional.take(3),
-      settingsAction,
+    final List<Widget> allActions = [
+      if (!isSearching && onTemplatesPressed != null)
+        IconButton(
+          icon: const Icon(Icons.library_books_outlined),
+          onPressed: onTemplatesPressed,
+          tooltip: s.templates,
+        ),
+      if (!isSearching && onViewModePressed != null)
+        IconButton(
+          icon: const Icon(Icons.grid_view),
+          onPressed: onViewModePressed,
+          tooltip: s.grid_view,
+        ),
+      ...(additionalActions ?? []),
     ];
 
-    final List<PopupMenuEntry<Widget>> hiddenMenuItems = needToHideActions
-        ? additional.skip(3).map((action) {
-            return PopupMenuItem<Widget>(
-              child: _getActionWidget(action),
-              onTap: () => _triggerAction(action),
-            );
-          }).toList()
+    const int maxVisibleActions = 0;
+    final bool needToHideActions = allActions.length > maxVisibleActions;
+    
+    final List<Widget> visibleActions = needToHideActions
+        ? allActions.take(maxVisibleActions).toList()
+        : allActions;
+
+    final List<Widget> hiddenActions = needToHideActions
+        ? allActions.skip(maxVisibleActions).toList()
         : [];
 
     return AppBar(
@@ -98,19 +99,18 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
       centerTitle: true,
       actions: [
-        baseActions.last,
-        
-        if (!isSearching && onTemplatesPressed != null) baseActions.first,
-        
-        if (!needToHideActions) ...additional,
-        if (needToHideActions) ...additional.take(3),
-
-        if (hiddenMenuItems.isNotEmpty)
-          PopupMenuButton<Widget>(
+        searchAction,
+        ...visibleActions,
+        if (hiddenActions.isNotEmpty)
+          PopupMenuButton(
             icon: const Icon(Icons.more_vert),
-            itemBuilder: (context) => hiddenMenuItems,
+            itemBuilder: (context) => hiddenActions
+                .map((action) => PopupMenuItem(
+                      child: _getActionWidget(action),
+                      onTap: () => _triggerAction(action),
+                    ))
+                .toList(),
           ),
-        
         settingsAction,
       ],
     );
@@ -125,7 +125,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     } else if (action is ActionChip) {
       return ListTile(
         leading: action.avatar,
-        title: Text(action.label?.toString() ?? ''),
+        title: Text(action.label.toString()),
       );
     }
     return action;
