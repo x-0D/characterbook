@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:characterbook/ui/widgets/character_list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -6,12 +7,9 @@ import '../../../generated/l10n.dart';
 import '../../../models/character_model.dart';
 import '../../../models/template_model.dart';
 import '../../../services/file_picker_service.dart';
-import '../../widgets/items/character_grid_tile.dart';
-import '../../widgets/items/character_list_card.dart';
 import '../../widgets/context_menu.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../widgets/custom_floating_buttons.dart';
-import '../../widgets/tag_filter.dart';
 import '../templates/templates_page.dart';
 import 'character_detail_page.dart';
 import 'character_management_page.dart';
@@ -238,112 +236,12 @@ class _CharacterListPageState extends State<CharacterListPage> {
     );
   }
 
-  Widget _buildCharacterCard(Character character, int index) {
-    final itemKey = ValueKey('char_${character.key}_${character.hashCode}');
-
-    return ReorderableDragStartListener(
-      key: itemKey,
-      index: index,
-      child: CharacterListCard(
-        key: itemKey,
-        character: character,
-        isSelected: false,
-        onTap: () => _navigateToDetail(character),
-        onLongPress: () => _showCharacterContextMenu(character),
-        onMenuPressed: () => _showCharacterContextMenu(character),
-        enableDrag: true,
-      ),
-    );
-  }
-
-  Widget _buildCharactersList(List<Character> characters) {
-    if (characters.isEmpty) return _buildEmptyState();
-
-    assert(() {
-      final keys = characters.map((c) => 'char_${c.key}_${c.hashCode}').toList();
-      if (keys.length != keys.toSet().length) {
-        debugPrint('⚠️ Найдены дубликаты ключей!');
-        debugPrint('Дубликаты: ${keys.where((e) => keys.indexOf(e) != keys.lastIndexOf(e))}');
-      }
-      return true;
-    }());
-
-    return ReorderableListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        for (int i = 0; i < characters.length; i++)
-          _buildCharacterCard(characters[i], i),
-      ],
-      onReorder: (oldIndex, newIndex) {
-        if (oldIndex < newIndex) newIndex -= 1;
-        _reorderCharacters(oldIndex, newIndex);
-      },
-    );
-}
-
-  Widget _buildCharacterTile(Character character) {
-    return CharacterGridTile(
-      key: ValueKey(character.key ?? character.hashCode),
-      character: character,
-      onTap: () => _navigateToDetail(character),
-      onLongPress: () => _showCharacterContextMenu(character),
-    );
-  }
-
   void _navigateToDetail(Character character) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CharacterDetailPage(character: character),
       ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    final theme = Theme.of(context);
-    final s = S.of(context);
-    
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.person_search,
-            size: 48,
-            color: theme.colorScheme.onSurface,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _isSearching && _searchController.text.isNotEmpty
-                ? s.nothing_found
-                : s.no_characters,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          if (!_isSearching)
-            TextButton(
-              onPressed: _importCharacter,
-              child: Text(s.import_character),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCharactersGrid(List<Character> characters) {
-    if (characters.isEmpty) return _buildEmptyState();
-
-    return GridView.builder(
-      padding: const EdgeInsets.all(8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.8,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-      ),
-      itemCount: characters.length,
-      itemBuilder: (context, index) => _buildCharacterTile(characters[index]),
     );
   }
 
@@ -409,32 +307,31 @@ class _CharacterListPageState extends State<CharacterListPage> {
             child: ValueListenableBuilder<Box<Character>>(
               valueListenable: Hive.box<Character>('characters').listenable(),
               builder: (context, box, _) {
-                final allCharacters = box.values.cast<Character>().toList();
+                final allCharacters = box.values.toList();
                 final tags = _generateTags(allCharacters);
-                final characters = _isSearching || _selectedTag != null
+                final charactersToShow = _isSearching || _selectedTag != null
                     ? _filteredCharacters
                     : allCharacters;
 
-                return Column(
-                  children: [
-                    if (tags.isNotEmpty) 
-                      TagFilter(
-                        tags: tags,
-                        selectedTag: _selectedTag,
-                        onTagSelected: (tag) {
-                          setState(() => _selectedTag = tag);
-                          _filterCharacters(_searchController.text, allCharacters);
-                        },
-                        allCharacters: allCharacters,
-                      ),
-                    Expanded(
-                      child: _isGridView 
-                          ? _buildCharactersGrid(characters) 
-                          : _buildCharactersList(characters),
-                    ),
-                  ],
+                return CharacterListView(
+                  allCharacters: allCharacters,
+                  charactersToShow: charactersToShow,
+                  tags: tags,
+                  searchController: _searchController,
+                  isSearching: _isSearching,
+                  selectedTag: _selectedTag,
+                  onReorder: (oldIndex, newIndex) {
+                    if (oldIndex < newIndex) newIndex -= 1;
+                    _reorderCharacters(oldIndex, newIndex);
+                  },
+                  onCharacterTap: (character) => _navigateToDetail(character),
+                  onCharacterLongPress: (character) => _showCharacterContextMenu(character),
+                  onTagSelected: (tag) {
+                    setState(() => _selectedTag = tag);
+                    _filterCharacters(_searchController.text, allCharacters);
+                  },
                 );
-              },
+              }
             ),
           ),
         ],

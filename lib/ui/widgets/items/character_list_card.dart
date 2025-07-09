@@ -12,21 +12,21 @@ class CharacterListCard extends StatelessWidget {
   final bool enableDrag;
 
   const CharacterListCard({
-    Key? key,
+    super.key,
     required this.character,
     required this.isSelected,
     required this.onTap,
     required this.onLongPress,
     required this.onMenuPressed,
     this.enableDrag = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Card(
-      key: ValueKey(character.key),
+      key: key,
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
       elevation: 0,
       color: isSelected
@@ -57,8 +57,7 @@ class CharacterListCard extends StatelessWidget {
                   children: [
                     Text(character.name, style: theme.textTheme.bodyLarge),
                     Text(
-                      '${character.age} ${S.of(context).years}, '
-                      '${_getLocalizedGender(context, character.gender)}',
+                      '${character.age} years, ${_getLocalizedGender(context, character.gender)}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface,
                       ),
@@ -88,3 +87,4 @@ class CharacterListCard extends StatelessWidget {
     };
   }
 }
+
