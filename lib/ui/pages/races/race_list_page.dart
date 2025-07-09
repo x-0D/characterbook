@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:characterbook/ui/widgets/context_menu.dart';
 import 'package:characterbook/ui/widgets/custom_app_bar.dart';
 import 'package:characterbook/ui/widgets/custom_floating_buttons.dart';
-import 'package:characterbook/ui/widgets/race_list_view.dart';
+import 'package:characterbook/ui/widgets/list_views/race_list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';

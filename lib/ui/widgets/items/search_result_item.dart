@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/note_model.dart';
 import 'package:characterbook/models/race_model.dart';
-import '../../../generated/l10n.dart';
+import '../../../../generated/l10n.dart';
 
 class SearchResultItem extends StatelessWidget {
   final dynamic item;

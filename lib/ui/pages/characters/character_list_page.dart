@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:characterbook/ui/widgets/character_list_view.dart';
+import 'package:characterbook/ui/widgets/list_views/character_list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';

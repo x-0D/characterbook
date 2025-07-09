@@ -4,7 +4,6 @@ import 'package:characterbook/ui/widgets/items/character_list_card.dart';
 import 'package:characterbook/ui/widgets/tag_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-
 import 'package:flutter/services.dart';
 
 class CharacterListView extends StatefulWidget {
@@ -66,96 +65,97 @@ class _CharacterListViewState extends State<CharacterListView> {
             allCharacters: widget.allCharacters,
           ),
         Expanded(
-          child: _buildCharactersList(theme),
+          child: _buildContent(theme),
         ),
       ],
     );
   }
 
-  Widget _buildCharactersList(ThemeData theme) {
+  Widget _buildContent(ThemeData theme) {
     if (widget.charactersToShow.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_outline, size: 48, color: theme.colorScheme.onSurface),
-            const SizedBox(height: 16),
-            Text(
-              widget.isSearching && widget.searchController.text.isNotEmpty
-                  ? S.of(context).empty_list : S.of(context).empty_list,
-              style: theme.textTheme.bodyLarge?.copyWith(color: theme.colorScheme.onSurface),
-            ),
-            if (widget.onImportCharacter != null) ...[
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: widget.onImportCharacter,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                ),
-                child: Text(S.of(context).import_character),
-              ),
-            ],
-          ],
-        ),
-      );
+      return _buildEmptyState(theme);
     }
+    return _buildReorderableList();
+  }
 
+  Widget _buildEmptyState(ThemeData theme) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.person_outline, 
+            size: 48, 
+            color: theme.colorScheme.onSurface,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            widget.isSearching && widget.searchController.text.isNotEmpty
+                ? S.of(context).empty_list 
+                : S.of(context).empty_list,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          if (widget.onImportCharacter != null) 
+            _buildImportButton(theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImportButton(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: ElevatedButton(
+        onPressed: widget.onImportCharacter,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: theme.colorScheme.onPrimary,
+        ),
+        child: Text(S.of(context).import_character),
+      ),
+    );
+  }
+
+  Widget _buildReorderableList() {
     return NotificationListener<UserScrollNotification>(
-      onNotification: (notification) {
-        if (widget.onScroll != null) {
-          widget.onScroll!(notification.direction);
-        }
-        return false;
-      },
+      onNotification: _handleScrollNotification,
       child: ReorderableListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 8),
         scrollController: widget.scrollController,
         itemCount: widget.charactersToShow.length,
         itemBuilder: (context, index) {
           final character = widget.charactersToShow[index];
-          return _buildDraggableCharacterCard(character, index);
+          return _buildCharacterCard(character, index);
         },
-        onReorderStart: (index) {
-          HapticFeedback.lightImpact();
-          setState(() => _isDragging = true);
-        },
-        onReorderEnd: (_) => setState(() => _isDragging = false),
+        onReorderStart: _onReorderStart,
+        onReorderEnd: _onReorderEnd,
         onReorder: widget.onReorder,
       ),
     );
   }
 
-  Widget _buildDraggableCharacterCard(Character character, int index) {
+  bool _handleScrollNotification(UserScrollNotification notification) {
+    widget.onScroll?.call(notification.direction);
+    return false;
+  }
+
+  void _onReorderStart(int _) {
+    HapticFeedback.lightImpact();
+    setState(() => _isDragging = true);
+  }
+
+  void _onReorderEnd(_) => setState(() => _isDragging = false);
+
+  Widget _buildCharacterCard(Character character, int index) {
     return LongPressDraggable<Character>(
       key: ValueKey(character.key),
       data: character,
-      feedback: Material(
-        child: CharacterListCard(
-          character: character,
-          isSelected: false,
-          onTap: () {},
-          onLongPress: () {},
-          onMenuPressed: () {},
-          enableDrag: true,
-        ),
-      ),
-      childWhenDragging: Opacity(
-        opacity: 0.5,
-        child: CharacterListCard(
-          character: character,
-          isSelected: false,
-          onTap: () {},
-          onLongPress: () {},
-          onMenuPressed: () {},
-          enableDrag: true,
-        ),
-      ),
-      onDragStarted: () {
-        HapticFeedback.lightImpact();
-        setState(() => _isDragging = true);
-      },
-      onDragEnd: (_) => setState(() => _isDragging = false),
+      feedback: _buildCharacterCardFeedback(character),
+      childWhenDragging: _buildCharacterCardWhenDragging(character),
+      onDragStarted: _onDragStarted,
+      onDragEnd: _onDragEnd,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => widget.onCharacterTap(character),
@@ -172,4 +172,38 @@ class _CharacterListViewState extends State<CharacterListView> {
       ),
     );
   }
+
+  Widget _buildCharacterCardFeedback(Character character) {
+    return Material(
+      child: CharacterListCard(
+        character: character,
+        isSelected: false,
+        onTap: () {},
+        onLongPress: () {},
+        onMenuPressed: () {},
+        enableDrag: true,
+      ),
+    );
+  }
+
+  Widget _buildCharacterCardWhenDragging(Character character) {
+    return Opacity(
+      opacity: 0.5,
+      child: CharacterListCard(
+        character: character,
+        isSelected: false,
+        onTap: () {},
+        onLongPress: () {},
+        onMenuPressed: () {},
+        enableDrag: true,
+      ),
+    );
+  }
+
+  void _onDragStarted() {
+    HapticFeedback.lightImpact();
+    setState(() => _isDragging = true);
+  }
+
+  void _onDragEnd(_) => setState(() => _isDragging = false);
 }
