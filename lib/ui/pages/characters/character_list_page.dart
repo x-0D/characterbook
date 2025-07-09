@@ -50,10 +50,19 @@ class _CharacterListPageState extends State<CharacterListPage> {
   }
 
   void _handleScroll() {
-    if (_scrollController.position.userScrollDirection == ScrollDirection.reverse) {
-      if (_isFabVisible) setState(() => _isFabVisible = false);
-    } else if (_scrollController.position.userScrollDirection == ScrollDirection.forward) {
-      if (!_isFabVisible) setState(() => _isFabVisible = true);
+    if (_scrollController.position.atEdge) {
+      final isTop = _scrollController.position.pixels == 0;
+      if (isTop) {
+        setState(() => _isFabVisible = true);
+      }
+      return;
+    }
+
+    final direction = _scrollController.position.userScrollDirection;
+    if (direction == ScrollDirection.reverse && _isFabVisible) {
+      setState(() => _isFabVisible = false);
+    } else if (direction == ScrollDirection.forward && !_isFabVisible) {
+      setState(() => _isFabVisible = true);
     }
   }
 
@@ -324,11 +333,19 @@ class _CharacterListPageState extends State<CharacterListPage> {
                     if (oldIndex < newIndex) newIndex -= 1;
                     _reorderCharacters(oldIndex, newIndex);
                   },
+                  scrollController: _scrollController,
                   onCharacterTap: (character) => _navigateToDetail(character),
                   onCharacterLongPress: (character) => _showCharacterContextMenu(character),
                   onTagSelected: (tag) {
                     setState(() => _selectedTag = tag);
                     _filterCharacters(_searchController.text, allCharacters);
+                  },
+                  onScroll: (direction) {
+                    if (direction == ScrollDirection.reverse && _isFabVisible) {
+                      setState(() => _isFabVisible = false);
+                    } else if (direction == ScrollDirection.forward && !_isFabVisible) {
+                      setState(() => _isFabVisible = true);
+                    }
                   },
                 );
               }
@@ -336,15 +353,18 @@ class _CharacterListPageState extends State<CharacterListPage> {
           ),
         ],
       ),
-      floatingActionButton: _isFabVisible 
-          ? CustomFloatingButtons(
-        onImport: _importCharacter,
-        onAdd: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CharacterEditPage()),
+      floatingActionButton: AnimatedOpacity(
+        opacity: _isFabVisible ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 300),
+        child: CustomFloatingButtons(
+          onImport: _importCharacter,
+          onAdd: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CharacterEditPage()),
+          ),
+          onTemplate: _createFromTemplate,
         ),
-        onTemplate: _createFromTemplate,
-      ) : null,
+      ),
     );
   }
 }

@@ -57,7 +57,7 @@ class CharacterListCard extends StatelessWidget {
                   children: [
                     Text(character.name, style: theme.textTheme.bodyLarge),
                     Text(
-                      '${character.age} years, ${_getLocalizedGender(context, character.gender)}',
+                      '${character.age} ${S.of(context).years}, ${_getLocalizedGender(context, character.gender)}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface,
                       ),
