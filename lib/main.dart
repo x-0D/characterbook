@@ -18,10 +18,12 @@ import 'ui/pages/home_page.dart';
 
 Future<void> _initializeHive() async {
   await HiveService.initHive();
-  await HiveService.openBox<Character>('characters');
-  await HiveService.openBox<Note>('notes');
-  await HiveService.openBox<Race>('races');
-  await HiveService.openBox<QuestionnaireTemplate>('templates');
+  await Future.wait([
+    HiveService.getBox<Character>('characters'),
+    HiveService.getBox<Note>('notes'),
+    HiveService.getBox<Race>('races'),
+    HiveService.getBox<QuestionnaireTemplate>('templates'),
+  ]);
 }
 
 void main() async {

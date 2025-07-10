@@ -32,39 +32,29 @@ class BackupHelper {
     'templates': QuestionnaireTemplate,
   };
 
-  static Future<void> ensureBoxesAreOpen() async {
-    for (final entry in _boxTypes.entries) {
-      await HiveService.openBox(entry.key);
-    }
-  }
-
   static Future<Map<String, dynamic>> getBackupData() async {
-    await ensureBoxesAreOpen();
     return {
-      'characters': (await HiveService.openBox<Character>('characters')).values.toList(),
-      'notes': (await HiveService.openBox<Note>('notes')).values.toList(),
-      'races': (await HiveService.openBox<Race>('races')).values.toList(),
-      'templates': (await HiveService.openBox<QuestionnaireTemplate>('templates')).values.toList(),
+      'characters': (await HiveService.getBox<Character>('characters')).values.toList(),
+      'notes': (await HiveService.getBox<Note>('notes')).values.toList(),
+      'races': (await HiveService.getBox<Race>('races')).values.toList(),
+      'templates': (await HiveService.getBox<QuestionnaireTemplate>('templates')).values.toList(),
     };
   }
 
-  static Future<void> _restoreBox(String boxName, Type type, List<dynamic>? items) async {
+  static Future<void> _restoreBox<T>(String boxName, List<dynamic>? items) async {
     if (items == null || items.isEmpty) return;
 
-    final box = Hive.isBoxOpen(boxName) 
-      ? Hive.box(boxName) 
-      : await Hive.openBox(boxName);
-      
+    final box = await HiveService.getBox<T>(boxName);
     await box.clear();
 
     for (final json in items.cast<Map<String, dynamic>>()) {
       try {
-        final item = _createModel(type, json);
+        final item = _createModel(T, json);
         if (item != null) {
-          await box.add(item);
+          await box.add(item as T);
         }
       } catch (e) {
-        debugPrint('Error creating $type from json: $e\nJson: $json');
+        debugPrint('Error creating ${T.toString()} from json: $e\nJson: $json');
       }
     }
   }
@@ -77,11 +67,20 @@ class BackupHelper {
     if (!validateBackupStructure(data)) {
       throw FormatException('Invalid backup structure');
     }
-
-    await Hive.close();
-
-    for (final entry in _boxTypes.entries) {
-      await _restoreBox(entry.key, entry.value, data[entry.key] as List<dynamic>?);
+    try {
+      await HiveService.closeBoxes();
+      
+      await _restoreBox<Character>('characters', data['characters'] as List<dynamic>?);
+      await _restoreBox<Note>('notes', data['notes'] as List<dynamic>?);
+      await _restoreBox<Race>('races', data['races'] as List<dynamic>?);
+      await _restoreBox<QuestionnaireTemplate>('templates', data['templates'] as List<dynamic>?);
+    } finally {
+      await Future.wait([
+        HiveService.getBox<Character>('characters'),
+        HiveService.getBox<Note>('notes'),
+        HiveService.getBox<Race>('races'),
+        HiveService.getBox<QuestionnaireTemplate>('templates'),
+      ]);
     }
   }
 
@@ -113,7 +112,6 @@ class LocalBackupService implements BackupService {
   @override
   Future<void> exportData() async {
     try {
-      await HiveService.closeBoxes();
       final backupData = await BackupHelper.getBackupData();
       final hasData = backupData.values.any((list) => (list as List).isNotEmpty);
 
@@ -173,14 +171,13 @@ class LocalBackupService implements BackupService {
   @override
   Future<void> importData() async {
     try {
-      await HiveService.closeBoxes();
       final jsonData = await filePickerService.pickRestoreFile();
       if (jsonData == null || jsonData is! Map<String, dynamic>) {
         throw Exception('Invalid backup file');
       }
 
       await BackupHelper.restoreFromBackupData(jsonData);
-      notificationService.showSuccess(S.current.local_restore_success as String);
+      notificationService.showSuccess(S.current.local_restore_success);
     } catch (e, stack) {
       notificationService.showError('${S.current.local_restore_error}: $e');
       debugPrint('Restore failed: $e\n$stack');

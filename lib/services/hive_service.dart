@@ -6,8 +6,8 @@ import 'package:characterbook/models/template_model.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 class HiveService {
-  static bool _isInitialized = false;
   static final Map<String, Type> _openBoxTypes = {};
+  static bool _isInitialized = false;
 
   static Future<void> initHive() async {
     if (!_isInitialized) {
@@ -35,22 +35,24 @@ class HiveService {
     }
   }
 
-  static Future<Box<T>> openBox<T>(String name) async {
+  static Future<Box<T>> getBox<T>(String name) async {
     if (Hive.isBoxOpen(name)) {
-      if (_openBoxTypes[name] != T) {
-        await Hive.box(name).close();
-        _openBoxTypes.remove(name);
-        return await _openNewBox<T>(name);
+      if (_openBoxTypes[name] == T) {
+        return Hive.box(name) as Box<T>;
       }
-      return Hive.box(name) as Box<T>;
+      throw HiveError('The box "$name" is already open with different type');
     }
-    return await _openNewBox<T>(name);
-  }
-
-  static Future<Box<T>> _openNewBox<T>(String name) async {
+    
     final box = await Hive.openBox<T>(name);
     _openBoxTypes[name] = T;
     return box;
+  }
+
+  static Future<void> closeBox(String name) async {
+    if (Hive.isBoxOpen(name)) {
+      await Hive.box(name).close();
+      _openBoxTypes.remove(name);
+    }
   }
 
   static Future<void> closeBoxes() async {
