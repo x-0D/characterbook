@@ -33,30 +33,17 @@ class BackupHelper {
   };
 
   static Future<Map<String, dynamic>> getBackupData() async {
+    final characters = await HiveService.getBox<Character>('characters');
+    final notes = await HiveService.getBox<Note>('notes');
+    final races = await HiveService.getBox<Race>('races');
+    final templates = await HiveService.getBox<QuestionnaireTemplate>('templates');
+
     return {
-      'characters': (await HiveService.getBox<Character>('characters')).values.toList(),
-      'notes': (await HiveService.getBox<Note>('notes')).values.toList(),
-      'races': (await HiveService.getBox<Race>('races')).values.toList(),
-      'templates': (await HiveService.getBox<QuestionnaireTemplate>('templates')).values.toList(),
+      'characters': characters.values.toList(),
+      'notes': notes.values.toList(),
+      'races': races.values.toList(),
+      'templates': templates.values.toList(),
     };
-  }
-
-  static Future<void> _restoreBox<T>(String boxName, List<dynamic>? items) async {
-    if (items == null || items.isEmpty) return;
-
-    final box = await HiveService.getBox<T>(boxName);
-    await box.clear();
-
-    for (final json in items.cast<Map<String, dynamic>>()) {
-      try {
-        final item = _createModel(T, json);
-        if (item != null) {
-          await box.add(item as T);
-        }
-      } catch (e) {
-        debugPrint('Error creating ${T.toString()} from json: $e\nJson: $json');
-      }
-    }
   }
 
   static bool validateBackupStructure(Map<String, dynamic> data) {
@@ -67,20 +54,40 @@ class BackupHelper {
     if (!validateBackupStructure(data)) {
       throw FormatException('Invalid backup structure');
     }
+
     try {
-      await HiveService.closeBoxes();
-      
-      await _restoreBox<Character>('characters', data['characters'] as List<dynamic>?);
-      await _restoreBox<Note>('notes', data['notes'] as List<dynamic>?);
-      await _restoreBox<Race>('races', data['races'] as List<dynamic>?);
-      await _restoreBox<QuestionnaireTemplate>('templates', data['templates'] as List<dynamic>?);
-    } finally {
-      await Future.wait([
-        HiveService.getBox<Character>('characters'),
-        HiveService.getBox<Note>('notes'),
-        HiveService.getBox<Race>('races'),
-        HiveService.getBox<QuestionnaireTemplate>('templates'),
-      ]);
+      final characters = await HiveService.getBox<Character>('characters');
+      final notes = await HiveService.getBox<Note>('notes');
+      final races = await HiveService.getBox<Race>('races');
+      final templates = await HiveService.getBox<QuestionnaireTemplate>('templates');
+
+      await characters.clear();
+      await notes.clear();
+      await races.clear();
+      await templates.clear();
+
+      await _restoreToBox<Character>(characters, data['characters'] as List<dynamic>?);
+      await _restoreToBox<Note>(notes, data['notes'] as List<dynamic>?);
+      await _restoreToBox<Race>(races, data['races'] as List<dynamic>?);
+      await _restoreToBox<QuestionnaireTemplate>(templates, data['templates'] as List<dynamic>?);
+    } catch (e) {
+      debugPrint('Restore error: $e');
+      rethrow;
+    }
+  }
+
+  static Future<void> _restoreToBox<T>(Box<T> box, List<dynamic>? items) async {
+    if (items == null || items.isEmpty) return;
+
+    for (final json in items.cast<Map<String, dynamic>>()) {
+      try {
+        final item = _createModel(T, json);
+        if (item != null) {
+          await box.add(item as T);
+        }
+      } catch (e) {
+        debugPrint('Error creating ${T.toString()} from json: $e\nJson: $json');
+      }
     }
   }
 
