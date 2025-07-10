@@ -2171,14 +2171,13 @@ class S {
     );
   }
 
-  /// `Восстановлено {charactersCount} персонажей, {notesCount} заметок, {racesCount} рас, {templatesCount} шаблонов`
-  String local_restore_success(Object charactersCount, Object notesCount,
-      Object racesCount, Object templatesCount) {
+  /// `Восстановление произошло успешно`
+  String get local_restore_success {
     return Intl.message(
-      'Восстановлено $charactersCount персонажей, $notesCount заметок, $racesCount рас, $templatesCount шаблонов',
+      'Восстановление произошло успешно',
       name: 'local_restore_success',
       desc: '',
-      args: [charactersCount, notesCount, racesCount, templatesCount],
+      args: [],
     );
   }
 

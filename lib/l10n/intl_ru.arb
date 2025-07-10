@@ -213,7 +213,7 @@
   "restore_from_file": "Восстановить из файла",
   "local_backup_success": "Резервная копия успешно создана",
   "local_backup_error": "Ошибка создания резервной копии",
-  "local_restore_success": "Восстановлено {charactersCount} персонажей, {notesCount} заметок, {racesCount} рас, {templatesCount} шаблонов",
+  "local_restore_success": "Восстановление произошло успешно",
   "local_restore_error": "Ошибка восстановления",
   "share_backup_file": "Вот моя резервная копия CharacterBook",
 

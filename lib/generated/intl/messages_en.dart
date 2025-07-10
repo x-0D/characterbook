@@ -35,18 +35,15 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m6(error) => "Import error: ${error}";
 
-  static String m7(charactersCount, notesCount, racesCount, templatesCount) =>
-      "Restored ${charactersCount} characters, ${notesCount} notes, ${racesCount} races, ${templatesCount} templates";
+  static String m7(name) => "Race \"${name}\" imported successfully";
 
-  static String m8(name) => "Race \"${name}\" imported successfully";
+  static String m8(name) => "Race file ${name}";
 
-  static String m9(name) => "Race file ${name}";
+  static String m9(name) => "Template \"${name}\" exported successfully";
 
-  static String m10(name) => "Template \"${name}\" exported successfully";
+  static String m10(name) => "Template \"${name}\" imported successfully";
 
-  static String m11(name) => "Template \"${name}\" imported successfully";
-
-  static String m12(name) => "Template \"${name}\" already exists. Replace it?";
+  static String m11(name) => "Template \"${name}\" already exists. Replace it?";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -205,7 +202,8 @@ class MessageLookup extends MessageLookupByLibrary {
             "Backup file created successfully"),
         "local_restore_error":
             MessageLookupByLibrary.simpleMessage("Restore failed"),
-        "local_restore_success": m7,
+        "local_restore_success":
+            MessageLookupByLibrary.simpleMessage("The recovery was successful"),
         "main_image": MessageLookupByLibrary.simpleMessage("Main Image"),
         "male": MessageLookupByLibrary.simpleMessage("Male"),
         "markdown_bold": MessageLookupByLibrary.simpleMessage("Bold"),
@@ -266,11 +264,11 @@ class MessageLookup extends MessageLookupByLibrary {
         "race_delete_title":
             MessageLookupByLibrary.simpleMessage("Delete Race"),
         "race_deleted": MessageLookupByLibrary.simpleMessage("Race deleted"),
-        "race_imported": m8,
+        "race_imported": m7,
         "race_management":
             MessageLookupByLibrary.simpleMessage("Race Management"),
         "race_name": MessageLookupByLibrary.simpleMessage("Race Name"),
-        "race_share_text": m9,
+        "race_share_text": m8,
         "races": MessageLookupByLibrary.simpleMessage("Races"),
         "reference_image": MessageLookupByLibrary.simpleMessage("Reference"),
         "related_notes": MessageLookupByLibrary.simpleMessage("Related Posts"),
@@ -328,11 +326,11 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Template deleted"),
         "template_exists":
             MessageLookupByLibrary.simpleMessage("Template already exists"),
-        "template_exported": m10,
-        "template_imported": m11,
+        "template_exported": m9,
+        "template_imported": m10,
         "template_name_label":
             MessageLookupByLibrary.simpleMessage("Template Name"),
-        "template_replace_confirm": m12,
+        "template_replace_confirm": m11,
         "templates": MessageLookupByLibrary.simpleMessage("Templates"),
         "templates_not_found":
             MessageLookupByLibrary.simpleMessage("No templates found"),

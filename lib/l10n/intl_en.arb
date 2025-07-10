@@ -207,7 +207,7 @@
   "restore_from_file": "Restore from File",
   "local_backup_success": "Backup file created successfully",
   "local_backup_error": "Backup failed",
-  "local_restore_success": "Restored {charactersCount} characters, {notesCount} notes, {racesCount} races, {templatesCount} templates",
+  "local_restore_success": "The recovery was successful",
   "local_restore_error": "Restore failed",
   "share_backup_file": "Here's my CharacterBook backup file",
 

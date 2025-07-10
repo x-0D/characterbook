@@ -1,4 +1,8 @@
+import 'package:characterbook/models/note_model.dart';
+import 'package:characterbook/models/race_model.dart';
+import 'package:characterbook/models/template_model.dart';
 import 'package:characterbook/services/hive_service.dart';
+import 'package:characterbook/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -14,6 +18,10 @@ import 'ui/pages/home_page.dart';
 
 Future<void> _initializeHive() async {
   await HiveService.initHive();
+  await HiveService.openBox<Character>('characters');
+  await HiveService.openBox<Note>('notes');
+  await HiveService.openBox<Race>('races');
+  await HiveService.openBox<QuestionnaireTemplate>('templates');
 }
 
 void main() async {
@@ -24,12 +32,15 @@ void main() async {
 
   final themeProvider = ThemeProvider();
   final localeProvider = LocaleProvider();
+  final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+  final notificationService = NotificationService(scaffoldMessengerKey);
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: themeProvider),
         ChangeNotifierProvider.value(value: localeProvider),
+        Provider<NotificationService>.value(value: notificationService),
       ],
       child: const _App(),
     ),
@@ -67,8 +78,11 @@ class _AppState extends State<_App> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final localeProvider = Provider.of<LocaleProvider>(context, listen: true);
     final themeProvider = Provider.of<ThemeProvider>(context, listen: true);
+    final notificationService = Provider.of<NotificationService>(context);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: notificationService.messengerKey,
       title: 'CharacterBook',
       locale: localeProvider.locale,
       theme: themeProvider.lightTheme,

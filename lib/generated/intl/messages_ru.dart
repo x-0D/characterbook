@@ -22,7 +22,7 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m0(name) => "Персонаж создан из шаблона \"${name}\"";
 
-  static String m13(name) => "Персонаж \"${name}\" успешно экспортирован";
+  static String m12(name) => "Персонаж \"${name}\" успешно экспортирован";
 
   static String m1(name) => "Персонаж \"${name}\" успешно импортирован";
 
@@ -37,18 +37,15 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m6(error) => "Ошибка импорта: ${error}";
 
-  static String m7(charactersCount, notesCount, racesCount, templatesCount) =>
-      "Восстановлено ${charactersCount} персонажей, ${notesCount} заметок, ${racesCount} рас, ${templatesCount} шаблонов";
+  static String m7(name) => "Раса \"${name}\" успешно импортирована";
 
-  static String m8(name) => "Раса \"${name}\" успешно импортирована";
+  static String m8(name) => "Файл расы ${name}";
 
-  static String m9(name) => "Файл расы ${name}";
+  static String m9(name) => "Шаблон \"${name}\" успешно экспортирован";
 
-  static String m10(name) => "Шаблон \"${name}\" успешно экспортирован";
+  static String m10(name) => "Шаблон \"${name}\" успешно импортирован";
 
-  static String m11(name) => "Шаблон \"${name}\" успешно импортирован";
-
-  static String m12(name) => "Шаблон \"${name}\" уже существует. Заменить его?";
+  static String m11(name) => "Шаблон \"${name}\" уже существует. Заменить его?";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -101,7 +98,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Удалить персонажа?"),
         "character_deleted":
             MessageLookupByLibrary.simpleMessage("Персонаж удален"),
-        "character_exported": m13,
+        "character_exported": m12,
         "character_gallery":
             MessageLookupByLibrary.simpleMessage("Галерея персонажа"),
         "character_imported": m1,
@@ -224,7 +221,8 @@ class MessageLookup extends MessageLookupByLibrary {
             "Резервная копия успешно создана"),
         "local_restore_error":
             MessageLookupByLibrary.simpleMessage("Ошибка восстановления"),
-        "local_restore_success": m7,
+        "local_restore_success": MessageLookupByLibrary.simpleMessage(
+            "Восстановление произошло успешно"),
         "main_image":
             MessageLookupByLibrary.simpleMessage("Основное изображение"),
         "male": MessageLookupByLibrary.simpleMessage("Мужской"),
@@ -289,11 +287,11 @@ class MessageLookup extends MessageLookupByLibrary {
         "race_delete_title":
             MessageLookupByLibrary.simpleMessage("Удаление расы"),
         "race_deleted": MessageLookupByLibrary.simpleMessage("Раса удалена"),
-        "race_imported": m8,
+        "race_imported": m7,
         "race_management":
             MessageLookupByLibrary.simpleMessage("Управление расами"),
         "race_name": MessageLookupByLibrary.simpleMessage("Название расы"),
-        "race_share_text": m9,
+        "race_share_text": m8,
         "races": MessageLookupByLibrary.simpleMessage("Расы"),
         "red": MessageLookupByLibrary.simpleMessage("Красный"),
         "reference_image": MessageLookupByLibrary.simpleMessage("Референс"),
@@ -354,11 +352,11 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Шаблон удален"),
         "template_exists":
             MessageLookupByLibrary.simpleMessage("Шаблон уже существует"),
-        "template_exported": m10,
-        "template_imported": m11,
+        "template_exported": m9,
+        "template_imported": m10,
         "template_name_label":
             MessageLookupByLibrary.simpleMessage("Название шаблона"),
-        "template_replace_confirm": m12,
+        "template_replace_confirm": m11,
         "templates": MessageLookupByLibrary.simpleMessage("Шаблоны"),
         "templates_not_found":
             MessageLookupByLibrary.simpleMessage("Шаблоны не найдены"),
