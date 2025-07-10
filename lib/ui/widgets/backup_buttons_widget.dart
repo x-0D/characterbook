@@ -1,6 +1,7 @@
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/services/backup_service.dart';
 import 'package:characterbook/services/file_picker_service.dart';
+import 'package:characterbook/ui/dialogs/loading_dialog.dart';
 import 'package:flutter/material.dart';
 
 class BackupButtons extends StatefulWidget {
@@ -83,6 +84,9 @@ class _BackupButtonsState extends State<BackupButtons> {
     );
 
     if (!mounted) return;
+
+    setState(() => _isProcessing = true);
+    showLoadingDialog(context: context, message: S.of(context).processing);
     
     setState(() => _isProcessing = true);
     try {
@@ -96,6 +100,8 @@ class _BackupButtonsState extends State<BackupButtons> {
         setState(() => _isProcessing = false);
       }
     }
+
+    hideLoadingDialog(context);
   }
 
   Future<void> _showRestoreDialog(BuildContext context) async {
@@ -131,6 +137,9 @@ class _BackupButtonsState extends State<BackupButtons> {
     if (!mounted) return;
     
     setState(() => _isProcessing = true);
+    showLoadingDialog(context: context, message: S.of(context).processing);
+
+    await Future.delayed(const Duration(milliseconds: 50));
     try {
       if (result == 'cloud') {
         await widget.cloudBackupService.importData();
@@ -142,6 +151,7 @@ class _BackupButtonsState extends State<BackupButtons> {
         setState(() => _isProcessing = false);
       }
     }
+    hideLoadingDialog(context);
   }
 
   Widget _buildListTile({
