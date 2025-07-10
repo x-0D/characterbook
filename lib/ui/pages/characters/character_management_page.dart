@@ -39,6 +39,8 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
   late List<Uint8List> _additionalImages;
   bool _hasUnsavedChanges = false;
 
+  static const _logoSize = 120.0;
+
   @override
   void initState() {
     super.initState();
@@ -241,16 +243,15 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
                       backgroundColor: colorScheme.primaryContainer,
                     ),
                   ),
-                AvatarPickerWidget(
-                  imageBytes: _character.imageBytes,
-                  onImageSelected: (bytes) {
+                AvatarPicker(
+                  currentAvatar: _character.imageBytes,
+                  onAvatarChanged: (bytes) {
                     setState(() {
                       _character.imageBytes = bytes;
                       _hasUnsavedChanges = true;
                     });
                     _updateCharacter();
                   },
-                  radius: 60,
                 ),
                 const SizedBox(height: 24),
                 CustomTextField(

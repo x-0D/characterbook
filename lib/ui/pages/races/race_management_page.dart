@@ -135,17 +135,15 @@ class _RaceManagementPageState extends State<RaceManagementPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AvatarPickerWidget(
-                  imageBytes: _logoBytes,
-                  onImageSelected: (bytes) {
+                AvatarPicker(
+                  currentAvatar: _logoBytes,
+                  onAvatarChanged: (bytes) {
                     setState(() {
                       _logoBytes = bytes;
                       _hasUnsavedChanges = true;
                     });
                   },
-                  radius: _logoSize / 2,
-                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                  placeholderIcon: Icons.add_photo_alternate,
+                  size: _logoSize / 2,
                 ),
                 const SizedBox(height: 24),
                 CustomTextField(
