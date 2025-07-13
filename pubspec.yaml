@@ -1,6 +1,6 @@
 name: characterbook
 description: "Implementation of the Character Book app on the Flutter framework"
-version: 1.6.7+27
+version: 1.6.7+28
 publish_to: 'MaxGog'
 
 environment:
@@ -11,6 +11,7 @@ flutter:
   generate: true
   assets:
     - assets/icon.svg
+    - assets/iconapp.png
     - assets/underdeveloped.png
     - assets/fonts/NotoSans-Regular.ttf
     - assets/fonts/NotoSans-Bold.ttf

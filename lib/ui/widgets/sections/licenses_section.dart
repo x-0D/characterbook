@@ -32,9 +32,9 @@ class LicensesSection extends StatelessWidget {
           onTap: () => showLicensePage(
             context: context,
             applicationName: s.app_name,
-            applicationVersion: '1.6.7',
+            applicationVersion: '1.6.7.1',
             applicationIcon: Image.asset(
-              'assets/icon.png',
+              'assets/iconapp.png',
               width: 50,
               height: 50,
             ),
