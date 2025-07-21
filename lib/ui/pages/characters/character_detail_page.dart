@@ -1,4 +1,7 @@
 import 'dart:typed_data';
+import 'package:characterbook/models/folder_model.dart';
+import 'package:characterbook/services/folder_service.dart';
+import 'package:characterbook/ui/pages/folders/folder_list_page.dart';
 import 'package:characterbook/ui/widgets/avatar_widget.dart';
 import 'package:characterbook/ui/widgets/build_section.dart';
 import 'package:flutter/material.dart';
@@ -33,11 +36,26 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
   static const _genderFemale = 'female';
   static const _genderAnother = 'another';
 
+  late final FolderService _folderService;
+  Folder? _currentFolder;
+
   @override
   void initState() {
     super.initState();
     _exportService = CharacterService.forExport(widget.character);
     _loadRelatedNotes();
+    _folderService = FolderService(Hive.box<Folder>('folders'));
+    _loadRelatedNotes();
+    _loadFolder();
+  }
+
+  Future<void> _loadFolder() async {
+    if (widget.character.folderId != null) {
+      final folder = _folderService.getFolderById(widget.character.folderId!);
+      setState(() {
+        _currentFolder = folder;
+      });
+    }
   }
 
   String _getLocalizedGender(String gender) {
@@ -445,6 +463,36 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
               ),
             ),
             const SizedBox(height: 16),
+
+            if (_currentFolder != null) ...[
+                Center( 
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FoldersScreen(
+                            folderType: FolderType.character,
+                            //initialFolderId: _currentFolder!.id,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Chip(
+                      avatar: Icon(Icons.folder, color: Theme.of(context).colorScheme.onPrimary),
+                      label: Text(
+                        _currentFolder!.name,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      ),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  )
+                ),
+                const SizedBox(height: 16),
+              ],
 
             _buildSectionTitle(S.of(context).basic_info, 'basic', Icons.info),
             if (_expandedSections['basic']!) ...[
