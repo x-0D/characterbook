@@ -101,6 +101,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         searchAction,
         ...visibleActions,
+        settingsAction,
         if (hiddenActions.isNotEmpty)
           PopupMenuButton(
             icon: const Icon(Icons.more_vert),
@@ -111,7 +112,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ))
                 .toList(),
           ),
-        settingsAction,
       ],
     );
   }

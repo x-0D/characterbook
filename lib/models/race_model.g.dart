@@ -22,13 +22,13 @@ class RaceAdapter extends TypeAdapter<Race> {
       biology: fields[2] as String,
       backstory: fields[3] as String,
       logo: fields[4] as Uint8List?,
-    );
+    )..folderId = fields[5] as String?;
   }
 
   @override
   void write(BinaryWriter writer, Race obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -38,7 +38,9 @@ class RaceAdapter extends TypeAdapter<Race> {
       ..writeByte(3)
       ..write(obj.backstory)
       ..writeByte(4)
-      ..write(obj.logo);
+      ..write(obj.logo)
+      ..writeByte(5)
+      ..write(obj.folderId);
   }
 
   @override

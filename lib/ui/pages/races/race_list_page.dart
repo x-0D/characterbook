@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:characterbook/models/folder_model.dart';
+import 'package:characterbook/ui/pages/folders/folder_list_page.dart';
 import 'package:characterbook/ui/widgets/context_menu.dart';
 import 'package:characterbook/ui/widgets/custom_app_bar.dart';
 import 'package:characterbook/ui/widgets/custom_floating_buttons.dart';
@@ -248,6 +250,18 @@ class _RaceListPageState extends State<RaceListPage> {
           });
         },
         onSearchChanged: (query) => _filterRaces(query, Hive.box<Race>('races').values.toList()),
+        additionalActions: [
+          IconButton(
+            icon: Icon(Icons.folder),
+            onPressed: () => setState(() => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const FoldersScreen(folderType: FolderType.race),
+              ),
+            )),
+            tooltip: S.of(context).folders,
+          ),
+        ],
       ),
       body: Column(
         children: [

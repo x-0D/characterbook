@@ -1,3 +1,5 @@
+import 'package:characterbook/models/folder_model.dart';
+import 'package:characterbook/ui/pages/folders/folder_list_page.dart';
 import 'package:characterbook/ui/widgets/filter_chip_widget.dart';
 import 'package:characterbook/ui/widgets/items/note_card.dart';
 import 'package:characterbook/ui/widgets/notes_empty_state.dart';
@@ -237,6 +239,18 @@ class _NotesListPageState extends State<NotesListPage> {
           final allNotes = Hive.box<Note>('notes').values.toList().cast<Note>();
           _filterNotes(query, allNotes);
         },
+        additionalActions: [
+          IconButton(
+            icon: Icon(Icons.folder),
+            onPressed: () => setState(() => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const FoldersScreen(folderType: FolderType.note),
+              ),
+            )),
+            tooltip: S.of(context).folders,
+          ),
+        ],
       ),
       body: ValueListenableBuilder<Box<Note>>(
         valueListenable: Hive.box<Note>('notes').listenable(),

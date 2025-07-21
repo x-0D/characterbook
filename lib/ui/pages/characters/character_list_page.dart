@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:characterbook/models/folder_model.dart';
+import 'package:characterbook/ui/pages/folders/folder_list_page.dart';
 import 'package:characterbook/ui/widgets/list_views/character_list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -273,15 +275,18 @@ class _CharacterListPageState extends State<CharacterListPage> {
           _filterCharacters(query, allCharacters.toList());
         },
         onTemplatesPressed: _createFromTemplate,
-        /*additionalActions: [
+        additionalActions: [
           IconButton(
-            icon: Icon(_isGridView ? Icons.list : Icons.grid_view),
-            onPressed: () => setState(() => _isGridView = !_isGridView),
-            tooltip: _isGridView 
-                ? S.of(context).list_view 
-                : S.of(context).grid_view,
+            icon: Icon(Icons.folder_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const FoldersScreen(folderType: FolderType.character),
+              ),
+            ),
+            tooltip: S.of(context).folders,
           ),
-        ],*/
+        ],
       ),
       body: Column(
         children: [

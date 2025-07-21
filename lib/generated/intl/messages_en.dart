@@ -101,6 +101,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "character_reference":
             MessageLookupByLibrary.simpleMessage("Character Reference"),
         "character_share_text": m2,
+        "characterbookLicense": MessageLookupByLibrary.simpleMessage(
+            "CharacterBook License (GNU GPL v3.0)"),
         "characters": MessageLookupByLibrary.simpleMessage("Characters"),
         "children": MessageLookupByLibrary.simpleMessage("Children"),
         "cloud_backup_characters_error": MessageLookupByLibrary.simpleMessage(
@@ -173,6 +175,10 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("File selection error"),
         "file_ready":
             MessageLookupByLibrary.simpleMessage("File ready to send"),
+        "flutterLicense":
+            MessageLookupByLibrary.simpleMessage("Flutter License"),
+        "folder": MessageLookupByLibrary.simpleMessage("Folder"),
+        "folders": MessageLookupByLibrary.simpleMessage("Folders"),
         "from_template": MessageLookupByLibrary.simpleMessage("From Template"),
         "gender": MessageLookupByLibrary.simpleMessage("Gender"),
         "githubRepo": MessageLookupByLibrary.simpleMessage("GitHub Repository"),
@@ -195,6 +201,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Invalid age entered"),
         "language": MessageLookupByLibrary.simpleMessage("Language"),
         "last_updated": MessageLookupByLibrary.simpleMessage("Last Updated"),
+        "licenses": MessageLookupByLibrary.simpleMessage("Licenses"),
         "light": MessageLookupByLibrary.simpleMessage("Light"),
         "lightBlue": MessageLookupByLibrary.simpleMessage("Light Blue"),
         "list_view":
@@ -342,6 +349,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "You have unsaved changes. Do you want to save before exiting?"),
         "unsaved_changes_title":
             MessageLookupByLibrary.simpleMessage("Unsaved Changes"),
+        "usedLibraries": MessageLookupByLibrary.simpleMessage("Used Libraries"),
         "version": MessageLookupByLibrary.simpleMessage("Version"),
         "web_not_supported":
             MessageLookupByLibrary.simpleMessage("Not available for web"),

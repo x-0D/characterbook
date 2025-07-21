@@ -25,6 +25,9 @@ class Note extends HiveObject {
   @HiveField(6)
   final List<String> tags;
 
+  @HiveField(7)
+  String? folderId;
+
   Note({
     required this.id,
     required this.title,

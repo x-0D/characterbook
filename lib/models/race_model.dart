@@ -21,6 +21,9 @@ class Race extends HiveObject {
   @HiveField(4)
   Uint8List? logo;
 
+  @HiveField(5)
+  String? folderId;
+
   Race({
     required this.name,
     this.description = '',

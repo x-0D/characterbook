@@ -2290,6 +2290,26 @@ class S {
       args: [],
     );
   }
+
+  /// `Папки`
+  String get folders {
+    return Intl.message(
+      'Папки',
+      name: 'folders',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Папка`
+  String get folder {
+    return Intl.message(
+      'Папка',
+      name: 'folder',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

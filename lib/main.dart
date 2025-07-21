@@ -1,3 +1,4 @@
+import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/models/note_model.dart';
 import 'package:characterbook/models/race_model.dart';
 import 'package:characterbook/models/template_model.dart';
@@ -23,6 +24,7 @@ Future<void> _initializeHive() async {
     HiveService.getBox<Note>('notes'),
     HiveService.getBox<Race>('races'),
     HiveService.getBox<QuestionnaireTemplate>('templates'),
+    HiveService.getBox<Folder>('folders')
   ]);
 }
 

@@ -227,6 +227,9 @@
   "licenses": "Лицензия",
   "flutterLicense": "Flutter лицензия",
   "characterbookLicense": "CharacterBook лицензия (GNU GPL v3.0)",
-  "usedLibraries": "Используемые библиотеки"
+  "usedLibraries": "Используемые библиотеки",
+
+  "folders": "Папки",
+  "folder": "Папка"
 
 }

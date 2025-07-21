@@ -30,11 +30,12 @@ class Assets {
 
   static const $AssetsFontsGen fonts = $AssetsFontsGen();
   static const String icon = 'assets/icon.svg';
+  static const AssetGenImage iconapp = AssetGenImage('assets/iconapp.png');
   static const AssetGenImage underdeveloped =
       AssetGenImage('assets/underdeveloped.png');
 
   /// List of all assets
-  static List<dynamic> get values => [icon, underdeveloped];
+  static List<dynamic> get values => [icon, iconapp, underdeveloped];
 }
 
 class AssetGenImage {

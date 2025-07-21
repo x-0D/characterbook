@@ -51,6 +51,9 @@ class Character extends HiveObject {
   @HiveField(13)
   Race? race;
 
+  @HiveField(14)
+  String? folderId;
+
   Character({
     this.name = '',
     this.age = 0,

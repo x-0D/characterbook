@@ -1,5 +1,6 @@
 import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/custom_field_model.dart';
+import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/models/note_model.dart';
 import 'package:characterbook/models/race_model.dart';
 import 'package:characterbook/models/template_model.dart';
@@ -32,6 +33,12 @@ class HiveService {
     }
     if (!Hive.isAdapterRegistered(CustomFieldAdapter().typeId)) {
       Hive.registerAdapter(CustomFieldAdapter());
+    }
+    if (!Hive.isAdapterRegistered(FolderAdapter().typeId)) {
+      Hive.registerAdapter(FolderAdapter());
+    }
+    if (!Hive.isAdapterRegistered(FolderTypeAdapter().typeId)) {
+      Hive.registerAdapter(FolderTypeAdapter());
     }
   }
 

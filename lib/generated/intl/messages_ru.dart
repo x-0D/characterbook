@@ -195,6 +195,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Файл готов к отправке"),
         "flutterLicense":
             MessageLookupByLibrary.simpleMessage("Flutter лицензия"),
+        "folder": MessageLookupByLibrary.simpleMessage("Папка"),
+        "folders": MessageLookupByLibrary.simpleMessage("Папки"),
         "from_template": MessageLookupByLibrary.simpleMessage("Из шаблона"),
         "gender": MessageLookupByLibrary.simpleMessage("Гендер"),
         "githubRepo":

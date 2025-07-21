@@ -221,5 +221,8 @@
   "licenses": "Licenses",
   "flutterLicense": "Flutter License",
   "characterbookLicense": "CharacterBook License (GNU GPL v3.0)",
-  "usedLibraries": "Used Libraries"
+  "usedLibraries": "Used Libraries",
+
+  "folders": "Folders",
+  "folder": "Folder"
 }
