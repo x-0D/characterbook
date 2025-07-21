@@ -4,7 +4,6 @@ import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/services/folder_service.dart';
-import 'package:flutter_tags/flutter_tags.dart';
 
 import '../../../generated/l10n.dart';
 import '../../../models/character_model.dart';
@@ -47,6 +46,7 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
   Folder? _selectedFolder;
 
   List<String> _tags = [];
+  final TextEditingController _tagController = TextEditingController();
 
   @override
   void initState() {
@@ -60,6 +60,13 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
     _tags = List.from(widget.character?.tags ?? []);
   }
 
+  @override
+  void dispose() {
+    _tagController.dispose();
+    super.dispose();
+  }
+
+
   Future<void> _loadFolders() async {
     final folders = _folderService.getFoldersByType(FolderType.character);
     setState(() {
@@ -67,13 +74,6 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
       _selectedFolder = widget.character?.folderId != null 
         ? _folderService.getFolderById(widget.character!.folderId!) 
         : null;
-    });
-  }
-
-  void _onTagsChanged(List<String> tags) {
-    setState(() {
-      _tags = tags;
-      _hasUnsavedChanges = true;
     });
   }
 
@@ -183,6 +183,7 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
       try {
         final character = _buildCharacter();
         character.folderId = _selectedFolder?.id;
+        character.tags = _tags;
 
         final characterKey = await _characterService.saveCharacter(
           character,
@@ -279,6 +280,8 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                _buildTagsInput(context),
+                const SizedBox(height: 24),
                 if (widget.template != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
@@ -413,7 +416,6 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
                     },
                   ),
                 if (_shouldShowField('race')) const SizedBox(height: 16),
-                //_buildTagsInput(context),
                 if (_shouldShowField('referenceImage'))
                   _buildReferenceImageSection(context, colorScheme, textTheme),
                   const SizedBox(height: 16),
@@ -562,41 +564,59 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
           style: theme.textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
-        Tags(
-          itemCount: _tags.length,
-          itemBuilder: (index) => ItemTags(
-            key: Key(index.toString()),
-            index: index,
-            title: _tags[index],
-            active: true,
-            //textStyle: theme.textTheme.bodyMedium,
-            combine: ItemTagsCombine.withTextBefore,
-            removeButton: ItemTagsRemoveButton(
-              onRemoved: () {
-                setState(() {
-                  _tags.removeAt(index);
-                  _hasUnsavedChanges = true;
-                });
-                return true;
-              },
-            ),
-          ),
-          textField: TagsTextField(
-            inputDecoration: InputDecoration(
-              hintText: S.of(context).add_tag,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _tags.map((tag) => Chip(
+            label: Text(tag),
+            deleteIcon: const Icon(Icons.close, size: 18),
+            onDeleted: () {
+              setState(() {
+                _tags.remove(tag);
+                _hasUnsavedChanges = true;
+              });
+            },
+          )).toList(),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _tagController,
+                decoration: InputDecoration(
+                  hintText: S.of(context).add_tag,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  )
+                ),
+                onSubmitted: (tag) {
+                  if (tag.trim().isNotEmpty && !_tags.contains(tag)) {
+                    setState(() {
+                      _tags.add(tag.trim());
+                      _hasUnsavedChanges = true;
+                    });
+                    _tagController.clear();
+                  }
+                },
               ),
             ),
-            onSubmitted: (String tag) {
-              if (tag.trim().isNotEmpty && !_tags.contains(tag)) {
-                setState(() {
-                  _tags.add(tag);
-                  _hasUnsavedChanges = true;
-                });
-              }
-            },
-          ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () {
+                final tag = _tagController.text.trim();
+                if (tag.isNotEmpty && !_tags.contains(tag)) {
+                  setState(() {
+                    _tags.add(tag);
+                    _hasUnsavedChanges = true;
+                  });
+                  _tagController.clear();
+                }
+              },
+              tooltip: S.of(context).add_tag,
+            ),
+          ],
         ),
       ],
     );
