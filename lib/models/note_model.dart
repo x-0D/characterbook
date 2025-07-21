@@ -36,6 +36,7 @@ class Note extends HiveObject {
     DateTime? updatedAt,
     this.tags = const [],
     this.characterIds = const [],
+    required this.folderId,
   })  : createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
@@ -46,6 +47,7 @@ class Note extends HiveObject {
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
     'characterIds': characterIds,
+    'folderId': folderId,
   };
 
   factory Note.fromJson(Map<String, dynamic> json) => Note(
@@ -55,5 +57,6 @@ class Note extends HiveObject {
     createdAt: DateTime.parse(json['createdAt']),
     updatedAt: DateTime.parse(json['updatedAt']),
     characterIds: List<String>.from(json['characterIds'] ?? []),
+    folderId: json['folderId']
   );
 }

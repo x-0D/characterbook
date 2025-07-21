@@ -1,9 +1,11 @@
+import 'package:characterbook/models/folder_model.dart';
+import 'package:characterbook/models/note_model.dart';
+import 'package:characterbook/services/folder_service.dart';
 import 'package:characterbook/ui/widgets/context_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../../../models/character_model.dart';
-import '../../../../models/note_model.dart';
 
 class NoteCard extends StatelessWidget {
   final Note note;
@@ -39,6 +41,9 @@ class NoteCard extends StatelessWidget {
         .map((id) => characterBox.get(id))
         .whereType<Character>()
         .toList();
+    final folder = note.folderId != null 
+        ? FolderService(Hive.box<Folder>('folders')).getFolderById(note.folderId!)
+        : null;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
@@ -74,6 +79,31 @@ class NoteCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (folder != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.folder, 
+                        size: 16, 
+                        color: theme.colorScheme.onPrimaryContainer),
+                      const SizedBox(width: 4),
+                      Text(
+                        folder.name,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 8),
               Text(
                 note.content,

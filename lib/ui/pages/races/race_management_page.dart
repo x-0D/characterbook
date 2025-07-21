@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import '../../../generated/l10n.dart';
 import '../../../models/race_model.dart';
+import '../../../models/folder_model.dart';
+import '../../../services/folder_service.dart';
 import '../../widgets/avatar_picker_widget.dart';
 import '../../widgets/fields/custom_text_field.dart';
 import '../../widgets/save_button_widget.dart';
@@ -30,9 +32,14 @@ class _RaceManagementPageState extends State<RaceManagementPage> {
 
   bool _hasUnsavedChanges = false;
 
+  late final FolderService _folderService;
+  List<Folder> _raceFolders = [];
+  Folder? _selectedFolder;
+
   @override
   void initState() {
     super.initState();
+    _folderService = FolderService(Hive.box<Folder>('folders'));
     final race = widget.race;
     _nameController = TextEditingController(text: race?.name ?? '');
     _descriptionController = TextEditingController(text: race?.description ?? '');
@@ -41,6 +48,17 @@ class _RaceManagementPageState extends State<RaceManagementPage> {
     _logoBytes = race?.logo;
     _hasUnsavedChanges = widget.race == null;
     _setupControllers();
+    _loadFolders();
+  }
+
+  Future<void> _loadFolders() async {
+    final folders = _folderService.getFoldersByType(FolderType.race);
+    setState(() {
+      _raceFolders = folders;
+      _selectedFolder = widget.race?.folderId != null 
+        ? _folderService.getFolderById(widget.race!.folderId!) 
+        : null;
+    });
   }
 
   @override
@@ -73,9 +91,34 @@ class _RaceManagementPageState extends State<RaceManagementPage> {
         ..description = _descriptionController.text
         ..biology = _biologyController.text
         ..backstory = _backstoryController.text
-        ..logo = _logoBytes;
+        ..logo = _logoBytes
+        ..folderId = _selectedFolder?.id;
 
-      widget.race == null ? await raceBox.add(race) : await race.save();
+      int? raceKey;
+      if (widget.race == null) {
+        raceKey = await raceBox.add(race);
+      } else {
+        await race.save();
+        raceKey = widget.race!.key;
+      }
+
+      if (raceKey != null) {
+        if (_selectedFolder == null) {
+          for (final folder in _raceFolders) {
+            if (folder.contentIds.contains(raceKey.toString())) {
+              await _folderService.removeFromFolder(folder.id, raceKey.toString());
+            }
+          }
+        } else {
+          for (final folder in _raceFolders) {
+            if (folder.id != _selectedFolder!.id && 
+                folder.contentIds.contains(raceKey.toString())) {
+              await _folderService.removeFromFolder(folder.id, raceKey.toString());
+            }
+          }
+          await _folderService.addToFolder(_selectedFolder!.id, raceKey.toString());
+        }
+      }
 
       setState(() => _hasUnsavedChanges = false);
 
@@ -83,6 +126,106 @@ class _RaceManagementPageState extends State<RaceManagementPage> {
       Navigator.pop(context, true);
     } catch (e) {
       _showError('${S.of(context).save_error}: $e');
+    }
+  }
+
+  Future<void> _selectFolder(BuildContext context) async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    final selected = await showModalBottomSheet<Folder>(
+      context: context,
+      backgroundColor: colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 40,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Text(
+                    S.of(context).select_folder,
+                    style: textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    child: IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                      style: IconButton.styleFrom(
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Divider(),
+            const SizedBox(height: 8),
+
+            Expanded(
+              child: Material(
+                color: Colors.transparent,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _raceFolders.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return ListTile(
+                        leading: Icon(
+                          Icons.folder_off,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        title: Text(
+                          S.of(context).none,
+                          style: textTheme.bodyLarge,
+                        ),
+                        onTap: () => Navigator.pop(context, null),
+                      );
+                    }
+
+                    final folder = _raceFolders[index - 1];
+                    return ListTile(
+                      leading: Icon(
+                        Icons.folder,
+                        color: colorScheme.primary,
+                      ),
+                      title: Text(
+                        folder.name,
+                        style: textTheme.bodyLarge,
+                      ),
+                      trailing: _selectedFolder?.id == folder.id
+                          ? Icon(
+                              Icons.check,
+                              color: colorScheme.primary,
+                            )
+                          : null,
+                      onTap: () => Navigator.pop(context, folder),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (selected != null || _selectedFolder != null) {
+      setState(() {
+        _selectedFolder = selected;
+        _hasUnsavedChanges = true;
+      });
     }
   }
 
@@ -151,6 +294,60 @@ class _RaceManagementPageState extends State<RaceManagementPage> {
                   label: s.race_name,
                   isRequired: true,
                 ),
+                if (_raceFolders.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _selectFolder(context),
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: s.folder,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        filled: true,
+                        fillColor: theme.colorScheme.surfaceContainerLow,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.folder_outlined,
+                            color: theme.colorScheme.primary,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              _selectedFolder?.name ?? s.no_folder_selected,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: _selectedFolder == null 
+                                  ? theme.colorScheme.onSurface 
+                                  : theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          if (_selectedFolder != null)
+                            IconButton(
+                              icon: Icon(
+                                Icons.close,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              style: IconButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _selectedFolder = null;
+                                  _hasUnsavedChanges = true;
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 CustomTextField(
                   controller: _descriptionController,
@@ -175,7 +372,7 @@ class _RaceManagementPageState extends State<RaceManagementPage> {
                 const SizedBox(height: 32),
                 SaveButton(
                   onPressed: _saveRace,
-                  text: S.of(context).save_race
+                  text: s.save_race,
                 ),
               ],
             ),

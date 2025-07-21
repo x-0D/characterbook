@@ -1,7 +1,10 @@
+import 'package:characterbook/generated/l10n.dart';
+import 'package:characterbook/models/folder_model.dart';
+import 'package:characterbook/models/race_model.dart';
+import 'package:characterbook/services/folder_service.dart';
 import 'package:characterbook/ui/widgets/avatar_widget.dart';
 import 'package:flutter/material.dart';
-
-import '../../../../models/race_model.dart';
+import 'package:hive/hive.dart';
 
 class RaceCard extends StatelessWidget {
   final Race race;
@@ -19,6 +22,9 @@ class RaceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final folder = race.folderId != null 
+        ? FolderService(Hive.box<Folder>('folders')).getFolderById(race.folderId!)
+        : null;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
@@ -36,28 +42,58 @@ class RaceCard extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AvatarWidget.race(imageBytes: race.logo, size: 28),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(race.name, style: textTheme.bodyLarge),
-                    Text(
-                      race.description.isNotEmpty ? race.description : 'No description',
-                      style: textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              Row(
+                children: [
+                  AvatarWidget.race(imageBytes: race.logo, size: 28),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(race.name, style: textTheme.bodyLarge),
+                        Text(
+                          race.description.isNotEmpty ? race.description : S.of(context).no_description,
+                          style: textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurface),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.more_vert, color: theme.colorScheme.onSurfaceVariant),
+                    onPressed: onLongPress,
+                  ),
+                ],
+              ),
+              if (folder != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.folder, 
+                        size: 16, 
+                        color: theme.colorScheme.onPrimaryContainer),
+                      const SizedBox(width: 4),
+                      Text(
+                        folder.name,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              IconButton(
-                icon: Icon(Icons.more_vert, color: theme.colorScheme.onSurfaceVariant),
-                onPressed: onLongPress,
-              ),
+              ],
             ],
           ),
         ),

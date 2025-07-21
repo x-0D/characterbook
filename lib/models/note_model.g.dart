@@ -24,7 +24,8 @@ class NoteAdapter extends TypeAdapter<Note> {
       updatedAt: fields[4] as DateTime?,
       tags: (fields[6] as List).cast<String>(),
       characterIds: fields[5] == null ? [] : (fields[5] as List).cast<String>(),
-    )..folderId = fields[7] as String?;
+      folderId: fields[7] as String?,
+    );
   }
 
   @override
