@@ -5,6 +5,7 @@ import 'package:characterbook/ui/pages/folders/folder_list_page.dart';
 import 'package:characterbook/ui/widgets/context_menu.dart';
 import 'package:characterbook/ui/widgets/custom_app_bar.dart';
 import 'package:characterbook/ui/widgets/custom_floating_buttons.dart';
+import 'package:characterbook/ui/widgets/filter_chip_widget.dart';
 import 'package:characterbook/ui/widgets/list_views/race_list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -34,6 +35,10 @@ class _RaceListPageState extends State<RaceListPage> {
   final ScrollController _scrollController = ScrollController();
   bool _showFab = true;
 
+  List<String> _getAllTags(List<Race> races) {
+    return races.expand((race) => race.tags).toSet().toList()..sort();
+  }
+
   List<String> _generateTags(List<Race> races) {
     final tags = <String>{};
     return tags.toList()..sort();
@@ -46,12 +51,13 @@ class _RaceListPageState extends State<RaceListPage> {
             race.name.toLowerCase().contains(query.toLowerCase()) ||
             race.description.toLowerCase().contains(query.toLowerCase());
 
-        final matchesTag = _selectedTag == null;
+        final matchesTag = _selectedTag == null || race.tags.contains(_selectedTag);
 
         return matchesSearch && matchesTag;
       }).toList();
     });
   }
+
 
   @override
   void initState() {
@@ -71,6 +77,41 @@ class _RaceListPageState extends State<RaceListPage> {
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Widget _buildFiltersRow(List<String> tags) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          if (tags.isNotEmpty)
+            FilterChipWidget(
+              label: S.of(context).all_tags,
+              selected: _selectedTag == null,
+              onSelected: (isSelected) {
+                setState(() {
+                  _selectedTag = null;
+                  _filterRaces(_searchController.text,
+                      Hive.box<Race>('races').values.toList());
+                });
+              },
+            ),
+          ...tags.map((tag) => FilterChipWidget(
+            label: tag,
+            selected: _selectedTag == tag,
+            onSelected: (isSelected) {
+              setState(() {
+                _selectedTag = _selectedTag == tag ? null : tag;
+                _filterRaces(_searchController.text,
+                    Hive.box<Race>('races').values.toList());
+              });
+            },
+          )),
+        ],
+      ),
+    );
   }
 
   Future<bool> _isRaceUsed(Race race) async {
@@ -294,29 +335,37 @@ class _RaceListPageState extends State<RaceListPage> {
               valueListenable: Hive.box<Race>('races').listenable(),
               builder: (context, box, _) {
                 final allRaces = box.values.toList();
-                final tags = _generateTags(allRaces);
+                final tags = _getAllTags(allRaces);
                 final racesToShow = _isSearching || _selectedTag != null
                     ? _filteredRaces
                     : allRaces;
 
-                return RaceListView(
-                  scrollController: _scrollController,
-                  allRaces: allRaces,
-                  racesToShow: racesToShow,
-                  tags: tags,
-                  searchController: _searchController,
-                  isSearching: _isSearching,
-                  selectedTag: _selectedTag,
-                  onReorder: _reorderRaces,
-                  onRaceTap: _editRace,
-                  onRaceLongPress: _showRaceContextMenu,
-                  onImportRace: _importRaceFromFile,
-                  onCreateRace: () async {
-                    await Navigator.push<bool>(
-                      context,
-                      MaterialPageRoute(builder: (context) => const RaceManagementPage()),
-                    );
-                  }
+                return Column(
+                  children: [
+                    if (tags.isNotEmpty) _buildFiltersRow(tags),
+                    Expanded(
+                      child: RaceListView(
+                        scrollController: _scrollController,
+                        allRaces: allRaces,
+                        racesToShow: racesToShow,
+                        tags: tags,
+                        searchController: _searchController,
+                        isSearching: _isSearching,
+                        selectedTag: _selectedTag,
+                        onReorder: _reorderRaces,
+                        onRaceTap: _editRace,
+                        onRaceLongPress: _showRaceContextMenu,
+                        onImportRace: _importRaceFromFile,
+                        onCreateRace: () async {
+                          await Navigator.push<bool>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const RaceManagementPage()),
+                          );
+                        }
+                      ),
+                    ),
+                  ],
                 );
               },
             ),

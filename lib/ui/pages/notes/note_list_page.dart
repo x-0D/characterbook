@@ -26,6 +26,7 @@ class _NotesListPageState extends State<NotesListPage> {
   bool _isSearching = false;
   String? _selectedTag;
   String? _selectedCharacter;
+  
 
   List<String> _getAllTags(List<Note> notes) {
     return notes.expand((note) => note.tags).toSet().toList()..sort();
@@ -63,6 +64,64 @@ class _NotesListPageState extends State<NotesListPage> {
         return matchesSearch && matchesTag && matchesCharacter;
       }).toList();
     });
+  }
+
+  Widget _buildFiltersRow(List<String> tags, List<String> characterNames) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          if (characterNames.isNotEmpty)
+            FilterChipWidget(
+              label: '${S.of(context).all} ${S.of(context).characters.toLowerCase()}',
+              selected: _selectedCharacter == null,
+              onSelected: (isSelected) {
+                setState(() {
+                  _selectedCharacter = null;
+                  _filterNotes(_searchController.text,
+                      Hive.box<Note>('notes').values.toList().cast<Note>());
+                });
+              },
+            ),
+          ...characterNames.map((name) => FilterChipWidget(
+            label: name,
+            selected: _selectedCharacter == name,
+            onSelected: (isSelected) {
+              setState(() {
+                _selectedCharacter = _selectedCharacter == name ? null : name;
+                _filterNotes(_searchController.text,
+                    Hive.box<Note>('notes').values.toList().cast<Note>());
+              });
+            },
+          )),
+          if (tags.isNotEmpty)
+            FilterChipWidget(
+              label: S.of(context).all_tags,
+              selected: _selectedTag == null,
+              onSelected: (isSelected) {
+                setState(() {
+                  _selectedTag = null;
+                  _filterNotes(_searchController.text,
+                      Hive.box<Note>('notes').values.toList().cast<Note>());
+                });
+              },
+            ),
+          ...tags.map((tag) => FilterChipWidget(
+            label: tag,
+            selected: _selectedTag == tag,
+            onSelected: (isSelected) {
+              setState(() {
+                _selectedTag = _selectedTag == tag ? null : tag;
+                _filterNotes(_searchController.text,
+                    Hive.box<Note>('notes').values.toList().cast<Note>());
+              });
+            },
+          )),
+        ],
+      ),
+    );
   }
 
   Future<void> _deleteNote(Note note) async {
@@ -135,64 +194,6 @@ class _NotesListPageState extends State<NotesListPage> {
         _filterNotes(_searchController.text, notes);
       });
     }
-  }
-
-  Widget _buildFiltersRow(List<String> tags, List<String> characterNames) {
-    return Container(
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          if (characterNames.isNotEmpty)
-            FilterChipWidget(
-              label: '${S.of(context).all} ${S.of(context).characters.toLowerCase()}',
-              selected: _selectedCharacter == null,
-              onSelected: (isSelected) {
-                setState(() {
-                  _selectedCharacter = null;
-                  _filterNotes(_searchController.text,
-                      Hive.box<Note>('notes').values.toList().cast<Note>());
-                });
-              },
-            ),
-          ...characterNames.map((name) => FilterChipWidget(
-            label: name,
-            selected: _selectedCharacter == name,
-            onSelected: (isSelected) {
-              setState(() {
-                _selectedCharacter = _selectedCharacter == name ? null : name;
-                _filterNotes(_searchController.text,
-                    Hive.box<Note>('notes').values.toList().cast<Note>());
-              });
-            },
-          )),
-          if (tags.isNotEmpty)
-            FilterChipWidget(
-              label: S.of(context).all_tags,
-              selected: _selectedTag == null,
-              onSelected: (isSelected) {
-                setState(() {
-                  _selectedTag = null;
-                  _filterNotes(_searchController.text,
-                      Hive.box<Note>('notes').values.toList().cast<Note>());
-                });
-              },
-            ),
-          ...tags.map((tag) => FilterChipWidget(
-            label: tag,
-            selected: _selectedTag == tag,
-            onSelected: (isSelected) {
-              setState(() {
-                _selectedTag = _selectedTag == tag ? null : tag;
-                _filterNotes(_searchController.text,
-                    Hive.box<Note>('notes').values.toList().cast<Note>());
-              });
-            },
-          )),
-        ],
-      ),
-    );
   }
 
   Widget _buildNotesList(List<Note> notes) {

@@ -36,6 +36,10 @@ class _NoteEditPageState extends State<NoteEditPage> {
   List<Folder> _noteFolders = [];
   Folder? _selectedFolder;
 
+  List<String> _tags = [];
+  final TextEditingController _tagController = TextEditingController();
+  
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +58,8 @@ class _NoteEditPageState extends State<NoteEditPage> {
     _titleController.addListener(_checkForChanges);
     _contentController.addListener(_checkForChanges);
     _loadFolders();
+
+    _tags = List.from(widget.note?.tags ?? []);
   }
 
   Future<void> _loadFolders() async {
@@ -77,6 +83,7 @@ class _NoteEditPageState extends State<NoteEditPage> {
     _contentController.removeListener(_checkForChanges);
     _titleController.dispose();
     _contentController.dispose();
+    _tagController.dispose();
     super.dispose();
   }
 
@@ -101,7 +108,8 @@ class _NoteEditPageState extends State<NoteEditPage> {
         ..content = _contentController.text.trim()
         ..characterIds = _selectedCharacterIds
         ..folderId = _selectedFolder?.id
-        ..updatedAt = now;
+        ..updatedAt = now
+        ..tags = _tags;
       await notesBox.put(widget.note!.key, widget.note!);
       noteKey = widget.note!.key;
     } else {
@@ -111,6 +119,7 @@ class _NoteEditPageState extends State<NoteEditPage> {
         content: _contentController.text.trim(),
         characterIds: _selectedCharacterIds,
         folderId: _selectedFolder?.id,
+        tags: _tags,
       ));
     }
 
@@ -255,7 +264,74 @@ class _NoteEditPageState extends State<NoteEditPage> {
     }
   }
 
-  // ... (keep existing _copyToClipboard and other methods)
+  Widget _buildTagsInput(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          S.of(context).tags,
+          style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _tags.map((tag) => Chip(
+            label: Text(tag),
+            deleteIcon: const Icon(Icons.close, size: 18),
+            onDeleted: () {
+              setState(() {
+                _tags.remove(tag);
+                _hasChanges = true;
+              });
+            },
+          )).toList(),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _tagController,
+                decoration: InputDecoration(
+                  hintText: S.of(context).add_tag,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  )
+                ),
+                onSubmitted: (tag) {
+                  if (tag.trim().isNotEmpty && !_tags.contains(tag)) {
+                    setState(() {
+                      _tags.add(tag.trim());
+                      _hasChanges = true;
+                    });
+                    _tagController.clear();
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () {
+                final tag = _tagController.text.trim();
+                if (tag.isNotEmpty && !_tags.contains(tag)) {
+                  setState(() {
+                    _tags.add(tag);
+                    _hasChanges = true;
+                  });
+                  _tagController.clear();
+                }
+              },
+              tooltip: S.of(context).add_tag,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -315,6 +391,8 @@ class _NoteEditPageState extends State<NoteEditPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _buildTagsInput(context),
+          const SizedBox(height: 24),
           CustomTextField(
             controller: _titleController,
             label: S.of(context).name,

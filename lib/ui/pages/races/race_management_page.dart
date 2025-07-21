@@ -36,6 +36,9 @@ class _RaceManagementPageState extends State<RaceManagementPage> {
   List<Folder> _raceFolders = [];
   Folder? _selectedFolder;
 
+  List<String> _tags = [];
+  final TextEditingController _tagController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +52,7 @@ class _RaceManagementPageState extends State<RaceManagementPage> {
     _hasUnsavedChanges = widget.race == null;
     _setupControllers();
     _loadFolders();
+    _tags = List.from(widget.race?.tags ?? []);
   }
 
   Future<void> _loadFolders() async {
@@ -67,6 +71,7 @@ class _RaceManagementPageState extends State<RaceManagementPage> {
     _descriptionController.dispose();
     _biologyController.dispose();
     _backstoryController.dispose();
+    _tagController.dispose();
     super.dispose();
   }
 
@@ -92,7 +97,8 @@ class _RaceManagementPageState extends State<RaceManagementPage> {
         ..biology = _biologyController.text
         ..backstory = _backstoryController.text
         ..logo = _logoBytes
-        ..folderId = _selectedFolder?.id;
+        ..folderId = _selectedFolder?.id
+        ..tags = _tags;
 
       int? raceKey;
       if (widget.race == null) {
@@ -278,6 +284,8 @@ class _RaceManagementPageState extends State<RaceManagementPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildTagsInput(context),
+                const SizedBox(height: 24),
                 AvatarPicker(
                   currentAvatar: _logoBytes,
                   onAvatarChanged: (bytes) {
@@ -379,6 +387,74 @@ class _RaceManagementPageState extends State<RaceManagementPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTagsInput(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          S.of(context).tags,
+          style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _tags.map((tag) => Chip(
+            label: Text(tag),
+            deleteIcon: const Icon(Icons.close, size: 18),
+            onDeleted: () {
+              setState(() {
+                _tags.remove(tag);
+                _hasUnsavedChanges = true;
+              });
+            },
+          )).toList(),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _tagController,
+                decoration: InputDecoration(
+                  hintText: S.of(context).add_tag,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  )
+                ),
+                onSubmitted: (tag) {
+                  if (tag.trim().isNotEmpty && !_tags.contains(tag)) {
+                    setState(() {
+                      _tags.add(tag.trim());
+                      _hasUnsavedChanges = true;
+                    });
+                    _tagController.clear();
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () {
+                final tag = _tagController.text.trim();
+                if (tag.isNotEmpty && !_tags.contains(tag)) {
+                  setState(() {
+                    _tags.add(tag);
+                    _hasUnsavedChanges = true;
+                  });
+                  _tagController.clear();
+                }
+              },
+              tooltip: S.of(context).add_tag,
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

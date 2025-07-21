@@ -23,7 +23,7 @@ class Note extends HiveObject {
   List<String> characterIds;
 
   @HiveField(6)
-  final List<String> tags;
+  List<String> tags;
 
   @HiveField(7)
   String? folderId;
