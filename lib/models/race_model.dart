@@ -24,12 +24,16 @@ class Race extends HiveObject {
   @HiveField(5)
   String? folderId;
 
+  @HiveField(6)
+  final List<String> tags;
+
   Race({
     required this.name,
     this.description = '',
     this.biology = '',
     this.backstory = '',
     this.logo,
+    this.tags = const [],
   });
 
   static Race empty() => Race(name: '', description: '');

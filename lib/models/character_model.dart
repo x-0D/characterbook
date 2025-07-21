@@ -54,6 +54,9 @@ class Character extends HiveObject {
   @HiveField(14)
   String? folderId;
 
+  @HiveField(15)
+  final List<String> tags;
+
   Character({
     this.name = '',
     this.age = 0,
@@ -66,6 +69,7 @@ class Character extends HiveObject {
     this.imageBytes,
     this.referenceImageBytes,
     this.race,
+    this.tags = const [],
     List<CustomField>? customFields,
     List<Uint8List>? additionalImages,
     DateTime? lastEdited,
