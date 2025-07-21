@@ -1,5 +1,6 @@
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/ui/pages/folders/folder_list_page.dart';
+import 'package:characterbook/ui/widgets/mixins/list_page_mixin.dart';
 import 'package:characterbook/ui/widgets/filter_chip_widget.dart';
 import 'package:characterbook/ui/widgets/items/note_card.dart';
 import 'package:characterbook/ui/widgets/notes_empty_state.dart';
@@ -20,19 +21,16 @@ class NotesListPage extends StatefulWidget {
   State<NotesListPage> createState() => _NotesListPageState();
 }
 
-class _NotesListPageState extends State<NotesListPage> {
-  final TextEditingController _searchController = TextEditingController();
-  List<Note> _filteredNotes = [];
-  bool _isSearching = false;
-  String? _selectedTag;
-  String? _selectedCharacter;
-  
+class _NotesListPageState extends State<NotesListPage> with ListPageMixin {
+  List<Note> filteredNotes = [];
+  String? selectedTag;
+  String? selectedCharacter;
 
-  List<String> _getAllTags(List<Note> notes) {
+  List<String> getAllTags(List<Note> notes) {
     return notes.expand((note) => note.tags).toSet().toList()..sort();
   }
 
-  List<String> _getAllCharacterNames(List<Note> notes) {
+  List<String> getAllCharacterNames(List<Note> notes) {
     final characterBox = Hive.box<Character>('characters');
     final characterIds = notes.expand((note) => note.characterIds).toSet();
     return characterIds
@@ -44,21 +42,21 @@ class _NotesListPageState extends State<NotesListPage> {
       ..sort();
   }
 
-  void _filterNotes(String query, List<Note> allNotes) {
+  void filterNotes(String query, List<Note> allNotes) {
     final characterBox = Hive.box<Character>('characters');
 
     setState(() {
-      _filteredNotes = allNotes.where((note) {
+      filteredNotes = allNotes.where((note) {
         final matchesSearch = query.isEmpty ||
             note.title.toLowerCase().contains(query.toLowerCase()) ||
             note.content.toLowerCase().contains(query.toLowerCase());
 
-        final matchesTag = _selectedTag == null || note.tags.contains(_selectedTag);
+        final matchesTag = selectedTag == null || note.tags.contains(selectedTag);
 
-        final matchesCharacter = _selectedCharacter == null ||
+        final matchesCharacter = selectedCharacter == null ||
             note.characterIds.any((id) {
               final character = characterBox.get(id);
-              return character?.name == _selectedCharacter;
+              return character?.name == selectedCharacter;
             });
 
         return matchesSearch && matchesTag && matchesCharacter;
@@ -66,7 +64,7 @@ class _NotesListPageState extends State<NotesListPage> {
     });
   }
 
-  Widget _buildFiltersRow(List<String> tags, List<String> characterNames) {
+  Widget buildFiltersRow(List<String> tags, List<String> characterNames) {
     return Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -76,22 +74,22 @@ class _NotesListPageState extends State<NotesListPage> {
           if (characterNames.isNotEmpty)
             FilterChipWidget(
               label: '${S.of(context).all} ${S.of(context).characters.toLowerCase()}',
-              selected: _selectedCharacter == null,
+              selected: selectedCharacter == null,
               onSelected: (isSelected) {
                 setState(() {
-                  _selectedCharacter = null;
-                  _filterNotes(_searchController.text,
+                  selectedCharacter = null;
+                  filterNotes(searchController.text,
                       Hive.box<Note>('notes').values.toList().cast<Note>());
                 });
               },
             ),
           ...characterNames.map((name) => FilterChipWidget(
             label: name,
-            selected: _selectedCharacter == name,
+            selected: selectedCharacter == name,
             onSelected: (isSelected) {
               setState(() {
-                _selectedCharacter = _selectedCharacter == name ? null : name;
-                _filterNotes(_searchController.text,
+                selectedCharacter = selectedCharacter == name ? null : name;
+                filterNotes(searchController.text,
                     Hive.box<Note>('notes').values.toList().cast<Note>());
               });
             },
@@ -99,22 +97,22 @@ class _NotesListPageState extends State<NotesListPage> {
           if (tags.isNotEmpty)
             FilterChipWidget(
               label: S.of(context).all_tags,
-              selected: _selectedTag == null,
+              selected: selectedTag == null,
               onSelected: (isSelected) {
                 setState(() {
-                  _selectedTag = null;
-                  _filterNotes(_searchController.text,
+                  selectedTag = null;
+                  filterNotes(searchController.text,
                       Hive.box<Note>('notes').values.toList().cast<Note>());
                 });
               },
             ),
           ...tags.map((tag) => FilterChipWidget(
             label: tag,
-            selected: _selectedTag == tag,
+            selected: selectedTag == tag,
             onSelected: (isSelected) {
               setState(() {
-                _selectedTag = _selectedTag == tag ? null : tag;
-                _filterNotes(_searchController.text,
+                selectedTag = selectedTag == tag ? null : tag;
+                filterNotes(searchController.text,
                     Hive.box<Note>('notes').values.toList().cast<Note>());
               });
             },
@@ -124,30 +122,14 @@ class _NotesListPageState extends State<NotesListPage> {
     );
   }
 
-  Future<void> _deleteNote(Note note) async {
-    final box = Hive.box<Note>('notes');
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(S.of(context).template_delete_title),
-        content: Text('${S.of(context).posts} "${note.title}" ${S.of(context).template_delete_confirm}'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(S.of(context).cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(
-              S.of(context).delete,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        ],
-      ),
-    ) ?? false;
+  Future<void> deleteNote(Note note) async {
+    final confirmed = await showDeleteConfirmationDialog(
+      S.of(context).template_delete_title,
+      '${S.of(context).posts} "${note.title}" ${S.of(context).template_delete_confirm}',
+    );
 
-    if (shouldDelete) {
+    if (confirmed) {
+      final box = Hive.box<Note>('notes');
       await box.delete(note.key);
       if (!mounted) return;
 
@@ -163,17 +145,17 @@ class _NotesListPageState extends State<NotesListPage> {
     }
   }
 
-  Future<void> _editNote(Note note) async {
+  Future<void> editNote(Note note) async {
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (context) => NoteEditPage(note: note)),
     );
     if (result == true && mounted) {
-      _filterNotes(_searchController.text, Hive.box<Note>('notes').values.toList().cast<Note>());
+      filterNotes(searchController.text, Hive.box<Note>('notes').values.toList().cast<Note>());
     }
   }
 
-  Future<void> _reorderNotes(int oldIndex, int newIndex) async {
+  Future<void> reorderNotes(int oldIndex, int newIndex) async {
     if (oldIndex == newIndex) return;
 
     final box = Hive.box<Note>('notes');
@@ -191,14 +173,14 @@ class _NotesListPageState extends State<NotesListPage> {
 
     if (mounted) {
       setState(() {
-        _filterNotes(_searchController.text, notes);
+        filterNotes(searchController.text, notes);
       });
     }
   }
 
-  Widget _buildNotesList(List<Note> notes) {
+  Widget buildNotesList(List<Note> notes) {
     if (notes.isEmpty) {
-      return NotesEmptyState(isSearching: _isSearching && _searchController.text.isNotEmpty);
+      return NotesEmptyState(isSearching: isSearching && searchController.text.isNotEmpty);
     }
 
     return ReorderableListView.builder(
@@ -210,10 +192,10 @@ class _NotesListPageState extends State<NotesListPage> {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => NoteEditPage(note: notes[index]))),
-        onEdit: () => _editNote(notes[index]),
-        onDelete: () => _deleteNote(notes[index]),
+        onEdit: () => editNote(notes[index]),
+        onDelete: () => deleteNote(notes[index]),
       ),
-      onReorder: (oldIndex, newIndex) => _reorderNotes(oldIndex, newIndex),
+      onReorder: (oldIndex, newIndex) => reorderNotes(oldIndex, newIndex),
     );
   }
 
@@ -222,27 +204,27 @@ class _NotesListPageState extends State<NotesListPage> {
     return Scaffold(
       appBar: CustomAppBar(
         title: '${S.of(context).my} ${S.of(context).posts.toLowerCase()}',
-        isSearching: _isSearching,
-        searchController: _searchController,
+        isSearching: isSearching,
+        searchController: searchController,
         searchHint: S.of(context).search_hint,
         onSearchToggle: () {
           setState(() {
-            _isSearching = !_isSearching;
-            if (!_isSearching) {
-              _searchController.clear();
-              _selectedTag = null;
-              _selectedCharacter = null;
-              _filteredNotes = [];
+            isSearching = !isSearching;
+            if (!isSearching) {
+              searchController.clear();
+              selectedTag = null;
+              selectedCharacter = null;
+              filteredNotes = [];
             }
           });
         },
         onSearchChanged: (query) {
           final allNotes = Hive.box<Note>('notes').values.toList().cast<Note>();
-          _filterNotes(query, allNotes);
+          filterNotes(query, allNotes);
         },
         additionalActions: [
           IconButton(
-            icon: Icon(Icons.folder_outlined),
+            icon: const Icon(Icons.folder_outlined),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -258,17 +240,17 @@ class _NotesListPageState extends State<NotesListPage> {
         builder: (context, box, _) {
           final allNotes = box.values.toList().cast<Note>();
           allNotes.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-          final tags = _getAllTags(allNotes);
-          final characterNames = _getAllCharacterNames(allNotes);
+          final tags = getAllTags(allNotes);
+          final characterNames = getAllCharacterNames(allNotes);
 
           return Column(
             children: [
               if (tags.isNotEmpty || characterNames.isNotEmpty)
-                _buildFiltersRow(tags, characterNames),
+                buildFiltersRow(tags, characterNames),
               Expanded(
-                child: _buildNotesList(
-                  _isSearching || _selectedTag != null || _selectedCharacter != null
-                      ? _filteredNotes
+                child: buildNotesList(
+                  isSearching || selectedTag != null || selectedCharacter != null
+                      ? filteredNotes
                       : allNotes,
                 ),
               ),

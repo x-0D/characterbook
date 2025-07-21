@@ -30,7 +30,7 @@ class CharacterEditPage extends StatefulWidget {
   State<CharacterEditPage> createState() => _CharacterEditPageState();
 }
 
-class _CharacterEditPageState extends State<CharacterEditPage> {
+class _CharacterEditPageState extends State<CharacterEditPage>  {
   final _formKey = GlobalKey<FormState>();
   final _picker = ImagePicker();
   late final CharacterService _characterService;

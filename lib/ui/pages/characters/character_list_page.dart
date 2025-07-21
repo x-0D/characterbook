@@ -1,14 +1,13 @@
 import 'dart:async';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/ui/pages/folders/folder_list_page.dart';
+import 'package:characterbook/ui/widgets/mixins/list_page_mixin.dart';
 import 'package:characterbook/ui/widgets/list_views/character_list_view.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../../generated/l10n.dart';
 import '../../../models/character_model.dart';
 import '../../../models/template_model.dart';
-import '../../../services/file_picker_service.dart';
 import '../../widgets/context_menu.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../widgets/custom_floating_buttons.dart';
@@ -23,50 +22,11 @@ class CharacterListPage extends StatefulWidget {
   State<CharacterListPage> createState() => _CharacterListPageState();
 }
 
-class _CharacterListPageState extends State<CharacterListPage> {
-  final TextEditingController _searchController = TextEditingController();
-  final FilePickerService _filePickerService = FilePickerService();
-  
-  List<Character> _filteredCharacters = [];
-  bool _isSearching = false;
-  bool _isImporting = false;
-  String? _selectedTag;
-  String? _errorMessage;
+class _CharacterListPageState extends State<CharacterListPage> with ListPageMixin {
+  List<Character> filteredCharacters = [];
+  String? selectedTag;
 
-  final ScrollController _scrollController = ScrollController();
-  bool _isFabVisible = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_handleScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_handleScroll);
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _handleScroll() {
-    if (_scrollController.position.atEdge) {
-      final isTop = _scrollController.position.pixels == 0;
-      if (isTop) {
-        setState(() => _isFabVisible = true);
-      }
-      return;
-    }
-
-    final direction = _scrollController.position.userScrollDirection;
-    if (direction == ScrollDirection.reverse && _isFabVisible) {
-      setState(() => _isFabVisible = false);
-    } else if (direction == ScrollDirection.forward && !_isFabVisible) {
-      setState(() => _isFabVisible = true);
-    }
-  }
-
-  List<String> _generateTags(List<Character> characters) {
+  List<String> generateTags(List<Character> characters) {
     final s = S.of(context);
     final allTags = <String>{
       s.male, s.female, s.another,
@@ -82,93 +42,83 @@ class _CharacterListPageState extends State<CharacterListPage> {
     return allTags.toList();
   }
 
-  void _filterCharacters(String query, List<Character> allCharacters) {
+  void filterCharacters(String query, List<Character> allCharacters) {
     final s = S.of(context);
     final queryLower = query.toLowerCase();
     
     setState(() {
-      _filteredCharacters = allCharacters.where((character) {
+      filteredCharacters = allCharacters.where((character) {
         final matchesSearch = query.isEmpty ||
             character.name.toLowerCase().contains(queryLower) ||
             character.age.toString().contains(query) ||
             character.tags.any((tag) => tag.toLowerCase().contains(queryLower));
 
-        if (_selectedTag == null) return matchesSearch;
+        if (selectedTag == null) return matchesSearch;
 
         final isSpecialTag = [
           s.male, s.female, s.another,
           s.children, s.young, s.adults, s.elderly,
           s.short_name,
           s.a_to_z, s.z_to_a, s.age_asc, s.age_desc
-        ].contains(_selectedTag);
+        ].contains(selectedTag);
 
         if (isSpecialTag) {
-          return matchesSearch && switch (_selectedTag) {
-            _ when _selectedTag == s.male => character.gender == 'male',
-            _ when _selectedTag == s.female => character.gender == 'female',
-            _ when _selectedTag == s.another => character.gender == 'another',
-            _ when _selectedTag == s.short_name => character.name.length <= 4,
-            _ when _selectedTag == s.children => character.age < 18,
-            _ when _selectedTag == s.young => character.age < 30,
-            _ when _selectedTag == s.adults => character.age < 50,
-            _ when _selectedTag == s.elderly => character.age >= 50,
+          return matchesSearch && switch (selectedTag) {
+            _ when selectedTag == s.male => character.gender == 'male',
+            _ when selectedTag == s.female => character.gender == 'female',
+            _ when selectedTag == s.another => character.gender == 'another',
+            _ when selectedTag == s.short_name => character.name.length <= 4,
+            _ when selectedTag == s.children => character.age < 18,
+            _ when selectedTag == s.young => character.age < 30,
+            _ when selectedTag == s.adults => character.age < 50,
+            _ when selectedTag == s.elderly => character.age >= 50,
             _ => true,
           };
         } else {
-          return matchesSearch && character.tags.contains(_selectedTag);
+          return matchesSearch && character.tags.contains(selectedTag);
         }
       }).toList();
 
-      if (_selectedTag == s.a_to_z) {
-        _filteredCharacters.sort((a, b) => a.name.compareTo(b.name));
-      } else if (_selectedTag == s.z_to_a) {
-        _filteredCharacters.sort((a, b) => b.name.compareTo(a.name));
-      } else if (_selectedTag == s.age_asc) {
-        _filteredCharacters.sort((a, b) => a.age.compareTo(b.age));
-      } else if (_selectedTag == s.age_desc) {
-        _filteredCharacters.sort((a, b) => b.age.compareTo(a.age));
+      if (selectedTag == s.a_to_z) {
+        filteredCharacters.sort((a, b) => a.name.compareTo(b.name));
+      } else if (selectedTag == s.z_to_a) {
+        filteredCharacters.sort((a, b) => b.name.compareTo(a.name));
+      } else if (selectedTag == s.age_asc) {
+        filteredCharacters.sort((a, b) => a.age.compareTo(b.age));
+      } else if (selectedTag == s.age_desc) {
+        filteredCharacters.sort((a, b) => b.age.compareTo(a.age));
       }
     });
   }
 
-  Future<void> _importCharacter() async {
+  Future<void> importCharacter() async {
     try {
       setState(() {
-        _isImporting = true;
-        _errorMessage = null;
+        isImporting = true;
+        errorMessage = null;
       });
 
-      final character = await _filePickerService.importCharacter();
+      final character = await filePickerService.importCharacter();
       if (character == null) return;
 
       final box = Hive.box<Character>('characters');
       await box.add(character);
 
       if (mounted) {
-        _showSnackBar(S.of(context).character_imported(character.name));
+        showSnackBar(S.of(context).character_imported(character.name));
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _errorMessage = e.toString());
+        setState(() => errorMessage = e.toString());
       }
     } finally {
       if (mounted) {
-        setState(() => _isImporting = false);
+        setState(() => isImporting = false);
       }
     }
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      )
-    );
-  }
-
-  Future<void> _editCharacter(Character character) async {
+  Future<void> editCharacter(Character character) async {
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
@@ -178,11 +128,11 @@ class _CharacterListPageState extends State<CharacterListPage> {
     
     if (result == true && mounted) {
       final characters = Hive.box<Character>('characters').values.cast<Character>();
-      _filterCharacters(_searchController.text, characters.toList());
+      filterCharacters(searchController.text, characters.toList());
     }
   }
 
-  Future<void> _reorderCharacters(int oldIndex, int newIndex) async {
+  Future<void> reorderCharacters(int oldIndex, int newIndex) async {
     if (oldIndex == newIndex) return;
 
     final box = Hive.box<Character>('characters');
@@ -190,7 +140,7 @@ class _CharacterListPageState extends State<CharacterListPage> {
 
     if (oldIndex < 0 || oldIndex >= characters.length || 
         newIndex < 0 || newIndex >= characters.length) {
-      debugPrint('⚠️ Некорректные индексы: old=$oldIndex, new=$newIndex');
+      debugPrint('⚠️ Invalid indices: old=$oldIndex, new=$newIndex');
       return;
     }
 
@@ -203,12 +153,12 @@ class _CharacterListPageState extends State<CharacterListPage> {
 
     if (mounted) {
       setState(() {
-        _filterCharacters(_searchController.text, updatedList);
+        filterCharacters(searchController.text, updatedList);
       });
     }
   }
 
-  Future<void> _createFromTemplate() async {
+  Future<void> createFromTemplate() async {
     final template = await Navigator.push<QuestionnaireTemplate>(
       context,
       MaterialPageRoute(builder: (context) => const TemplatesPage()),
@@ -226,44 +176,31 @@ class _CharacterListPageState extends State<CharacterListPage> {
     }
   }
 
-  Future<void> _deleteCharacter(Character character) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(S.of(context).character_delete_title),
-        content: Text(S.of(context).character_delete_confirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(S.of(context).cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(S.of(context).delete),
-          ),
-        ],
-      ),
+  Future<void> deleteCharacter(Character character) async {
+    final confirmed = await showDeleteConfirmationDialog(
+      S.of(context).character_delete_title,
+      S.of(context).character_delete_confirm,
     );
 
-    if (confirmed == true) {
+    if (confirmed) {
       await Hive.box<Character>('characters').delete(character.key);
-      if (mounted) _showSnackBar(S.of(context).character_deleted);
+      if (mounted) showSnackBar(S.of(context).character_deleted);
     }
   }
 
-  void _showCharacterContextMenu(Character character) {
+  void showCharacterContextMenu(Character character) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => ContextMenu.character(
         character: character,
-        onEdit: () => _editCharacter(character),
-        onDelete: () => _deleteCharacter(character),
+        onEdit: () => editCharacter(character),
+        onDelete: () => deleteCharacter(character),
       ),
     );
   }
 
-  void _navigateToDetail(Character character) {
+  void navigateToDetail(Character character) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -277,25 +214,25 @@ class _CharacterListPageState extends State<CharacterListPage> {
     return Scaffold(
       appBar: CustomAppBar(
         title: S.of(context).my_characters,
-        isSearching: _isSearching,
-        searchController: _searchController,
+        isSearching: isSearching,
+        searchController: searchController,
         searchHint: S.of(context).search_characters,
         onSearchToggle: () => setState(() {
-          _isSearching = !_isSearching;
-          if (!_isSearching) {
-            _searchController.clear();
-            _selectedTag = null;
-            _filteredCharacters = [];
+          isSearching = !isSearching;
+          if (!isSearching) {
+            searchController.clear();
+            selectedTag = null;
+            filteredCharacters = [];
           }
         }),
         onSearchChanged: (query) {
           final allCharacters = Hive.box<Character>('characters').values.cast<Character>();
-          _filterCharacters(query, allCharacters.toList());
+          filterCharacters(query, allCharacters.toList());
         },
-        onTemplatesPressed: _createFromTemplate,
+        onTemplatesPressed: createFromTemplate,
         additionalActions: [
           IconButton(
-            icon: Icon(Icons.folder_outlined),
+            icon: const Icon(Icons.folder_outlined),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -308,86 +245,85 @@ class _CharacterListPageState extends State<CharacterListPage> {
       ),
       body: Column(
         children: [
-          if (_isImporting) const LinearProgressIndicator(),
-          if (_errorMessage != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Theme.of(context).colorScheme.errorContainer,
-              child: Row(
-                children: [
-                  Icon(Icons.error, color: Theme.of(context).colorScheme.error),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _errorMessage!,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onErrorContainer,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, 
-                      color: Theme.of(context).colorScheme.onErrorContainer),
-                    onPressed: () => setState(() => _errorMessage = null),
-                  ),
-                ],
-              ),
-            ),
+          if (isImporting) const LinearProgressIndicator(),
+          if (errorMessage != null)
+            _buildErrorWidget(errorMessage!),
           Expanded(
             child: ValueListenableBuilder<Box<Character>>(
               valueListenable: Hive.box<Character>('characters').listenable(),
               builder: (context, box, _) {
                 final allCharacters = box.values.toList();
-                final tags = _generateTags(allCharacters);
-                final charactersToShow = _isSearching || _selectedTag != null
-                    ? _filteredCharacters
+                final tags = generateTags(allCharacters);
+                final charactersToShow = isSearching || selectedTag != null
+                    ? filteredCharacters
                     : allCharacters;
 
                 return CharacterListView(
                   allCharacters: allCharacters,
-                  onImportCharacter: _importCharacter,
+                  onImportCharacter: importCharacter,
                   onCreateCharacter: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const CharacterEditPage()),
                   ),
                   charactersToShow: charactersToShow,
                   tags: tags,
-                  searchController: _searchController,
-                  isSearching: _isSearching,
-                  selectedTag: _selectedTag,
+                  searchController: searchController,
+                  isSearching: isSearching,
+                  selectedTag: selectedTag,
                   onReorder: (oldIndex, newIndex) {
                     if (oldIndex < newIndex) newIndex -= 1;
-                    _reorderCharacters(oldIndex, newIndex);
+                    reorderCharacters(oldIndex, newIndex);
                   },
-                  scrollController: _scrollController,
-                  onCharacterTap: (character) => _navigateToDetail(character),
-                  onCharacterLongPress: (character) => _showCharacterContextMenu(character),
+                  scrollController: scrollController,
+                  onCharacterTap: navigateToDetail,
+                  onCharacterLongPress: showCharacterContextMenu,
                   onTagSelected: (tag) {
-                    setState(() => _selectedTag = tag);
-                    _filterCharacters(_searchController.text, allCharacters);
+                    setState(() => selectedTag = tag);
+                    filterCharacters(searchController.text, allCharacters);
                   },
-                  onScroll: (direction) {
-                    if (direction == ScrollDirection.reverse && _isFabVisible) {
-                      setState(() => _isFabVisible = false);
-                    } else if (direction == ScrollDirection.forward && !_isFabVisible) {
-                      setState(() => _isFabVisible = true);
-                    }
-                  },
+                  onScroll: (ScrollDirection ) {  },
                 );
               }
             ),
           ),
         ],
       ),
-      floatingActionButton: _isFabVisible 
-      ? CustomFloatingButtons(
-          onImport: _importCharacter,
-          onAdd: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CharacterEditPage()),
+      floatingActionButton: isFabVisible 
+        ? CustomFloatingButtons(
+            onImport: importCharacter,
+            onAdd: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CharacterEditPage()),
+            ),
+            onTemplate: createFromTemplate,
+          ) 
+        : null,
+    );
+  }
+
+  Widget _buildErrorWidget(String message) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Theme.of(context).colorScheme.errorContainer,
+      child: Row(
+        children: [
+          Icon(Icons.error, color: Theme.of(context).colorScheme.error),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+            ),
           ),
-          onTemplate: _createFromTemplate,
-        ) : null,
+          IconButton(
+            icon: Icon(Icons.close, 
+              color: Theme.of(context).colorScheme.onErrorContainer),
+            onPressed: () => setState(() => errorMessage = null),
+          ),
+        ],
+      ),
     );
   }
 }

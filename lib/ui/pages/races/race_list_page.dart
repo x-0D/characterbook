@@ -2,19 +2,18 @@ import 'dart:async';
 
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/ui/pages/folders/folder_list_page.dart';
+import 'package:characterbook/ui/widgets/mixins/list_page_mixin.dart';
 import 'package:characterbook/ui/widgets/context_menu.dart';
 import 'package:characterbook/ui/widgets/custom_app_bar.dart';
 import 'package:characterbook/ui/widgets/custom_floating_buttons.dart';
 import 'package:characterbook/ui/widgets/filter_chip_widget.dart';
 import 'package:characterbook/ui/widgets/list_views/race_list_view.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../../generated/l10n.dart';
 import '../../../models/character_model.dart';
 import '../../../models/race_model.dart';
-import '../../../services/file_picker_service.dart';
 import 'race_management_page.dart';
 
 class RaceListPage extends StatefulWidget {
@@ -24,183 +23,80 @@ class RaceListPage extends StatefulWidget {
   State<RaceListPage> createState() => _RaceListPageState();
 }
 
-class _RaceListPageState extends State<RaceListPage> {
-  final TextEditingController _searchController = TextEditingController();
-  final FilePickerService _filePickerService = FilePickerService();
-  List<Race> _filteredRaces = [];
-  bool _isSearching = false;
-  String? _selectedTag;
-  bool _isImporting = false;
-  String? _errorMessage;
-  final ScrollController _scrollController = ScrollController();
-  bool _showFab = true;
+class _RaceListPageState extends State<RaceListPage> with ListPageMixin {
+  List<Race> filteredRaces = [];
+  String? selectedTag;
 
-  List<String> _getAllTags(List<Race> races) {
+  List<String> getAllTags(List<Race> races) {
     return races.expand((race) => race.tags).toSet().toList()..sort();
   }
 
-  List<String> _generateTags(List<Race> races) {
-    final tags = <String>{};
-    return tags.toList()..sort();
-  }
-
-  void _filterRaces(String query, List<Race> allRaces) {
+  void filterRaces(String query, List<Race> allRaces) {
     setState(() {
-      _filteredRaces = allRaces.where((race) {
+      filteredRaces = allRaces.where((race) {
         final matchesSearch = query.isEmpty ||
             race.name.toLowerCase().contains(query.toLowerCase()) ||
             race.description.toLowerCase().contains(query.toLowerCase());
 
-        final matchesTag = _selectedTag == null || race.tags.contains(_selectedTag);
+        final matchesTag = selectedTag == null || race.tags.contains(selectedTag);
 
         return matchesSearch && matchesTag;
       }).toList();
     });
   }
 
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(() {
-      final direction = _scrollController.position.userScrollDirection;
-      if (direction == ScrollDirection.forward) {
-        if (!_showFab) setState(() => _showFab = true);
-      } else if (direction == ScrollDirection.reverse) {
-        if (_showFab) setState(() => _showFab = false);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  Widget _buildFiltersRow(List<String> tags) {
-    return Container(
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          if (tags.isNotEmpty)
-            FilterChipWidget(
-              label: S.of(context).all_tags,
-              selected: _selectedTag == null,
-              onSelected: (isSelected) {
-                setState(() {
-                  _selectedTag = null;
-                  _filterRaces(_searchController.text,
-                      Hive.box<Race>('races').values.toList());
-                });
-              },
-            ),
-          ...tags.map((tag) => FilterChipWidget(
-            label: tag,
-            selected: _selectedTag == tag,
-            onSelected: (isSelected) {
-              setState(() {
-                _selectedTag = _selectedTag == tag ? null : tag;
-                _filterRaces(_searchController.text,
-                    Hive.box<Race>('races').values.toList());
-              });
-            },
-          )),
-        ],
-      ),
-    );
-  }
-
-  Future<bool> _isRaceUsed(Race race) async {
+  Future<bool> isRaceUsed(Race race) async {
     final charactersBox = Hive.box<Character>('characters');
     final characters = charactersBox.values;
     
-    final usingCharacter = characters.firstWhere(
-      (character) => character.race?.key == race.key,
-      // ignore: cast_from_null_always_fails
-      orElse: () => null as Character,
-    );
-    
-    // ignore: unnecessary_null_comparison
-    return usingCharacter != null;
+    return characters.any((character) => character.race?.key == race.key);
   }
 
-  Future<void> _deleteRace(Race race) async {
-    if (await _isRaceUsed(race)) {
-      if (mounted) _showRaceInUseDialog();
+  Future<void> deleteRace(Race race) async {
+    if (await isRaceUsed(race)) {
+      if (mounted) showRaceInUseDialog();
       return;
     }
 
-    final confirmed = await _showDeleteConfirmationDialog();
-    if (confirmed ?? false) {
+    final confirmed = await showDeleteConfirmationDialog(
+      S.of(context).race_delete_title,
+      S.of(context).race_delete_confirm,
+    );
+
+    if (confirmed) {
       await Hive.box<Race>('races').delete(race.key);
-      if (mounted) _showSnackBar(S.of(context).race_deleted);
+      if (mounted) showSnackBar(S.of(context).race_deleted);
     }
   }
 
-  Future<void> _importRaceFromFile() async {
+  Future<void> importRaceFromFile() async {
     try {
       setState(() {
-        _isImporting = true;
-        _errorMessage = null;
+        isImporting = true;
+        errorMessage = null;
       });
 
-      final race = await _filePickerService.importRace();
+      final race = await filePickerService.importRace();
       if (race == null) return;
 
       final box = Hive.box<Race>('races');
       await box.add(race);
 
       if (mounted) {
-        _showSnackBar(S.of(context).race_imported(race.name));
+        showSnackBar(S.of(context).race_imported(race.name));
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _errorMessage = e.toString();
-        });
+        setState(() => errorMessage = e.toString());
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isImporting = false;
-        });
+        setState(() => isImporting = false);
       }
     }
   }
 
-  Future<bool?> _showDeleteConfirmationDialog() async {
-    if (!mounted) return false;
-
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(S.of(context).race_delete_title),
-        content: Text(S.of(context).race_delete_confirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              S.of(context).cancel,
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              S.of(context).delete,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRaceInUseDialog() {
+  void showRaceInUseDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -216,40 +112,29 @@ class _RaceListPageState extends State<RaceListPage> {
     );
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
-  }
-
-  void _showRaceContextMenu(Race race) {
+  void showRaceContextMenu(Race race) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => ContextMenu.race(
         race: race,
-        onEdit: () => _editRace(race),
-        onDelete: () => _deleteRace(race),
+        onEdit: () => editRace(race),
+        onDelete: () => deleteRace(race),
       ),
     );
   }
 
-  Future<void> _editRace(Race race) async {
+  Future<void> editRace(Race race) async {
     final result = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (context) => RaceManagementPage(race: race)),
     );
     if (result == true && mounted) {
-      _filterRaces(_searchController.text, Hive.box<Race>('races').values.toList());
+      filterRaces(searchController.text, Hive.box<Race>('races').values.toList());
     }
   }
 
-  Future<void> _reorderRaces(int oldIndex, int newIndex) async {
+  Future<void> reorderRaces(int oldIndex, int newIndex) async {
     if (oldIndex == newIndex) return;
 
     final box = Hive.box<Race>('races');
@@ -267,7 +152,7 @@ class _RaceListPageState extends State<RaceListPage> {
 
     if (mounted) {
       setState(() {
-        _filterRaces(_searchController.text, box.values.toList());
+        filterRaces(searchController.text, box.values.toList());
       });
     }
   }
@@ -277,23 +162,23 @@ class _RaceListPageState extends State<RaceListPage> {
     return Scaffold(
       appBar: CustomAppBar(
         title: S.of(context).races,
-        isSearching: _isSearching,
-        searchController: _searchController,
+        isSearching: isSearching,
+        searchController: searchController,
         searchHint: S.of(context).search_race_hint,
         onSearchToggle: () {
           setState(() {
-            _isSearching = !_isSearching;
-            if (!_isSearching) {
-              _searchController.clear();
-              _selectedTag = null;
-              _filteredRaces = [];
+            isSearching = !isSearching;
+            if (!isSearching) {
+              searchController.clear();
+              selectedTag = null;
+              filteredRaces = [];
             }
           });
         },
-        onSearchChanged: (query) => _filterRaces(query, Hive.box<Race>('races').values.toList()),
+        onSearchChanged: (query) => filterRaces(query, Hive.box<Race>('races').values.toList()),
         additionalActions: [
           IconButton(
-            icon: Icon(Icons.folder_outlined),
+            icon: const Icon(Icons.folder_outlined),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -306,38 +191,17 @@ class _RaceListPageState extends State<RaceListPage> {
       ),
       body: Column(
         children: [
-          if (_isImporting) const LinearProgressIndicator(),
-          if (_errorMessage != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Theme.of(context).colorScheme.errorContainer,
-              child: Row(
-                children: [
-                  Icon(Icons.error, color: Theme.of(context).colorScheme.error),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _errorMessage!,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onErrorContainer,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onErrorContainer),
-                    onPressed: () => setState(() => _errorMessage = null),
-                  ),
-                ],
-              ),
-            ),
+          if (isImporting) const LinearProgressIndicator(),
+          if (errorMessage != null)
+            _buildErrorWidget(errorMessage!),
           Expanded(
             child: ValueListenableBuilder<Box<Race>>(
               valueListenable: Hive.box<Race>('races').listenable(),
               builder: (context, box, _) {
                 final allRaces = box.values.toList();
-                final tags = _getAllTags(allRaces);
-                final racesToShow = _isSearching || _selectedTag != null
-                    ? _filteredRaces
+                final tags = getAllTags(allRaces);
+                final racesToShow = isSearching || selectedTag != null
+                    ? filteredRaces
                     : allRaces;
 
                 return Column(
@@ -345,17 +209,17 @@ class _RaceListPageState extends State<RaceListPage> {
                     if (tags.isNotEmpty) _buildFiltersRow(tags),
                     Expanded(
                       child: RaceListView(
-                        scrollController: _scrollController,
+                        scrollController: scrollController,
                         allRaces: allRaces,
                         racesToShow: racesToShow,
                         tags: tags,
-                        searchController: _searchController,
-                        isSearching: _isSearching,
-                        selectedTag: _selectedTag,
-                        onReorder: _reorderRaces,
-                        onRaceTap: _editRace,
-                        onRaceLongPress: _showRaceContextMenu,
-                        onImportRace: _importRaceFromFile,
+                        searchController: searchController,
+                        isSearching: isSearching,
+                        selectedTag: selectedTag,
+                        onReorder: reorderRaces,
+                        onRaceTap: editRace,
+                        onRaceLongPress: showRaceContextMenu,
+                        onImportRace: importRaceFromFile,
                         onCreateRace: () async {
                           await Navigator.push<bool>(
                             context,
@@ -372,20 +236,82 @@ class _RaceListPageState extends State<RaceListPage> {
           ),
         ],
       ),
-      floatingActionButton: _showFab 
+      floatingActionButton: isFabVisible 
         ? CustomFloatingButtons(
-            onImport: _importRaceFromFile,
+            onImport: importRaceFromFile,
             onAdd: () async {
               final result = await Navigator.push<bool>(
                 context,
                 MaterialPageRoute(builder: (context) => const RaceManagementPage()),
               );
               if (result == true && mounted) {
-                _filterRaces(_searchController.text,
+                filterRaces(searchController.text,
                     Hive.box<Race>('races').values.toList());
               }
             },
-          ) : null,
+          ) 
+        : null,
+    );
+  }
+
+  Widget _buildFiltersRow(List<String> tags) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          if (tags.isNotEmpty)
+            FilterChipWidget(
+              label: S.of(context).all_tags,
+              selected: selectedTag == null,
+              onSelected: (isSelected) {
+                setState(() {
+                  selectedTag = null;
+                  filterRaces(searchController.text,
+                      Hive.box<Race>('races').values.toList());
+                });
+              },
+            ),
+          ...tags.map((tag) => FilterChipWidget(
+            label: tag,
+            selected: selectedTag == tag,
+            onSelected: (isSelected) {
+              setState(() {
+                selectedTag = selectedTag == tag ? null : tag;
+                filterRaces(searchController.text,
+                    Hive.box<Race>('races').values.toList());
+              });
+            },
+          )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget(String message) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Theme.of(context).colorScheme.errorContainer,
+      child: Row(
+        children: [
+          Icon(Icons.error, color: Theme.of(context).colorScheme.error),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.close, 
+              color: Theme.of(context).colorScheme.onErrorContainer),
+            onPressed: () => setState(() => errorMessage = null),
+          ),
+        ],
+      ),
     );
   }
 }
