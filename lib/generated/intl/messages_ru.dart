@@ -266,12 +266,15 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Данные не найдены"),
         "no_description":
             MessageLookupByLibrary.simpleMessage("Описание отсутствует"),
+        "no_folder_selected":
+            MessageLookupByLibrary.simpleMessage("Нет выбранной папки"),
         "no_information":
             MessageLookupByLibrary.simpleMessage("Нет информации"),
         "no_race": MessageLookupByLibrary.simpleMessage("Без расы"),
         "no_races_created":
             MessageLookupByLibrary.simpleMessage("Нет созданных рас"),
         "no_templates": MessageLookupByLibrary.simpleMessage("Нет шаблонов"),
+        "none": MessageLookupByLibrary.simpleMessage("Пусто"),
         "not_selected": MessageLookupByLibrary.simpleMessage("Не выбрано"),
         "nothing_found": MessageLookupByLibrary.simpleMessage(
             "Ничего не найдено по запросу"),
@@ -337,6 +340,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "select": MessageLookupByLibrary.simpleMessage("Выбрано"),
         "select_character":
             MessageLookupByLibrary.simpleMessage("Выберите персонажа"),
+        "select_folder": MessageLookupByLibrary.simpleMessage("Выбрать папку"),
         "select_gender_error":
             MessageLookupByLibrary.simpleMessage("Выберите пол"),
         "select_race": MessageLookupByLibrary.simpleMessage("Выберите расу"),

@@ -230,6 +230,9 @@
   "usedLibraries": "Используемые библиотеки",
 
   "folders": "Папки",
-  "folder": "Папка"
+  "folder": "Папка",
+  "select_folder": "Выбрать папку",
+  "no_folder_selected": "Нет выбранной папки",
+  "none": "Пусто"
 
 }

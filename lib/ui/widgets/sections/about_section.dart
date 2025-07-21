@@ -36,7 +36,7 @@ class AboutSection extends StatelessWidget {
           leading: const Icon(Icons.info_outline),
           title: Text(s.version),
           trailing: Text(
-            '1.6.7.1',
+            '1.6.8',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
         ),

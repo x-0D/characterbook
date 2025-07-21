@@ -2,6 +2,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:characterbook/models/folder_model.dart';
+import 'package:characterbook/services/folder_service.dart';
 
 import '../../../generated/l10n.dart';
 import '../../../models/character_model.dart';
@@ -41,13 +43,29 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
 
   static const _logoSize = 120.0;
 
+  late final FolderService _folderService;
+  List<Folder> _characterFolders = [];
+  Folder? _selectedFolder;
+
   @override
   void initState() {
     super.initState();
     _characterService = CharacterService.forDatabase();
+    _folderService = FolderService(Hive.box<Folder>('folders'));
     _initializeFields();
     _loadRaces();
+    _loadFolders();
     _hasUnsavedChanges = widget.character == null;
+  }
+
+  Future<void> _loadFolders() async {
+    final folders = _folderService.getFoldersByType(FolderType.character);
+    setState(() {
+      _characterFolders = folders;
+      _selectedFolder = widget.character?.folderId != null 
+        ? _folderService.getFolderById(widget.character!.folderId!) 
+        : null;
+    });
   }
 
   void _initializeFields() {
@@ -155,11 +173,33 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
 
       try {
         final character = _buildCharacter();
+        character.folderId = _selectedFolder?.id;
 
-        await _characterService.saveCharacter(
+        final characterKey = await _characterService.saveCharacter(
           character,
           key: widget.character?.key,
         );
+
+        final actualKey = characterKey ?? widget.character?.key;
+
+        if (actualKey != null) {
+          if (_selectedFolder == null) {
+            for (final folder in _characterFolders) {
+              if (folder.contentIds.contains(actualKey.toString())) {
+                await _folderService.removeFromFolder(folder.id, actualKey.toString());
+              }
+            }
+          } 
+          else {
+            for (final folder in _characterFolders) {
+              if (folder.id != _selectedFolder!.id && 
+                  folder.contentIds.contains(actualKey.toString())) {
+                await _folderService.removeFromFolder(folder.id, actualKey.toString());
+              }
+            }
+            await _folderService.addToFolder(_selectedFolder!.id, actualKey.toString());
+          }
+        }
 
         setState(() => _hasUnsavedChanges = false);
 
@@ -261,6 +301,42 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
                   onSaved: (value) => _character.name = value!,
                   onChanged: (_) => _hasUnsavedChanges = true,
                 ),
+                if (_characterFolders.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: () => _selectFolder(context),
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: S.of(context).folder,
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.folder, color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _selectedFolder?.name ?? S.of(context).no_folder_selected,
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                          ),
+                          if (_selectedFolder != null)
+                            IconButton(
+                              icon: Icon(Icons.close),
+                              onPressed: () {
+                                setState(() {
+                                  _selectedFolder = null;
+                                  _character.folderId = null;
+                                  _hasUnsavedChanges = true;
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 if (_shouldShowField('age') || _shouldShowField('gender'))
                   Row(
@@ -445,6 +521,50 @@ class _CharacterEditPageState extends State<CharacterEditPage> {
           ),
       ],
     );
+  }
+
+  Future<void> _selectFolder(BuildContext context) async {
+    final selected = await showDialog<Folder>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(S.of(context).select_folder),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _characterFolders.length,
+            itemBuilder: (context, index) {
+              final folder = _characterFolders[index];
+              return ListTile(
+                title: Text(folder.name),
+                leading: Icon(Icons.folder),
+                onTap: () => Navigator.pop(context, folder),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, null),
+            child: Text(S.of(context).none),
+          ),
+        ],
+      ),
+    );
+
+    if (selected != null) {
+      setState(() {
+        _selectedFolder = selected;
+        _character.folderId = selected.id;
+        _hasUnsavedChanges = true;
+      });
+    } else if (_selectedFolder != null) {
+      setState(() {
+        _selectedFolder = null;
+        _character.folderId = null;
+        _hasUnsavedChanges = true;
+      });
+    }
   }
 
   Widget _buildReferenceImageSection(BuildContext context, ColorScheme colorScheme, TextTheme textTheme) {

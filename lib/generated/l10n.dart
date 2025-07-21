@@ -2310,6 +2310,36 @@ class S {
       args: [],
     );
   }
+
+  /// `Выбрать папку`
+  String get select_folder {
+    return Intl.message(
+      'Выбрать папку',
+      name: 'select_folder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Нет выбранной папки`
+  String get no_folder_selected {
+    return Intl.message(
+      'Нет выбранной папки',
+      name: 'no_folder_selected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Пусто`
+  String get none {
+    return Intl.message(
+      'Пусто',
+      name: 'none',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

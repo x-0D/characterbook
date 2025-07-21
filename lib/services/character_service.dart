@@ -22,9 +22,14 @@ class CharacterService {
 
   Future<Box<Character>> get _box => Hive.openBox<Character>(_boxName);
 
-  Future<void> saveCharacter(Character character, {int? key}) async {
-    final box = await _box;
-    key != null ? await box.put(key, character) : await box.add(character);
+  Future<int?> saveCharacter(Character character, {int? key}) async {
+    final box = Hive.box<Character>('characters');
+    if (key != null) {
+      await box.put(key, character);
+      return key;
+    } else {
+      return await box.add(character);
+    }
   }
 
   Future<List<Character>> getAllCharacters() async {

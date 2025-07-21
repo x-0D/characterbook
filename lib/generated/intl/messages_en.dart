@@ -241,12 +241,15 @@ class MessageLookup extends MessageLookupByLibrary {
         "no_data_found": MessageLookupByLibrary.simpleMessage("No data found"),
         "no_description":
             MessageLookupByLibrary.simpleMessage("No description"),
+        "no_folder_selected":
+            MessageLookupByLibrary.simpleMessage("No folder selected"),
         "no_information":
             MessageLookupByLibrary.simpleMessage("No Information"),
         "no_race": MessageLookupByLibrary.simpleMessage("No race"),
         "no_races_created":
             MessageLookupByLibrary.simpleMessage("No races created"),
         "no_templates": MessageLookupByLibrary.simpleMessage("No templates"),
+        "none": MessageLookupByLibrary.simpleMessage("None"),
         "not_selected": MessageLookupByLibrary.simpleMessage("Not selected"),
         "nothing_found":
             MessageLookupByLibrary.simpleMessage("Nothing found for the query"),
@@ -308,6 +311,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "select": MessageLookupByLibrary.simpleMessage("Selected"),
         "select_character":
             MessageLookupByLibrary.simpleMessage("Select Character"),
+        "select_folder": MessageLookupByLibrary.simpleMessage("Select folder"),
         "select_gender_error":
             MessageLookupByLibrary.simpleMessage("Select gender"),
         "select_race": MessageLookupByLibrary.simpleMessage("Select Race"),

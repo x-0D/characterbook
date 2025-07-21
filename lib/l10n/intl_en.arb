@@ -224,5 +224,8 @@
   "usedLibraries": "Used Libraries",
 
   "folders": "Folders",
-  "folder": "Folder"
+  "folder": "Folder",
+  "select_folder": "Select folder",
+  "no_folder_selected": "No folder selected",
+  "none": "None"
 }
