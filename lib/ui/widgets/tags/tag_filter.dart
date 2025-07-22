@@ -1,10 +1,14 @@
 import 'package:characterbook/generated/l10n.dart';
 import 'package:flutter/material.dart';
+import 'package:characterbook/models/folder_model.dart';
 
 class TagFilter extends StatelessWidget {
   final List<String> tags;
+  //final List<Folder> folders;
   final String? selectedTag;
+  //final String? selectedFolderId;
   final ValueChanged<String?> onTagSelected;
+  //final ValueChanged<String?> onFolderSelected;
   final BuildContext context;
   final bool showAllOption;
   final bool isForCharacters;
@@ -12,8 +16,11 @@ class TagFilter extends StatelessWidget {
   const TagFilter({
     super.key,
     required this.tags,
+    //required this.folders,
     required this.selectedTag,
+    //required this.selectedFolderId,
     required this.onTagSelected,
+    //required this.onFolderSelected,
     required this.context,
     this.showAllOption = true,
     this.isForCharacters = false,
@@ -41,17 +48,36 @@ class TagFilter extends StatelessWidget {
           if (showAllOption)
             FilterChip(
               label: Text(s.all),
-              selected: selectedTag == null,
-              onSelected: (_) => onTagSelected(null),
+              selected: selectedTag == null, //&& selectedFolderId == null,
+              onSelected: (_) {
+                onTagSelected(null);
+                //onFolderSelected(null);
+              },
               shape: StadiumBorder(side: BorderSide(color: theme.colorScheme.outline)),
               showCheckmark: false,
               selectedColor: theme.colorScheme.secondaryContainer,
               labelStyle: theme.textTheme.labelLarge?.copyWith(
-                color: selectedTag == null
+                color: selectedTag == null// && selectedFolderId == null
                     ? theme.colorScheme.onSecondaryContainer
                     : theme.colorScheme.onSurface,
               ),
             ),
+          /*...folders.map((folder) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: FilterChip(
+              label: Text(folder.name),
+              selected: selectedFolderId == folder.id,
+              onSelected: (selected) => onFolderSelected(selected ? folder.id : null),
+              shape: StadiumBorder(side: BorderSide(color: theme.colorScheme.outline)),
+              showCheckmark: false,
+              selectedColor: theme.colorScheme.primaryContainer,
+              labelStyle: theme.textTheme.labelLarge?.copyWith(
+                color: selectedFolderId == folder.id
+                    ? theme.colorScheme.onPrimaryContainer
+                    : theme.colorScheme.onSurface,
+              ),
+            ),
+          )),*/
           ...tags.map((tag) => Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: FilterChip(

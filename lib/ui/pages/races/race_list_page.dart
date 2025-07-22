@@ -217,7 +217,7 @@ class _RaceListPageState extends State<RaceListPage> with ListPageMixin, TagMixi
                             filterRaces(searchController.text, allRaces);
                           },
                           context: context,
-                          isForCharacters: false
+                          isForCharacters: false,
                         ),
                     Expanded(
                       child: RaceListView(

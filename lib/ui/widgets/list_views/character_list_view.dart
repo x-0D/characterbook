@@ -65,7 +65,7 @@ class _CharacterListViewState extends State<CharacterListView> {
             selectedTag: widget.selectedTag,
             onTagSelected: widget.onTagSelected,
             context: context,
-            isForCharacters: true
+            isForCharacters: true,
           ),
         Expanded(
           child: _buildContent(theme),
