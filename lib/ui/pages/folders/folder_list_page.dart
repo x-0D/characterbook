@@ -1,3 +1,6 @@
+import 'package:characterbook/ui/pages/characters/character_management_page.dart';
+import 'package:characterbook/ui/pages/notes/note_management_page.dart';
+import 'package:characterbook/ui/pages/races/race_management_page.dart';
 import 'package:characterbook/ui/widgets/items/character_card.dart';
 import 'package:characterbook/ui/widgets/items/note_card.dart';
 import 'package:characterbook/ui/widgets/items/race_card.dart';
@@ -29,6 +32,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
 
   @override
   void initState() {
@@ -185,7 +189,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
 
   List<Widget> _buildCharacterContents(Folder folder) {
     final characters = _characterBox.values
-        .where((character) => folder.contentIds.contains(character.key))
+        .where((character) => folder.contentIds.contains(character.key.toString()))
         .toList();
 
     if (characters.isEmpty) {
@@ -211,7 +215,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
 
   List<Widget> _buildRaceContents(Folder folder) {
     final races = _raceBox.values
-        .where((race) => folder.contentIds.contains(race.key))
+        .where((race) => folder.contentIds.contains(race.key.toString()))
         .toList();
 
     if (races.isEmpty) {
@@ -460,31 +464,209 @@ class _FoldersScreenState extends State<FoldersScreen> {
   }
 
   void _openCharacter(Character character) {
-    // Implement character opening logic
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CharacterEditPage(character: character),
+      ),
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   void _showCharacterContextMenu(Character character) {
-    // Implement character context menu
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28))
+      ),
+      builder: (context) => ContextMenu(
+        item: character,
+        onEdit: () => _openCharacter(character),
+        onDelete: () => _deleteCharacter(character),
+        showExportPdf: true,
+        showCopy: true,
+        showShare: true,
+      ),
+    );
+  }
+
+  Future<void> _deleteCharacter(Character character) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(S.of(context).delete),
+        content: Text(S.of(context).character_delete_confirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(S.of(context).cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              S.of(context).delete,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await character.delete();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).character_deleted)),
+        );
+      }
+    }
   }
 
   void _openRace(Race race) {
-    // Implement race opening logic
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RaceManagementPage(race: race),
+      ),
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   void _showRaceContextMenu(Race race) {
-    // Implement race context menu
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28))
+      ),
+      builder: (context) => ContextMenu(
+        item: race,
+        onEdit: () => _openRace(race),
+        onDelete: () => _deleteRace(race),
+        showExportPdf: false,
+        showCopy: false,
+        showShare: false,
+      ),
+    );
+  }
+
+  Future<void> _deleteRace(Race race) async {
+    final isUsed = await isRaceUsed(race);
+    if (isUsed) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(S.of(context).race_delete_error_title),
+            content: Text(S.of(context).race_delete_error_content),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(S.of(context).ok),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(S.of(context).delete),
+        content: Text(S.of(context).race_delete_confirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(S.of(context).cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              S.of(context).delete,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await race.delete();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).race_deleted)),
+        );
+      }
+    }
+  }
+
+
+  Future<bool> isRaceUsed(Race race) async {
+    final characters = _characterBox.values;
+    return characters.any((character) => character.race?.key == race.key);
   }
 
   void _openNote(Note note) {
-    // Implement note opening logic
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NoteEditPage(note: note),
+      ),
+    );
   }
 
   void _editNote(Note note) {
-    // Implement note editing logic
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>NoteEditPage(note: note),
+      ),
+    ).then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
-  void _deleteNote(Note note) {
-    // Implement note deletion logic
+  Future<void> _deleteNote(Note note) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(S.of(context).delete),
+        content: Text('${S.of(context).posts} "${note.title}" ${S.of(context).template_delete_confirm}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(S.of(context).cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              S.of(context).delete,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await note.delete();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${S.of(context).posts} "${note.title}" ${S.of(context).template_deleted}'),
+            action: SnackBarAction(
+              label: S.of(context).cancel,
+              onPressed: () => _noteBox.add(note),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   void _editFolder(Folder folder, S s) {
