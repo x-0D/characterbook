@@ -2,7 +2,9 @@ import 'dart:typed_data';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/services/folder_service.dart';
 import 'package:characterbook/ui/pages/folders/folder_list_page.dart';
+import 'package:characterbook/ui/pages/notes/note_management_page.dart';
 import 'package:characterbook/ui/widgets/avatar_widget.dart';
+import 'package:characterbook/ui/widgets/context_menu.dart';
 import 'package:characterbook/ui/widgets/sections/build_section.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
@@ -264,50 +266,163 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
 
   Widget _buildNoteCard(Note note) {
     final theme = Theme.of(context);
+    final characterBox = Hive.box<Character>('characters');
+    final characters = note.characterIds
+        .map((id) => characterBox.get(id))
+        .whereType<Character>()
+        .toList();
+    final folder = note.folderId != null 
+        ? _folderService.getFolderById(note.folderId!)
+        : null;
+
+    void _showNoteContextMenu() {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (context) => ContextMenu.note(
+          note: note,
+          onEdit: () => _openNoteForEditing(note),
+          onDelete: () => _deleteNote(note),
+        ),
+      );
+    }
+
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    note.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold),
-                    overflow: TextOverflow.ellipsis,
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: theme.colorScheme.outlineVariant),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _openNoteForEditing(note),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      note.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.more_vert, 
+                        color: theme.colorScheme.onSurfaceVariant),
+                    onPressed: _showNoteContextMenu,
+                  ),
+                ],
+              ),
+              if (folder != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.folder, 
+                        size: 16, 
+                        color: theme.colorScheme.onPrimaryContainer),
+                      const SizedBox(width: 4),
+                      Text(
+                        folder.name,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  '${note.updatedAt.day}.${note.updatedAt.month}.${note.updatedAt.year}',
-                  style: theme.textTheme.bodySmall,
+              ],
+              const SizedBox(height: 8),
+              Text(
+                note.content,
+                style: theme.textTheme.bodyMedium,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (characters.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 4,
+                  children: characters.map((character) => Chip(
+                    label: Text(character.name),
+                    labelStyle: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSecondaryContainer,
+                    ),
+                    backgroundColor: theme.colorScheme.secondaryContainer,
+                    visualDensity: VisualDensity.compact,
+                  )).toList(),
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              note.content.length > 100 
-                ? '${note.content.substring(0, 100)}...' 
-                : note.content,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (note.tags.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 4,
-                children: note.tags.map((tag) => Chip(label: Text(tag))).toList(),
-              ),
+              if (note.tags.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 4,
+                  children: note.tags.map((tag) => Chip(
+                    label: Text(tag),
+                    labelStyle: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSecondaryContainer,
+                    ),
+                    backgroundColor: theme.colorScheme.secondaryContainer,
+                    visualDensity: VisualDensity.compact,
+                  )).toList(),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
   }
+
+  Future<void> _deleteNote(Note note) async {
+    final confirmed = await _showConfirmationDialog(
+      title: S.of(context).delete,
+      message: S.of(context).delete,
+      confirmText: S.of(context).delete,
+      isDestructive: true,
+    );
+
+    if (confirmed == true) {
+      try {
+        final box = Hive.box<Note>('notes');
+        await box.delete(note.key);
+        if (mounted) {
+          _showSnackBar(S.of(context).delete, isError: false);
+          await _loadRelatedNotes();
+        }
+      } catch (e) {
+        _showSnackBar('${S.of(context).delete_error}: ${e.toString()}');
+      }
+    }
+  }
+
+  Future<void> _openNoteForEditing(Note note) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NoteEditPage(note: note),
+      ),
+    );
+    
+    if (result == true) {
+      await _loadRelatedNotes();
+    }
+  }
+
 
   Widget _buildInfoRow(String label, String value, IconData icon, {Color? valueColor}) {
     final theme = Theme.of(context);
