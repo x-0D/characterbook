@@ -557,7 +557,7 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
   Widget _buildAgeField() {
     return CustomTextField(
       label: S.of(context).age,
-      initialValue: _character.age?.toString() ?? '',
+      initialValue: _character.age.toString(),
       isRequired: _shouldShowField('age'),
       keyboardType: TextInputType.number,
       validator: _shouldShowField('age') ? (value) {

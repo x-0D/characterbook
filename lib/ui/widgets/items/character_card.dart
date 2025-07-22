@@ -67,7 +67,6 @@ class CharacterCard extends StatelessWidget {
                         Text(character.name, style: theme.textTheme.bodyLarge),
                         Row(
                           children: [
-                            // Возраст с иконкой
                             _buildInfoChip(
                               context,
                               icon: Icons.cake_rounded,
@@ -76,7 +75,6 @@ class CharacterCard extends StatelessWidget {
                               iconColor: theme.colorScheme.onTertiaryContainer,
                             ),
                             const SizedBox(width: 8),
-                            // Пол с иконкой
                             _buildInfoChip(
                               context,
                               icon: _getGenderIcon(character.gender),

@@ -6,7 +6,6 @@ import 'package:characterbook/ui/widgets/mixins/list_page_mixin.dart';
 import 'package:characterbook/ui/widgets/context_menu.dart';
 import 'package:characterbook/ui/widgets/custom_app_bar.dart';
 import 'package:characterbook/ui/widgets/custom_floating_buttons.dart';
-import 'package:characterbook/ui/widgets/filter_chip_widget.dart';
 import 'package:characterbook/ui/widgets/list_views/race_list_view.dart';
 import 'package:characterbook/ui/widgets/mixins/tag_mixin.dart';
 import 'package:characterbook/ui/widgets/tags/tag_filter.dart';
@@ -29,7 +28,6 @@ class _RaceListPageState extends State<RaceListPage> with ListPageMixin, TagMixi
   List<Race> filteredRaces = [];
   String? selectedTag;
 
-  @override
   List<String> getAllTags(List<Race> races) {
     return generateAllTags(races, context, (r) => r.tags);
   }

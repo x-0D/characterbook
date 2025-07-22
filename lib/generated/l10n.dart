@@ -2341,6 +2341,36 @@ class S {
     );
   }
 
+  /// `Имя папки`
+  String get folder_name {
+    return Intl.message(
+      'Имя папки',
+      name: 'folder_name',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Новая папка`
+  String get new_folder {
+    return Intl.message(
+      'Новая папка',
+      name: 'new_folder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Редактирование папки`
+  String get edit_folder {
+    return Intl.message(
+      'Редактирование папки',
+      name: 'edit_folder',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Теги`
   String get tags {
     return Intl.message(

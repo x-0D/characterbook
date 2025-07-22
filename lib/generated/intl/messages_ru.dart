@@ -171,6 +171,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "edit": MessageLookupByLibrary.simpleMessage("Редактировать"),
         "edit_character":
             MessageLookupByLibrary.simpleMessage("Редактировать персонажа"),
+        "edit_folder":
+            MessageLookupByLibrary.simpleMessage("Редактирование папки"),
         "edit_race": MessageLookupByLibrary.simpleMessage("Редактировать расу"),
         "edit_template": MessageLookupByLibrary.simpleMessage("Редактирование"),
         "elderly": MessageLookupByLibrary.simpleMessage("Пожилые"),
@@ -197,6 +199,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "flutterLicense":
             MessageLookupByLibrary.simpleMessage("Flutter лицензия"),
         "folder": MessageLookupByLibrary.simpleMessage("Папка"),
+        "folder_name": MessageLookupByLibrary.simpleMessage("Имя папки"),
         "folders": MessageLookupByLibrary.simpleMessage("Папки"),
         "from_template": MessageLookupByLibrary.simpleMessage("Из шаблона"),
         "gender": MessageLookupByLibrary.simpleMessage("Гендер"),
@@ -256,6 +259,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "new_character": MessageLookupByLibrary.simpleMessage("Новый персонаж"),
         "new_character_from_template":
             MessageLookupByLibrary.simpleMessage("Новый персонаж (из шаблона)"),
+        "new_folder": MessageLookupByLibrary.simpleMessage("Новая папка"),
         "new_race": MessageLookupByLibrary.simpleMessage("Новая раса"),
         "new_template": MessageLookupByLibrary.simpleMessage("Новый шаблон"),
         "no_additional_images": MessageLookupByLibrary.simpleMessage(

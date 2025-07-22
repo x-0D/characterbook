@@ -234,6 +234,9 @@
   "select_folder": "Выбрать папку",
   "no_folder_selected": "Нет выбранной папки",
   "none": "Пусто",
+  "folder_name": "Имя папки",
+  "new_folder": "Новая папка",
+  "edit_folder": "Редактирование папки",
 
   "tags": "Теги",
   "add_tag": "Добавить тег"

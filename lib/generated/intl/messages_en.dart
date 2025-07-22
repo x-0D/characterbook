@@ -153,6 +153,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "edit": MessageLookupByLibrary.simpleMessage("Edit"),
         "edit_character":
             MessageLookupByLibrary.simpleMessage("Edit Character"),
+        "edit_folder": MessageLookupByLibrary.simpleMessage("Edit folder"),
         "edit_race": MessageLookupByLibrary.simpleMessage("Edit Race"),
         "edit_template": MessageLookupByLibrary.simpleMessage("Edit"),
         "elderly": MessageLookupByLibrary.simpleMessage("Elderly"),
@@ -179,6 +180,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "flutterLicense":
             MessageLookupByLibrary.simpleMessage("Flutter License"),
         "folder": MessageLookupByLibrary.simpleMessage("Folder"),
+        "folder_name": MessageLookupByLibrary.simpleMessage("Folder name"),
         "folders": MessageLookupByLibrary.simpleMessage("Folders"),
         "from_template": MessageLookupByLibrary.simpleMessage("From Template"),
         "gender": MessageLookupByLibrary.simpleMessage("Gender"),
@@ -233,6 +235,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "new_character": MessageLookupByLibrary.simpleMessage("New Character"),
         "new_character_from_template": MessageLookupByLibrary.simpleMessage(
             "New Character (from Template)"),
+        "new_folder": MessageLookupByLibrary.simpleMessage("New folder"),
         "new_race": MessageLookupByLibrary.simpleMessage("New Race"),
         "new_template": MessageLookupByLibrary.simpleMessage("New Template"),
         "no_additional_images":

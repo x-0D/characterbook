@@ -27,7 +27,6 @@ class _CharacterListPageState extends State<CharacterListPage> with ListPageMixi
   List<Character> filteredCharacters = [];
   String? selectedTag;
 
-  @override
   List<String> generateTags(List<Character> characters) {
     return generateAllTags(characters, context, (c) => c.tags);
   }
