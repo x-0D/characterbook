@@ -30,6 +30,7 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   shared_preferences: ^2.5.3
+  share_plus: ^7.0.1
 
   intl: ^0.20.2
 
@@ -46,10 +47,8 @@ dependencies:
   googleapis: ^11.4.0
   extension_google_sign_in_as_googleapis_auth: ^2.0.3
 
-  crypto: ^3.0.3
   json_annotation: ^4.8.1
   universal_html: ^2.2.1
-  share_plus: ^7.0.1
 
 dev_dependencies:
   flutter_test:
@@ -64,6 +63,8 @@ dev_dependencies:
   intl_utils: ^2.8.6
 
   flutter_launcher_icons: ^0.13.1
+
+  analyzer: ^6.11.0
 
 flutter_intl:
   enabled: true

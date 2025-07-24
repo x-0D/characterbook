@@ -197,7 +197,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
         Padding(
           padding: const EdgeInsets.all(16),
           child: Text(
-            S.of(context).none,
+            S.of(context).characters,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
@@ -223,7 +223,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
         Padding(
           padding: const EdgeInsets.all(16),
           child: Text(
-            S.of(context).none,
+            S.of(context).races,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
@@ -247,7 +247,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
         Padding(
           padding: const EdgeInsets.all(16),
           child: Text(
-            S.of(context).none,
+            S.of(context).posts,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
@@ -324,7 +324,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),

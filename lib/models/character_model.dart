@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:characterbook/models/race_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
@@ -11,54 +9,58 @@ part 'character_model.g.dart';
 @HiveType(typeId: 0)
 class Character extends HiveObject {
   @HiveField(0)
-  String name;
+  String id;
 
   @HiveField(1)
-  int age;
+  String name;
 
   @HiveField(2)
-  String gender;
+  int age;
 
   @HiveField(3)
-  String biography;
+  String gender;
 
   @HiveField(4)
-  String personality;
+  String biography;
 
   @HiveField(5)
-  String appearance;
+  String personality;
 
   @HiveField(6)
-  Uint8List? imageBytes;
+  String appearance;
 
   @HiveField(7)
-  String abilities;
+  Uint8List? imageBytes;
 
   @HiveField(8)
-  String other;
+  String abilities;
 
   @HiveField(9)
-  Uint8List? referenceImageBytes;
+  String other;
 
   @HiveField(10)
-  List<CustomField> customFields;
+  Uint8List? referenceImageBytes;
 
   @HiveField(11)
-  List<Uint8List> additionalImages;
+  List<CustomField> customFields;
 
   @HiveField(12)
-  DateTime lastEdited;
+  List<Uint8List> additionalImages;
 
   @HiveField(13)
-  Race? race;
+  DateTime lastEdited;
 
   @HiveField(14)
+  Race? race;
+
+  @HiveField(15)
   String? folderId;
 
-  @HiveField(15, defaultValue: [])
+  @HiveField(16, defaultValue: [])
   List<String> tags;
 
   Character({
+    required this.id,
     this.name = '',
     this.age = 0,
     this.gender = '',
@@ -85,6 +87,7 @@ class Character extends HiveObject {
       identical(this, other) ||
       other is Character &&
           runtimeType == other.runtimeType &&
+          id == other.id &&
           name == other.name &&
           age == other.age &&
           gender == other.gender &&
@@ -99,6 +102,7 @@ class Character extends HiveObject {
 
   @override
   int get hashCode => Object.hash(
+        id,
         name,
         age,
         gender,
@@ -114,6 +118,7 @@ class Character extends HiveObject {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'name': name,
       'age': age,
       'gender': gender,
@@ -128,6 +133,7 @@ class Character extends HiveObject {
       'additionalImages': additionalImages.map((img) => img.toList()).toList(),
       'lastEdited': lastEdited.toIso8601String(),
       'race': race?.name,
+      'raceId': race?.id,
       'folderId': folderId,
       'tags': tags,
     };
@@ -135,6 +141,7 @@ class Character extends HiveObject {
 
   factory Character.fromJson(Map<String, dynamic> json) {
     return Character(
+      id: json['id'] ?? '',
       name: json['name'] ?? '',
       age: json['age'] ?? 0,
       gender: json['gender'] ?? '',
@@ -156,7 +163,7 @@ class Character extends HiveObject {
       lastEdited: json['lastEdited'] != null
           ? DateTime.parse(json['lastEdited'])
           : DateTime.now(),
-      race: json['race'] != null ? Race(name: json['race']) : null,
+      race: json['race'] != null ? Race(id: json['raceId'], name: json['race']) : null,
       folderId: json['folderId'],
       tags: (json['tags'] as List?)?.cast<String>() ?? [],
     );
@@ -168,6 +175,7 @@ class Character extends HiveObject {
 
   factory Character.empty() {
     return Character(
+      id: '',
       name: '',
       age: 20,
       gender: 'male',
@@ -186,6 +194,7 @@ class Character extends HiveObject {
   }
 
   Character copyWith({
+    String? id,
     String? name,
     int? age,
     String? gender,
@@ -203,6 +212,7 @@ class Character extends HiveObject {
     List<String>? tags,
   }) {
     return Character(
+      id: id ?? this.id,
       name: name ?? this.name,
       age: age ?? this.age,
       gender: gender ?? this.gender,

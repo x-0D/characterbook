@@ -6,27 +6,31 @@ part 'race_model.g.dart';
 @HiveType(typeId: 3)
 class Race extends HiveObject {
   @HiveField(0)
-  String name;
+  String id;
 
   @HiveField(1)
-  String description;
+  String name;
 
   @HiveField(2)
-  String biology;
+  String description;
 
   @HiveField(3)
-  String backstory;
+  String biology;
 
   @HiveField(4)
+  String backstory;
+
+  @HiveField(5)
   Uint8List? logo;
 
-  @HiveField(5, defaultValue: null)
+  @HiveField(6, defaultValue: null)
   String? folderId;
 
-  @HiveField(6, defaultValue: const [])
+  @HiveField(7, defaultValue: const [])
   List<String> tags;
 
   Race({
+    required this.id,
     required this.name,
     this.description = '',
     this.biology = '',
@@ -36,13 +40,14 @@ class Race extends HiveObject {
     List<String> tags = const [],
   }) : tags = List.from(tags);
 
-  factory Race.empty() => Race(name: '');
+  factory Race.empty() => Race(id: '', name: '');
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is Race &&
           runtimeType == other.runtimeType &&
+          id == other.id &&
           name == other.name &&
           description == other.description &&
           biology == other.biology &&
@@ -52,6 +57,7 @@ class Race extends HiveObject {
 
   @override
   int get hashCode => Object.hash(
+        id,
         name,
         description,
         biology,
@@ -62,6 +68,7 @@ class Race extends HiveObject {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'name': name,
       'description': description,
       'biology': biology,
@@ -74,6 +81,7 @@ class Race extends HiveObject {
 
   factory Race.fromJson(Map<String, dynamic> json) {
     return Race(
+      id: json['id'] ?? '',
       name: json['name'] ?? '',
       description: json['description'] ?? '',
       biology: json['biology'] ?? '',
@@ -87,6 +95,7 @@ class Race extends HiveObject {
   }
 
   Race copyWith({
+    String? id,
     String? name,
     String? description,
     String? biology,
@@ -96,6 +105,7 @@ class Race extends HiveObject {
     List<String>? tags,
   }) {
     return Race(
+      id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
       biology: biology ?? this.biology,

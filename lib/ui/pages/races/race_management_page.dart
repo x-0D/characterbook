@@ -95,7 +95,10 @@ class _RaceManagementPageState extends State<RaceManagementPage> with UnsavedCha
 
     try {
       final raceBox = Hive.box<Race>('races');
-      final race = widget.race ?? Race(name: _nameController.text)
+      final race = widget.race ?? Race(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: _nameController.text,
+      )
         ..name = _nameController.text
         ..description = _descriptionController.text
         ..biology = _biologyController.text

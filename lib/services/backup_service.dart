@@ -93,13 +93,13 @@ class BackupHelper {
 
   static dynamic _createModel(Type type, Map<String, dynamic> json) {
     switch (type) {
-      case Character:
+      case Character _:
         return Character.fromJson(json);
-      case Note:
+      case Note _:
         return Note.fromJson(json);
-      case Race:
+      case Race _:
         return Race.fromJson(json);
-      case QuestionnaireTemplate:
+      case QuestionnaireTemplate _:
         return QuestionnaireTemplate.fromJson(json);
       default:
         return null;
@@ -151,9 +151,6 @@ class LocalBackupService implements BackupService {
     final bytes = utf8.encode(backupJson);
     final blob = html.Blob([bytes]);
     final url = html.Url.createObjectUrlFromBlob(blob);
-    final anchor = html.AnchorElement(href: url)
-      ..setAttribute('download', 'characterbook_backup_${DateTime.now().millisecondsSinceEpoch}.json')
-      ..click();
     html.Url.revokeObjectUrl(url);
   }
 
@@ -179,7 +176,7 @@ class LocalBackupService implements BackupService {
   Future<void> importData() async {
     try {
       final jsonData = await filePickerService.pickRestoreFile();
-      if (jsonData == null || jsonData is! Map<String, dynamic>) {
+      if (jsonData == null) {
         throw Exception('Invalid backup file');
       }
 

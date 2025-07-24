@@ -17,60 +17,63 @@ class CharacterAdapter extends TypeAdapter<Character> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Character(
-      name: fields[0] as String,
-      age: fields[1] as int,
-      gender: fields[2] as String,
-      biography: fields[3] as String,
-      personality: fields[4] as String,
-      appearance: fields[5] as String,
-      abilities: fields[7] as String,
-      other: fields[8] as String,
-      imageBytes: fields[6] as Uint8List?,
-      referenceImageBytes: fields[9] as Uint8List?,
-      race: fields[13] as Race?,
-      tags: fields[15] == null ? [] : (fields[15] as List).cast<String>(),
-      customFields: (fields[10] as List?)?.cast<CustomField>(),
-      additionalImages: (fields[11] as List?)?.cast<Uint8List>(),
-      lastEdited: fields[12] as DateTime?,
-      folderId: fields[14] as String?,
+      id: fields[0] as String,
+      name: fields[1] as String,
+      age: fields[2] as int,
+      gender: fields[3] as String,
+      biography: fields[4] as String,
+      personality: fields[5] as String,
+      appearance: fields[6] as String,
+      abilities: fields[8] as String,
+      other: fields[9] as String,
+      imageBytes: fields[7] as Uint8List?,
+      referenceImageBytes: fields[10] as Uint8List?,
+      race: fields[14] as Race?,
+      tags: fields[16] == null ? [] : (fields[16] as List).cast<String>(),
+      customFields: (fields[11] as List?)?.cast<CustomField>(),
+      additionalImages: (fields[12] as List?)?.cast<Uint8List>(),
+      lastEdited: fields[13] as DateTime?,
+      folderId: fields[15] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Character obj) {
     writer
-      ..writeByte(16)
+      ..writeByte(17)
       ..writeByte(0)
-      ..write(obj.name)
+      ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.age)
+      ..write(obj.name)
       ..writeByte(2)
-      ..write(obj.gender)
+      ..write(obj.age)
       ..writeByte(3)
-      ..write(obj.biography)
+      ..write(obj.gender)
       ..writeByte(4)
-      ..write(obj.personality)
+      ..write(obj.biography)
       ..writeByte(5)
-      ..write(obj.appearance)
+      ..write(obj.personality)
       ..writeByte(6)
-      ..write(obj.imageBytes)
+      ..write(obj.appearance)
       ..writeByte(7)
-      ..write(obj.abilities)
+      ..write(obj.imageBytes)
       ..writeByte(8)
-      ..write(obj.other)
+      ..write(obj.abilities)
       ..writeByte(9)
-      ..write(obj.referenceImageBytes)
+      ..write(obj.other)
       ..writeByte(10)
-      ..write(obj.customFields)
+      ..write(obj.referenceImageBytes)
       ..writeByte(11)
-      ..write(obj.additionalImages)
+      ..write(obj.customFields)
       ..writeByte(12)
-      ..write(obj.lastEdited)
+      ..write(obj.additionalImages)
       ..writeByte(13)
-      ..write(obj.race)
+      ..write(obj.lastEdited)
       ..writeByte(14)
-      ..write(obj.folderId)
+      ..write(obj.race)
       ..writeByte(15)
+      ..write(obj.folderId)
+      ..writeByte(16)
       ..write(obj.tags);
   }
 

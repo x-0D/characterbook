@@ -17,33 +17,36 @@ class RaceAdapter extends TypeAdapter<Race> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Race(
-      name: fields[0] as String,
-      description: fields[1] as String,
-      biology: fields[2] as String,
-      backstory: fields[3] as String,
-      logo: fields[4] as Uint8List?,
-      folderId: fields[5] as String?,
-      tags: fields[6] == null ? [] : (fields[6] as List).cast<String>(),
+      id: fields[0] as String,
+      name: fields[1] as String,
+      description: fields[2] as String,
+      biology: fields[3] as String,
+      backstory: fields[4] as String,
+      logo: fields[5] as Uint8List?,
+      folderId: fields[6] as String?,
+      tags: fields[7] == null ? [] : (fields[7] as List).cast<String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, Race obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
-      ..write(obj.name)
+      ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.description)
+      ..write(obj.name)
       ..writeByte(2)
-      ..write(obj.biology)
+      ..write(obj.description)
       ..writeByte(3)
-      ..write(obj.backstory)
+      ..write(obj.biology)
       ..writeByte(4)
-      ..write(obj.logo)
+      ..write(obj.backstory)
       ..writeByte(5)
-      ..write(obj.folderId)
+      ..write(obj.logo)
       ..writeByte(6)
+      ..write(obj.folderId)
+      ..writeByte(7)
       ..write(obj.tags);
   }
 
