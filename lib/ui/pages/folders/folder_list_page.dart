@@ -142,7 +142,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest,
+            color: folder.color,
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -315,11 +315,25 @@ class _FoldersScreenState extends State<FoldersScreen> {
   void _showFolderDialog(Folder? folder, Folder? parentFolder, S s) {
     final colorScheme = Theme.of(context).colorScheme;
     final controller = TextEditingController(text: folder?.name ?? '');
-    
+    int selectedColor = folder?.colorValue ?? 0xFF6200EE;
+
+    final List<int> colorOptions = [
+      0xFF6200EE, // Purple
+      0xFF03DAC6, // Teal
+      0xFF018786, // Dark Teal
+      0xFFBB86FC, // Light Purple
+      0xFFFF7597, // Pink
+      0xFFFF0266, // Hot Pink
+      0xFF6750A4, // Deep Purple
+      0xFF1E88E5, // Blue
+      0xFF4CAF50, // Green
+      0xFFFF9800, // Orange
+    ];
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -360,6 +374,53 @@ class _FoldersScreenState extends State<FoldersScreen> {
               ),
             ),
             Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    s.folder_color,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 50,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: colorOptions.length,
+                      itemBuilder: (context, index) {
+                        final color = colorOptions[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedColor = color;
+                              });
+                            },
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Color(color),
+                                shape: BoxShape.circle,
+                                border: selectedColor == color
+                                    ? Border.all(
+                                        color: colorScheme.onSurface,
+                                        width: 2,
+                                      )
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
@@ -382,7 +443,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
                     child: FilledButton(
                       onPressed: () {
                         if (controller.text.isNotEmpty) {
-                          _saveFolder(folder, controller.text, parentFolder);
+                          _saveFolder(folder, controller.text, parentFolder, selectedColor);
                           Navigator.pop(context);
                         }
                       },
@@ -405,17 +466,19 @@ class _FoldersScreenState extends State<FoldersScreen> {
     );
   }
 
-  Future<void> _saveFolder(Folder? folder, String name, Folder? parentFolder) async {
+  Future<void> _saveFolder(Folder? folder, String name, Folder? parentFolder, int colorValue) async {
     if (folder == null) {
       final newFolder = Folder(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: name,
         type: widget.folderType,
         parentId: parentFolder?.id,
+        colorValue: colorValue,
       );
       await _folderBox.put(newFolder.id, newFolder);
     } else {
       folder.name = name;
+      folder.colorValue = colorValue;
       folder.updatedAt = DateTime.now();
       await folder.save();
     }

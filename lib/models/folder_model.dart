@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:hive/hive.dart';
 
 part 'folder_model.g.dart';
@@ -25,6 +27,9 @@ class Folder extends HiveObject {
   @HiveField(6, defaultValue: [])
   List<String> contentIds;
 
+  @HiveField(7, defaultValue: 0xFF6200EE)
+  int colorValue;
+
   Folder({
     required this.id,
     required this.name,
@@ -33,9 +38,13 @@ class Folder extends HiveObject {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<String>? contentIds,
+    int? colorValue,
   })  : createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now(),
-        contentIds = contentIds ?? [];
+        contentIds = contentIds ?? [],
+        colorValue = colorValue ?? 0xFF6200EE;
+
+  Color get color => Color(colorValue);
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -45,6 +54,7 @@ class Folder extends HiveObject {
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
     'contentIds': contentIds,
+    'colorValue': colorValue,
   };
 
   factory Folder.fromJson(Map<String, dynamic> json) => Folder(
@@ -58,6 +68,7 @@ class Folder extends HiveObject {
     createdAt: DateTime.parse(json['createdAt']),
     updatedAt: DateTime.parse(json['updatedAt']),
     contentIds: List<String>.from(json['contentIds'] ?? []),
+    colorValue: json['colorValue'] ?? 0xFF6200EE,
   );
 }
 

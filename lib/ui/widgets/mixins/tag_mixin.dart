@@ -44,6 +44,13 @@ mixin TagMixin<T> {
     return tag.replaceFirst('${Icons.folder.codePoint}:', '');
   }
 
+  String getFolderIdFromTag(String folderTag) {
+    if (!isFolderTag(folderTag)) {
+      return '';
+    }
+    return folderTag.split(':').last;
+  }
+
   bool matchesTagFilter(String? selectedTag, BuildContext context, T item, 
       List<String> Function(T) getItemTags, bool Function(T) isShortName) {
     if (selectedTag == null) return true;

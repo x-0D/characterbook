@@ -1,6 +1,9 @@
 import 'package:characterbook/generated/l10n.dart';
+import 'package:characterbook/models/folder_model.dart';
+import 'package:characterbook/services/folder_service.dart';
 import 'package:characterbook/ui/widgets/mixins/tag_mixin.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 class TagFilter extends StatelessWidget with TagMixin {
   final List<String> tags;
   final String? selectedTag;
@@ -23,6 +26,8 @@ class TagFilter extends StatelessWidget with TagMixin {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final s = S.of(context);
+    final folderService = FolderService(Hive.box<Folder>('folders'));
+    
     final standardTags = isForCharacters 
         ? [
             s.male, s.female, s.another,
@@ -57,19 +62,23 @@ class TagFilter extends StatelessWidget with TagMixin {
             ),
           ...folderTags.map((folderTag) {
             final folderName = getFolderNameFromTag(folderTag);
+            final folderId = getFolderIdFromTag(folderTag);
+            final folder = folderService.getFolderById(folderId);
+            final folderColor = folder?.color ?? theme.colorScheme.primary;
+            
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: FilterChip(
-                avatar: const Icon(Icons.folder, size: 20),
+                avatar: Icon(Icons.folder, size: 20, color: folderColor),
                 label: Text(folderName),
                 selected: selectedTag == folderTag,
                 onSelected: (selected) => onTagSelected(selected ? folderTag : null),
                 shape: StadiumBorder(side: BorderSide(color: theme.colorScheme.outline)),
                 showCheckmark: false,
-                selectedColor: theme.colorScheme.primaryContainer,
+                selectedColor: folderColor,
                 labelStyle: theme.textTheme.labelLarge?.copyWith(
                   color: selectedTag == folderTag
-                      ? theme.colorScheme.onPrimaryContainer
+                      ? folderColor
                       : theme.colorScheme.onSurface,
                 ),
               ),

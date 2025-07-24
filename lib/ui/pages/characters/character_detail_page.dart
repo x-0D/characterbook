@@ -275,7 +275,7 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
         ? _folderService.getFolderById(note.folderId!)
         : null;
 
-    void _showNoteContextMenu() {
+    void showNoteContextMenu() {
       showModalBottomSheet(
         context: context,
         backgroundColor: Colors.transparent,
@@ -317,7 +317,7 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
                   IconButton(
                     icon: Icon(Icons.more_vert, 
                         color: theme.colorScheme.onSurfaceVariant),
-                    onPressed: _showNoteContextMenu,
+                    onPressed: showNoteContextMenu,
                   ),
                 ],
               ),

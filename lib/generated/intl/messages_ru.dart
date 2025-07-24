@@ -200,6 +200,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "flutterLicense":
             MessageLookupByLibrary.simpleMessage("Flutter лицензия"),
         "folder": MessageLookupByLibrary.simpleMessage("Папка"),
+        "folder_color": MessageLookupByLibrary.simpleMessage("Цвет папки"),
         "folder_name": MessageLookupByLibrary.simpleMessage("Имя папки"),
         "folders": MessageLookupByLibrary.simpleMessage("Папки"),
         "from_template": MessageLookupByLibrary.simpleMessage("Из шаблона"),

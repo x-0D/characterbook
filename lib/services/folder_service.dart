@@ -10,12 +10,14 @@ class FolderService {
     required String name,
     required FolderType type,
     String? parentId,
+    int? colorValue,
   }) async {
     final folder = Folder(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
       type: type,
       parentId: parentId,
+      colorValue: colorValue,
     );
     await _folderBox.put(folder.id, folder);
     return folder;

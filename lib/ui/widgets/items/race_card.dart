@@ -86,8 +86,12 @@ class RaceCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primaryContainer,
+                            color: folder.color,
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: folder.color,
+                              width: 1,
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,

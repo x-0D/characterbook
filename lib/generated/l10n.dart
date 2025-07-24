@@ -2377,6 +2377,16 @@ class S {
     );
   }
 
+  /// `Цвет папки`
+  String get folder_color {
+    return Intl.message(
+      'Цвет папки',
+      name: 'folder_color',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Теги`
   String get tags {
     return Intl.message(
