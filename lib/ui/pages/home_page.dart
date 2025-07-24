@@ -31,16 +31,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final bool isLargeScreen = mediaQuery.size.width >= 600;
-
     return Scaffold(
       body: _pages[_currentIndex],
-      bottomNavigationBar: !isLargeScreen && _currentIndex < 4
-          ? _buildBottomNavigationBar(context)
-          : isLargeScreen
-              ? null
-              : _buildBottomAppBar(context),
+      bottomNavigationBar: _buildBottomNavigationBar(context),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
@@ -71,51 +64,6 @@ class _HomePageState extends State<HomePage> {
           label: S.of(context).search,
         ),
       ],
-    );
-  }
-
-  Widget _buildBottomAppBar(BuildContext context) {
-    return BottomAppBar(
-      shape: const CircularNotchedRectangle(),
-      notchMargin: 8.0,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          IconButton(
-            icon: Icon(
-              _currentIndex == 0 
-                  ? Icons.people_alt 
-                  : Icons.people_alt_outlined,
-            ),
-            onPressed: () => _updateIndex(0),
-          ),
-          IconButton(
-            icon: Icon(
-              _currentIndex == 1 
-                  ? Icons.emoji_people 
-                  : Icons.emoji_people_outlined,
-            ),
-            onPressed: () => _updateIndex(1),
-          ),
-          const SizedBox(width: 48),
-          IconButton(
-            icon: Icon(
-              _currentIndex == 2 
-                  ? Icons.note_alt 
-                  : Icons.note_alt_outlined,
-            ),
-            onPressed: () => _updateIndex(2),
-          ),
-          IconButton(
-            icon: Icon(
-              _currentIndex == 3 
-                  ? Icons.search 
-                  : Icons.search_outlined,
-            ),
-            onPressed: () => _updateIndex(3),
-          ),
-        ],
-      ),
     );
   }
 
