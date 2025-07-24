@@ -3,7 +3,7 @@ import 'package:characterbook/ui/pages/folders/folder_list_page.dart';
 import 'package:characterbook/ui/widgets/mixins/list_page_mixin.dart';
 import 'package:characterbook/ui/widgets/items/note_card.dart';
 import 'package:characterbook/ui/widgets/mixins/tag_mixin.dart';
-import 'package:characterbook/ui/widgets/notes_empty_state.dart';
+import 'package:characterbook/ui/widgets/empty_notes_state.dart';
 import 'package:characterbook/ui/widgets/tags/tag_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -127,7 +127,7 @@ class _NotesListPageState extends State<NotesListPage> with ListPageMixin, TagMi
 
   Widget buildNotesList(List<Note> notes) {
     if (notes.isEmpty) {
-      return NotesEmptyState(isSearching: isSearching && searchController.text.isNotEmpty);
+      return  NotesEmptyState(isSearching: isSearching && searchController.text.isNotEmpty);
     }
 
     return ReorderableListView.builder(
@@ -222,7 +222,7 @@ class _NotesListPageState extends State<NotesListPage> with ListPageMixin, TagMi
           context,
           MaterialPageRoute(builder: (context) => const NoteEditPage()),
         ),
-      ),
+      )
     );
   }
 }

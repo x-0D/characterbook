@@ -1,7 +1,9 @@
 import 'package:characterbook/ui/pages/characters/character_management_page.dart';
 import 'package:characterbook/ui/pages/notes/note_management_page.dart';
 import 'package:characterbook/ui/pages/races/race_management_page.dart';
+import 'package:characterbook/ui/widgets/empty_folders_state.dart';
 import 'package:characterbook/ui/widgets/items/character_card.dart';
+import 'package:characterbook/ui/widgets/items/folder_card.dart';
 import 'package:characterbook/ui/widgets/items/note_card.dart';
 import 'package:characterbook/ui/widgets/items/race_card.dart';
 import 'package:flutter/material.dart';
@@ -46,8 +48,6 @@ class _FoldersScreenState extends State<FoldersScreen> {
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -64,31 +64,9 @@ class _FoldersScreenState extends State<FoldersScreen> {
           final folders = _getFilteredFolders();
           
           if (folders.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    _getFolderIcon(widget.folderType),
-                    size: 48,
-                    color: colorScheme.onSurface,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    s.none,
-                    style: textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    s.create,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-              ),
+            return EmptyFoldersState(
+              folderType: widget.folderType,
+              onCreate: _createNewFolder,
             );
           }
 
@@ -97,7 +75,12 @@ class _FoldersScreenState extends State<FoldersScreen> {
             itemCount: folders.length,
             itemBuilder: (context, index) {
               final folder = folders[index];
-              return _buildFolderItem(folder, colorScheme, textTheme, s);
+              return FolderItem(
+                folder: folder,
+                onEdit: () => _editFolder(folder, s),
+                onDelete: () => _deleteFolder(folder, s),
+                children: _buildFolderContents(folder),
+              );
             },
           );
         },
@@ -108,6 +91,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
       ),
     );
   }
+
 
   String _getTitle(S s) {
     return switch (widget.folderType) {
@@ -127,51 +111,6 @@ class _FoldersScreenState extends State<FoldersScreen> {
            folder.name.toLowerCase().contains(_searchQuery.toLowerCase())))
         .toList()
       ..sort((a, b) => a.name.compareTo(b.name));
-  }
-
-  Widget _buildFolderItem(Folder folder, ColorScheme colorScheme, TextTheme textTheme, S s) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outlineVariant),
-      ),
-      child: ExpansionTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: folder.color,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            _getFolderIcon(folder.type),
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        title: Text(
-          folder.name,
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        subtitle: Text(
-          '${folder.contentIds.length} ${_getContentLabel(folder.contentIds.length, s)}',
-          style: textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurface,
-          ),
-        ),
-        trailing: IconButton(
-          icon: Icon(
-            Icons.more_vert,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          onPressed: () => _showFolderContextMenu(folder, s),
-        ),
-        children: _buildFolderContents(folder),
-      ),
-    );
   }
 
   List<Widget> _buildFolderContents(Folder folder) {
@@ -262,18 +201,6 @@ class _FoldersScreenState extends State<FoldersScreen> {
     )).toList();
   }
 
-  String _getContentLabel(int count, S s) {
-    if (count % 10 == 1 && count % 100 != 11) return s.none;
-    if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) {
-      return s.none;
-    }
-    return s.none;
-  }
-
-  IconData _getFolderIcon(FolderType type) {
-    return Icons.folder_outlined;
-  }
-
   void _toggleSearch() {
     setState(() {
       _isSearching = !_isSearching;
@@ -292,24 +219,6 @@ class _FoldersScreenState extends State<FoldersScreen> {
 
   void _createNewFolder() {
     _showFolderDialog(null, null, S.of(context));
-  }
-
-  void _showFolderContextMenu(Folder folder, S s) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28))
-      ),
-      builder: (context) => ContextMenu(
-        item: folder,
-        onEdit: () => _editFolder(folder, s),
-        onDelete: () => _deleteFolder(folder, s),
-        showExportPdf: false,
-        showCopy: false,
-        showShare: false,
-      ),
-    );
   }
 
   void _showFolderDialog(Folder? folder, Folder? parentFolder, S s) {

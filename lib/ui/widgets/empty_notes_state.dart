@@ -1,3 +1,4 @@
+import 'package:characterbook/ui/pages/notes/note_management_page.dart';
 import 'package:flutter/material.dart';
 
 import '../../../generated/l10n.dart';
@@ -28,12 +29,20 @@ class NotesEmptyState extends StatelessWidget {
             style: theme.textTheme.bodyLarge,
           ),
           const SizedBox(height: 8),
-          Text(
-            isSearching
-                ? S.of(context).search_hint
-                : '${S.of(context).create} ${S.of(context).posts.toLowerCase()}',
+          Text(S.of(context).search_hint,
             style: theme.textTheme.bodyMedium,
           ),
+          const SizedBox(height: 16),
+          Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: ElevatedButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const NoteEditPage()),
+                ),
+                child: Text(S.of(context).create),
+              ),
+            ),
         ],
       ),
     );
