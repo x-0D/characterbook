@@ -510,14 +510,20 @@ class S {
     );
   }
 
-  /// `Успешно восстановлено:\n{charactersCount} персонажей\n{notesCount} заметок\n{racesCount} рас\n{templatesCount} шаблонов`
+  /// `Успешно восстановлено:\n{charactersCount} персонажей\n{notesCount} заметок\n{racesCount} рас\n{templatesCount} шаблонов \n{foldersCount} папок`
   String cloud_restore_success(Object charactersCount, Object notesCount,
-      Object racesCount, Object templatesCount) {
+      Object racesCount, Object templatesCount, Object foldersCount) {
     return Intl.message(
-      'Успешно восстановлено:\n$charactersCount персонажей\n$notesCount заметок\n$racesCount рас\n$templatesCount шаблонов',
+      'Успешно восстановлено:\n$charactersCount персонажей\n$notesCount заметок\n$racesCount рас\n$templatesCount шаблонов \n$foldersCount папок',
       name: 'cloud_restore_success',
       desc: '',
-      args: [charactersCount, notesCount, racesCount, templatesCount],
+      args: [
+        charactersCount,
+        notesCount,
+        racesCount,
+        templatesCount,
+        foldersCount
+      ],
     );
   }
 

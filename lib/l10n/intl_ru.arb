@@ -46,7 +46,7 @@
   "cloud_export_error": "Ошибка при экспорте в Google Drive",
   "cloud_import_error": "Ошибка при импорте из Google Drive",
   "cloud_restore_error": "Ошибка при восстановлении данных",
-  "cloud_restore_success": "Успешно восстановлено:\n{charactersCount} персонажей\n{notesCount} заметок\n{racesCount} рас\n{templatesCount} шаблонов",
+  "cloud_restore_success": "Успешно восстановлено:\n{charactersCount} персонажей\n{notesCount} заметок\n{racesCount} рас\n{templatesCount} шаблонов \n{foldersCount} папок",
   "colorScheme": "Цветовая схема",
   "copy": "Копировать",
   "copy_character": "Скопировать персонажа",

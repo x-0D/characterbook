@@ -44,7 +44,7 @@
   "cloud_export_error": "Google Drive export error",
   "cloud_import_error": "Google Drive import error",
   "cloud_restore_error": "Restore Error",
-  "cloud_restore_success": "Successfully restored:\n{charactersCount} characters\n{notesCount} notes\n{racesCount} races\n{templatesCount} templates",
+  "cloud_restore_success": "Successfully restored:\n{charactersCount} characters\n{notesCount} notes\n{racesCount} races\n{templatesCount} templates \n{foldersCount} folders",
   "colorScheme": "Color Scheme",
   "copy": "Copy",
   "copy_character": "Copy Character",

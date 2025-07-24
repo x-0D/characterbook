@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/services/hive_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -30,6 +31,7 @@ class BackupHelper {
     'notes': Note,
     'races': Race,
     'templates': QuestionnaireTemplate,
+    'folders': Folder,
   };
 
   static Future<Map<String, dynamic>> getBackupData() async {
@@ -37,12 +39,15 @@ class BackupHelper {
     final notes = await HiveService.getBox<Note>('notes');
     final races = await HiveService.getBox<Race>('races');
     final templates = await HiveService.getBox<QuestionnaireTemplate>('templates');
+    final folders = await HiveService.getBox<Folder>('folders');
+
 
     return {
       'characters': characters.values.toList(),
       'notes': notes.values.toList(),
       'races': races.values.toList(),
       'templates': templates.values.toList(),
+      'folders': folders.values.toList(),
     };
   }
 
@@ -60,16 +65,19 @@ class BackupHelper {
       final notes = await HiveService.getBox<Note>('notes');
       final races = await HiveService.getBox<Race>('races');
       final templates = await HiveService.getBox<QuestionnaireTemplate>('templates');
+      final folders = await HiveService.getBox<Folder>('folders');
 
       await characters.clear();
       await notes.clear();
       await races.clear();
       await templates.clear();
+      await folders.clear();
 
       await _restoreToBox<Character>(characters, data['characters'] as List<dynamic>?);
       await _restoreToBox<Note>(notes, data['notes'] as List<dynamic>?);
       await _restoreToBox<Race>(races, data['races'] as List<dynamic>?);
       await _restoreToBox<QuestionnaireTemplate>(templates, data['templates'] as List<dynamic>?);
+      await _restoreToBox<Folder>(folders, data['folders'] as List<dynamic>?);
     } catch (e) {
       debugPrint('Restore error: $e');
       rethrow;
@@ -101,6 +109,8 @@ class BackupHelper {
         return Race.fromJson(json);
       case QuestionnaireTemplate _:
         return QuestionnaireTemplate.fromJson(json);
+      case Folder _:
+        return Folder.fromJson(json);
       default:
         return null;
     }
@@ -238,6 +248,7 @@ class CloudBackupService implements BackupService {
           counts['notes'].toString(),
           counts['races'].toString(),
           counts['templates'].toString(),
+          counts['folders'].toString(),
         ),
       );
     } catch (e) {

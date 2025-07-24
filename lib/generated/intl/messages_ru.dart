@@ -28,8 +28,9 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m2(name) => "Файл персонажа ${name}";
 
-  static String m3(charactersCount, notesCount, racesCount, templatesCount) =>
-      "Успешно восстановлено:\n${charactersCount} персонажей\n${notesCount} заметок\n${racesCount} рас\n${templatesCount} шаблонов";
+  static String m3(charactersCount, notesCount, racesCount, templatesCount,
+          foldersCount) =>
+      "Успешно восстановлено:\n${charactersCount} персонажей\n${notesCount} заметок\n${racesCount} рас\n${templatesCount} шаблонов \n${foldersCount} папок";
 
   static String m4(count) => "${count} полей";
 
