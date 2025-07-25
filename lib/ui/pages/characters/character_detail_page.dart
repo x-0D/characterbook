@@ -25,6 +25,11 @@ class CharacterDetailPage extends StatefulWidget {
 }
 
 class _CharacterDetailPageState extends State<CharacterDetailPage> {
+  final ScrollController _scrollController = ScrollController();
+  double _appBarHeight = 120.0;
+  final double _minAppBarHeight = kToolbarHeight;
+  final double _maxAppBarHeight = 120.0;
+
   final _expandedSections = <String, bool>{
     'basic': true, 'reference': true, 'appearance': true,
     'personality': true, 'biography': true, 'abilities': true,
@@ -50,6 +55,38 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
     _folderService = FolderService(Hive.box<Folder>('folders'));
     _loadRelatedNotes();
     _loadFolder();
+    _scrollController.addListener(_handleScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _handleScroll() {
+    final offset = _scrollController.offset;
+    final newHeight = _maxAppBarHeight - offset;
+    
+    if (newHeight >= _minAppBarHeight && newHeight <= _maxAppBarHeight) {
+      setState(() {
+        _appBarHeight = newHeight;
+      });
+    } else if (newHeight < _minAppBarHeight && _appBarHeight != _minAppBarHeight) {
+      setState(() {
+        _appBarHeight = _minAppBarHeight;
+      });
+    } else if (newHeight > _maxAppBarHeight && _appBarHeight != _maxAppBarHeight) {
+      setState(() {
+        _appBarHeight = _maxAppBarHeight;
+      });
+    }
+  }
+
+  double _getTitleSize() {
+    final progress = (_appBarHeight - _minAppBarHeight) / (_maxAppBarHeight - _minAppBarHeight);
+    return 24.0 + (8.0 * progress);
   }
 
   Future<void> _loadFolder() async {
@@ -433,38 +470,6 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
     }
   }
 
-
-  Widget _buildInfoRow(String label, String value, IconData icon, {Color? valueColor}) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: theme.colorScheme.primary, size: 20),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 80,
-            child: Text(
-              label,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: SelectableText(
-              value,
-              style: valueColor != null 
-                ? TextStyle(color: valueColor) 
-                : null,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildReferenceImage() {
     final theme = Theme.of(context);
     return InkWell(
@@ -549,80 +554,6 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
     );
   }
 
-  Widget _buildBasicInfoSection() {
-    final theme = Theme.of(context);
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.bottomCenter,
-          children: [
-            Container(
-              height: 40,
-              width: 2,
-              color: theme.colorScheme.outline,
-            ),
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.colorScheme.surfaceContainer,
-              ),
-              padding: const EdgeInsets.all(8),
-              child: InkWell(
-                onTap: widget.character.imageBytes != null
-                    ? () => _showFullImage(
-                        widget.character.imageBytes!, 
-                        S.of(context).character_avatar)
-                    : null,
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: theme.colorScheme.outline,
-                      width: 1,
-                    ),
-                  ),
-                  child: AvatarWidget.character(
-                    imageBytes: widget.character.imageBytes,
-                    size: 80,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        
-        Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainer,
-            border: Border.all(
-              color: theme.colorScheme.outline),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              _buildInfoRow(S.of(context).name, widget.character.name, Icons.badge),
-              Divider(height: 20, color: theme.colorScheme.outline),
-              _buildInfoRow(S.of(context).age, '${widget.character.age} ${S.of(context).years}', Icons.cake),
-              Divider(height: 20, color: theme.colorScheme.outline),
-              _buildInfoRow(
-                S.of(context).gender, 
-                _getLocalizedGender(widget.character.gender), 
-                Icons.transgender,
-                valueColor: _getGenderColor(widget.character.gender),
-              ),
-              if (widget.character.race != null) ...[
-                Divider(height: 20, color: theme.colorScheme.outline),
-                _buildInfoRow(S.of(context).race, widget.character.race!.name, Icons.people),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   void _showShareMenu(BuildContext context) {
     final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
     final RenderBox button = context.findRenderObject() as RenderBox;
@@ -666,74 +597,104 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.character.name,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.share, color: Theme.of(context).colorScheme.onSurface),
-            onPressed: () => _showShareMenu(context),
-            tooltip: S.of(context).share_character,
-          ),
+    final theme = Theme.of(context);
+    final isExpanded = _appBarHeight > _minAppBarHeight + 20;
 
-          PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.onSurface),
-            position: PopupMenuPosition.under,
-            surfaceTintColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-            onSelected: (value) => switch (value) {
-              'copy' => _copyToClipboard(),
-              'edit' => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CharacterEditPage(character: widget.character),
-                ),
-              ),
-              'delete' => _handleDelete(),
-              _ => null,
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem<String>(
-                value: 'copy',
-                child: ListTile(
-                  leading: Icon(Icons.copy, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  title: Text(S.of(context).copy_character),
-                ),
-              ),
-              PopupMenuItem<String>(
-                value: 'edit',
-                child: ListTile(
-                  leading: Icon(Icons.edit, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  title: Text(S.of(context).edit_character),
-                ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem<String>(
-                value: 'delete',
-                child: ListTile(
-                  leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
-                  title: Text(
-                    S.of(context).delete_character,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+    return Scaffold(
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          SliverAppBar(
+            expandedHeight: _maxAppBarHeight,
+            collapsedHeight: _minAppBarHeight,
+            pinned: true,
+            flexibleSpace: LayoutBuilder(
+              builder: (context, constraints) {
+                final expandRatio = (constraints.maxHeight - _minAppBarHeight) / 
+                                  (_maxAppBarHeight - _minAppBarHeight);
+                final opacity = expandRatio.clamp(0.0, 1.0);
+                final fontSize = 36.0 * opacity + 20.0 * (1 - opacity);
+                return FlexibleSpaceBar(
+                  centerTitle: true,
+                  title: Opacity(
+                    opacity: 1.0 - opacity,
+                    child: Text(
+                      widget.character.name,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                ),
+                  background: Opacity(
+                    opacity: opacity,
+                    child: Container(
+                      color: theme.colorScheme.surface,
+                      alignment: Alignment.bottomCenter,
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        widget.character.name,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontSize: fontSize,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.share, color: theme.colorScheme.onSurface),
+                onPressed: () => _showShareMenu(context),
+                tooltip: S.of(context).share_character,
+              ),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, color: theme.colorScheme.onSurface),
+                position: PopupMenuPosition.under,
+                surfaceTintColor: theme.colorScheme.surfaceContainerHighest,
+                onSelected: (value) => switch (value) {
+                  'copy' => _copyToClipboard(),
+                  'edit' => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CharacterEditPage(character: widget.character),
+                    ),
+                  ),
+                  'delete' => _handleDelete(),
+                  _ => null,
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem<String>(
+                    value: 'copy',
+                    child: ListTile(
+                      leading: Icon(Icons.copy, color: theme.colorScheme.onSurfaceVariant),
+                      title: Text(S.of(context).copy_character),
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'edit',
+                    child: ListTile(
+                      leading: Icon(Icons.edit, color: theme.colorScheme.onSurfaceVariant),
+                      title: Text(S.of(context).edit_character),
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem<String>(
+                    value: 'delete',
+                    child: ListTile(
+                      leading: Icon(Icons.delete, color: theme.colorScheme.error),
+                      title: Text(
+                        S.of(context).delete_character,
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToEdit,
-        tooltip: S.of(context).edit_character,
-        child: const Icon(Icons.edit),
-      ),
-      body: CustomScrollView(
-        slivers: [
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             sliver: SliverList(
@@ -749,6 +710,11 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _navigateToEdit,
+        tooltip: S.of(context).edit_character,
+        child: const Icon(Icons.edit),
       ),
     );
   }
