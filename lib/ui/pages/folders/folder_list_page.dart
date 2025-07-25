@@ -245,6 +245,8 @@ class _FoldersScreenState extends State<FoldersScreen> {
         type: widget.folderType,
         parentId: parentFolder?.id,
         colorValue: colorValue,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       );
       await _folderBox.put(newFolder.id, newFolder);
     } else {

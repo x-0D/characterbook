@@ -27,7 +27,7 @@ class Folder extends HiveObject {
   @HiveField(6, defaultValue: [])
   List<String> contentIds;
 
-  @HiveField(7, defaultValue: 0xFF6200EE)
+  @HiveField(7)
   int colorValue;
 
   Folder({
