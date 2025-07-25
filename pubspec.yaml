@@ -1,6 +1,6 @@
 name: characterbook
 description: "Implementation of the Character Book app on the Flutter framework"
-version: 1.6.8+31
+version: 1.6.8+32
 publish_to: 'MaxGog'
 
 environment:
