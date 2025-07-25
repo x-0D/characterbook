@@ -4,6 +4,7 @@ import 'package:characterbook/services/folder_service.dart';
 import 'package:characterbook/ui/widgets/mixins/tag_mixin.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+
 class TagFilter extends StatelessWidget with TagMixin {
   final List<String> tags;
   final String? selectedTag;
@@ -29,94 +30,127 @@ class TagFilter extends StatelessWidget with TagMixin {
     final folderService = FolderService(Hive.box<Folder>('folders'));
     
     final standardTags = isForCharacters 
-        ? [
-            s.male, s.female, s.another,
-            s.children, s.young, s.adults, s.elderly,
-            s.short_name,
-            s.a_to_z, s.z_to_a, s.age_asc, s.age_desc
-          ]
-        : [];
+      ? [
+          s.male, s.female, s.another,
+          s.children, s.young, s.adults, s.elderly,
+          s.a_to_z, s.z_to_a, s.age_asc, s.age_desc
+        ]
+      : [];
 
     final folderTags = generateFolderTags(context);
-    final regularTags = tags.where((tag) => !isFolderTag(tag)).toList();
+    final regularTags = tags.where((tag) => 
+      !isFolderTag(tag) && 
+      (!isForCharacters || !standardTags.contains(tag)))
+    .toList();
 
     return SizedBox(
       height: 56,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
           if (showAllOption)
-            FilterChip(
-              label: Text(s.all),
-              selected: selectedTag == null,
+            _buildExpressiveChip(
+              context: context,
+              label: s.all,
+              isSelected: selectedTag == null,
               onSelected: (_) => onTagSelected(null),
-              shape: StadiumBorder(side: BorderSide(color: theme.colorScheme.outline)),
-              showCheckmark: false,
-              selectedColor: theme.colorScheme.secondaryContainer,
-              labelStyle: theme.textTheme.labelLarge?.copyWith(
-                color: selectedTag == null
-                    ? theme.colorScheme.onSecondaryContainer
-                    : theme.colorScheme.onSurface,
-              ),
+              icon: null,
+              color: theme.colorScheme.secondaryContainer,
             ),
           ...folderTags.map((folderTag) {
             final folderName = getFolderNameFromTag(folderTag);
             final folderId = getFolderIdFromTag(folderTag);
             final folder = folderService.getFolderById(folderId);
-            final folderColor = folder?.color ?? theme.colorScheme.primary;
+            final folderColor = folder != null 
+                ? Color(folder.colorValue) 
+                : theme.colorScheme.primary;
             
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: FilterChip(
-                avatar: Icon(Icons.folder, size: 20, color: folderColor),
-                label: Text(folderName),
-                selected: selectedTag == folderTag,
-                onSelected: (selected) => onTagSelected(selected ? folderTag : null),
-                shape: StadiumBorder(side: BorderSide(color: theme.colorScheme.outline)),
-                showCheckmark: false,
-                selectedColor: folderColor,
-                labelStyle: theme.textTheme.labelLarge?.copyWith(
-                  color: selectedTag == folderTag
-                      ? folderColor
-                      : theme.colorScheme.onSurface,
-                ),
-              ),
+            return _buildExpressiveChip(
+              context: context,
+              label: folderName,
+              isSelected: selectedTag == folderTag,
+              onSelected: (selected) => onTagSelected(selected ? folderTag : null),
+              icon: Icon(Icons.folder, size: 20, color: folderColor),
+              color: folderColor.withOpacity(0.2),
+              selectedTextColor: folderColor,
             );
           }),
-          ...regularTags.map((tag) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: FilterChip(
-              label: Text(tag),
-              selected: selectedTag == tag,
-              onSelected: (selected) => onTagSelected(selected ? tag : null),
-              shape: StadiumBorder(side: BorderSide(color: theme.colorScheme.outline)),
-              showCheckmark: false,
-              selectedColor: theme.colorScheme.secondaryContainer,
-              labelStyle: theme.textTheme.labelLarge?.copyWith(
-                color: selectedTag == tag
-                    ? theme.colorScheme.onSecondaryContainer
-                    : theme.colorScheme.onSurface,
-              ),
-            ),
+          ...regularTags.map((tag) => _buildExpressiveChip(
+            context: context,
+            label: tag,
+            isSelected: selectedTag == tag,
+            onSelected: (selected) => onTagSelected(selected ? tag : null),
+            icon: null,
+            color: theme.colorScheme.secondaryContainer,
           )),
-          ...standardTags.map((tag) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: FilterChip(
-              label: Text(tag),
-              selected: selectedTag == tag,
+          if (isForCharacters)
+            ...standardTags.map((tag) => _buildExpressiveChip(
+              context: context,
+              label: tag,
+              isSelected: selectedTag == tag,
               onSelected: (selected) => onTagSelected(selected ? tag : null),
-              shape: StadiumBorder(side: BorderSide(color: theme.colorScheme.outline)),
-              showCheckmark: false,
-              selectedColor: theme.colorScheme.tertiaryContainer,
-              labelStyle: theme.textTheme.labelLarge?.copyWith(
-                color: selectedTag == tag
-                    ? theme.colorScheme.onTertiaryContainer
-                    : theme.colorScheme.onSurface,
-              ),
-            ),
-          )),
+              icon: null,
+              color: theme.colorScheme.tertiaryContainer,
+            )),
         ],
+      ),
+    );
+  }
+
+  Widget _buildExpressiveChip({
+    required BuildContext context,
+    required String label,
+    required bool isSelected,
+    required ValueChanged<bool> onSelected,
+    required Color color,
+    Widget? icon,
+    Color? selectedTextColor,
+  }) {
+    final theme = Theme.of(context);
+    final textColor = isSelected 
+        ? (selectedTextColor ?? theme.colorScheme.onSecondaryContainer)
+        : theme.colorScheme.onSurface;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: ChoiceChip(
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) 
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: icon,
+              ),
+            Text(
+              label,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: textColor,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        selected: isSelected,
+        onSelected: onSelected,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: StadiumBorder(
+          side: BorderSide(
+            color: isSelected 
+                ? Colors.transparent 
+                : theme.colorScheme.outline.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
+        showCheckmark: false,
+        selectedColor: color,
+        backgroundColor: theme.colorScheme.surface,
+        elevation: 0,
+        pressElevation: 0,
+        visualDensity: VisualDensity.compact,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        labelPadding: EdgeInsets.zero,
       ),
     );
   }

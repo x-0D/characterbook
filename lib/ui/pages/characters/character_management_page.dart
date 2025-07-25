@@ -87,6 +87,7 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
 
     _customFields = _character.customFields.map((f) => f.copyWith()).toList();
     _additionalImages = List.from(_character.additionalImages);
+    _tags = List.from(_character.tags);
   }
 
   Future<void> _loadRaces() async {

@@ -17,7 +17,7 @@ class RaceAdapter extends TypeAdapter<Race> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Race(
-      id: fields[0] as String,
+      id: fields[0] as String?,
       name: fields[1] as String,
       description: fields[2] as String,
       biology: fields[3] as String,
