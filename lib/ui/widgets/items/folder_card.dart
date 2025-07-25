@@ -5,64 +5,151 @@ import 'package:flutter/material.dart';
 
 class FolderItem extends StatelessWidget {
   final Folder folder;
+  final bool isSelected;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final bool enableDrag;
   final List<Widget> children;
 
   const FolderItem({
     super.key,
     required this.folder,
+    this.isSelected = false,
     required this.onEdit,
     required this.onDelete,
+    this.enableDrag = false,
     required this.children,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
     final s = S.of(context);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outlineVariant),
+    final backgroundColor = folder.color.withOpacity(0.1);
+
+    return Dismissible(
+      key: Key(folder.id),
+      direction: DismissDirection.horizontal,
+      background: _buildSwipeBackground(
+        context,
+        alignment: Alignment.centerLeft,
+        icon: Icons.edit_rounded,
+        color: theme.colorScheme.tertiaryContainer,
+        label: S.of(context).edit,
       ),
-      child: ExpansionTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: folder.color,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            _getFolderIcon(folder.type),
-            color: colorScheme.onSurfaceVariant,
+      secondaryBackground: _buildSwipeBackground(
+        context,
+        alignment: Alignment.centerRight,
+        icon: Icons.delete_rounded,
+        color: theme.colorScheme.errorContainer,
+        label: S.of(context).delete,
+      ),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          onEdit;
+          return false;
+        } else {
+          return await _showDeleteConfirmation(context);
+        }
+      },
+      onDismissed: (direction) async {
+        onDelete;
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+        elevation: 0,
+        color: backgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide.none,
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: folder.color,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _getFolderIcon(folder.type),
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            folder.name,
+                            style: theme.textTheme.bodyLarge,
+                          ),
+                          Text(
+                            '${folder.contentIds.length} ${_getContentLabel(folder.contentIds.length, s)}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.more_vert, 
+                        color: theme.colorScheme.onSurfaceVariant),
+                      onPressed: () => _showFolderContextMenu(context, folder, s),
+                    ),
+                  ],
+                ),
+                if (children.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  ...children,
+                ],
+              ],
+            ),
           ),
         ),
-        title: Text(
-          folder.name,
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w500,
+      ),
+    );
+  }
+
+  Widget _buildSwipeBackground(
+    BuildContext context, {
+    required Alignment alignment,
+    required IconData icon,
+    required Color color,
+    required String label,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      alignment: alignment,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        mainAxisAlignment: alignment == Alignment.centerLeft
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.end,
+        children: [
+          Icon(icon, color: Theme.of(context).colorScheme.onTertiaryContainer),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onTertiaryContainer,
+            ),
           ),
-        ),
-        subtitle: Text(
-          '${folder.contentIds.length} ${_getContentLabel(folder.contentIds.length, s)}',
-          style: textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurface,
-          ),
-        ),
-        trailing: IconButton(
-          icon: Icon(
-            Icons.more_vert,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          onPressed: () => _showFolderContextMenu(context, folder, s),
-        ),
-        children: children,
+        ],
       ),
     );
   }
@@ -83,6 +170,28 @@ class FolderItem extends StatelessWidget {
         showShare: false,
       ),
     );
+  }
+
+  Future<bool> _showDeleteConfirmation(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(S.of(context).delete),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(S.of(context).cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: Text(S.of(context).delete),
+          ),
+        ],
+      ),
+    ) ?? false;
   }
 
   String _getContentLabel(int count, S s) {

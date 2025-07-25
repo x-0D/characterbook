@@ -190,7 +190,7 @@ class _RaceManagementPageState extends State<RaceManagementPage> with UnsavedCha
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 TagsInputWidget(
                   tags: _tags,
