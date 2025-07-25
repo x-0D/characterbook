@@ -209,6 +209,16 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
     );
   }
 
+  Future<void> _navigateToEdit() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CharacterEditPage(character: widget.character),
+      ),
+    );
+    
+  }
+
   void _showFullImage(Uint8List imageBytes, String title) => showDialog(
     context: context,
     builder: (context) => Dialog(
@@ -656,8 +666,6 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -719,106 +727,241 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      floatingActionButton: FloatingActionButton(
+        onPressed: _navigateToEdit,
+        tooltip: S.of(context).edit_character,
+        child: const Icon(Icons.edit),
+      ),
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildHeroSection(context),
+                const SizedBox(height: 8),
+                
+                _buildMetadataSection(context),
+                const SizedBox(height: 8),
+                
+                _buildContentSections(context),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    return Card(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+        side: BorderSide(color: colorScheme.outlineVariant, width: 1),
+      ),
+      child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: colorScheme.outline,
+                  width: 2,
+                ),
+              ),
+              child: InkWell(
+                onTap: widget.character.imageBytes != null
+                    ? () => _showFullImage(
+                        widget.character.imageBytes!, 
+                        S.of(context).character_avatar)
+                    : null,
+                borderRadius: BorderRadius.circular(60),
+                child: AvatarWidget.character(
+                  imageBytes: widget.character.imageBytes,
+                  size: 120,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            Text(
+              widget.character.name,
+              style: textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
               children: [
-                Icon(
-                  Icons.update,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                if (widget.character.age > 0)
+                  _buildInfoChip(
+                    icon: Icons.cake,
+                    label: '${widget.character.age} ${S.of(context).years}',
+                    color: colorScheme.surfaceContainerHigh,
+                  ),
+                _buildInfoChip(
+                  icon: Icons.transgender,
+                  label: _getLocalizedGender(widget.character.gender),
+                  color: _getGenderColor(widget.character.gender),
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  '${S.of(context).last_updated}: ${_formatLastEdited(widget.character.lastEdited)}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  )
-                ),
+                if (widget.character.race != null)
+                  _buildInfoChip(
+                    icon: Icons.people,
+                    label: widget.character.race!.name,
+                    color: colorScheme.surfaceContainerHigh,
+                  ),
               ],
             ),
-
-           if (_currentFolder != null || widget.character.tags.isNotEmpty)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  if (_currentFolder != null)
-                    InputChip(
-                      avatar: Icon(Icons.folder, size: 18, 
-                          color: theme.colorScheme.onSecondaryContainer),
-                      label: Text(_currentFolder!.name),
-                      backgroundColor: theme.colorScheme.secondaryContainer,
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => FoldersScreen(
-                              folderType: FolderType.character,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ...widget.character.tags.map((tag) => InputChip(
-                    label: Text(tag),
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                    onPressed: () {},
-                  )),
-                ],
-              ),
-            const SizedBox(height: 16),
-            _buildBasicInfoSection(),
-            const SizedBox(height: 16),
-
-            _buildSectionTitle(S.of(context).character_reference, 'reference', Icons.image_search),
-            if (_expandedSections['reference']!) ...[
-              Center(child: _buildReferenceImage()),
-              const SizedBox(height: 16),
-            ],
-            if (widget.character.appearance.isNotEmpty) _buildSection(S.of(context).appearance, 'appearance', widget.character.appearance, Icons.face_retouching_natural),
-            if (widget.character.personality.isNotEmpty) _buildSection(S.of(context).personality, 'personality', widget.character.personality, Icons.psychology),
-            if (widget.character.biography.isNotEmpty) _buildSection(S.of(context).biography, 'biography', widget.character.biography, Icons.history_edu),
-            if (widget.character.abilities.isNotEmpty) _buildSection(S.of(context).abilities, 'abilities', widget.character.abilities, Icons.auto_awesome),
-            if (widget.character.other.isNotEmpty) _buildSection(S.of(context).other, 'other', widget.character.other, Icons.more_horiz),
-
-            if (widget.character.additionalImages.isNotEmpty) ...[
-              _buildSectionTitle(S.of(context).character_gallery, 'additionalImages', Icons.photo_library),
-              if (_expandedSections['additionalImages']!) ...[
-                _buildGallery(),
-                const SizedBox(height: 16),
-              ],
-            ],
-
-            if (widget.character.customFields.isNotEmpty) ...[
-              _buildSectionTitle(S.of(context).custom_fields, 'customFields', Icons.list_alt),
-              if (_expandedSections['customFields']!) ...[
-                _buildCustomFields(),
-                const SizedBox(height: 16),
-              ],
-            ],
-
-            if (_relatedNotes.isNotEmpty) ...[
-              _buildSectionTitle(S.of(context).related_notes, 'notes', Icons.note),
-              if (_expandedSections['notes']!) ...[
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _relatedNotes.length,
-                  itemBuilder: (context, index) => _buildNoteCard(_relatedNotes[index]),
-                ),
-              ],
-            ],
           ],
         ),
       ),
     );
   }
+
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    final theme = Theme.of(context);
+    return Chip(
+      avatar: Icon(icon, size: 18),
+      label: Text(label),
+      backgroundColor: color,
+      side: BorderSide.none,
+      visualDensity: VisualDensity.compact,
+      labelStyle: theme.textTheme.labelLarge,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+    );
+  }
+
+  Widget _buildMetadataSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.update,
+              size: 16,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '${S.of(context).last_updated}: ${_formatLastEdited(widget.character.lastEdited)}',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        
+        if (_currentFolder != null)
+          InputChip(
+            avatar: Icon(Icons.folder, size: 18, 
+                color: colorScheme.onSecondaryContainer),
+            label: Text(_currentFolder!.name),
+            backgroundColor: colorScheme.secondaryContainer,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FoldersScreen(
+                    folderType: FolderType.character,
+                  ),
+                ),
+              );
+            },
+          ),
+        ...widget.character.tags.map((tag) => InputChip(
+          label: Text(tag),
+          backgroundColor: colorScheme.surfaceContainerHighest,
+          onPressed: () {},
+        )),
+      ],
+    );
+  }
+
+  Widget _buildContentSections(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.character.referenceImageBytes != null) ...[
+          _buildSectionTitle(S.of(context).character_reference, 'reference', Icons.image_search),
+          if (_expandedSections['reference']!) ...[
+            Center(child: _buildReferenceImage()),
+            const SizedBox(height: 16),
+          ],
+        ],
+        
+        if (widget.character.appearance.isNotEmpty) 
+          _buildSection(S.of(context).appearance, 'appearance', widget.character.appearance, Icons.face_retouching_natural),
+        
+        if (widget.character.personality.isNotEmpty) 
+          _buildSection(S.of(context).personality, 'personality', widget.character.personality, Icons.psychology),
+        
+        if (widget.character.biography.isNotEmpty) 
+          _buildSection(S.of(context).biography, 'biography', widget.character.biography, Icons.history_edu),
+        
+        if (widget.character.abilities.isNotEmpty) 
+          _buildSection(S.of(context).abilities, 'abilities', widget.character.abilities, Icons.auto_awesome),
+        
+        if (widget.character.other.isNotEmpty) 
+          _buildSection(S.of(context).other, 'other', widget.character.other, Icons.more_horiz),
+
+        if (widget.character.additionalImages.isNotEmpty) ...[
+          _buildSectionTitle(S.of(context).character_gallery, 'additionalImages', Icons.photo_library),
+          if (_expandedSections['additionalImages']!) ...[
+            _buildGallery(),
+            const SizedBox(height: 16),
+          ],
+        ],
+
+        if (widget.character.customFields.isNotEmpty) ...[
+          _buildSectionTitle(S.of(context).custom_fields, 'customFields', Icons.list_alt),
+          if (_expandedSections['customFields']!) ...[
+            _buildCustomFields(),
+            const SizedBox(height: 16),
+          ],
+        ],
+
+        if (_relatedNotes.isNotEmpty) ...[
+          _buildSectionTitle(S.of(context).related_notes, 'notes', Icons.note),
+          if (_expandedSections['notes']!) ...[
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _relatedNotes.length,
+              itemBuilder: (context, index) => _buildNoteCard(_relatedNotes[index]),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
 
   String _formatLastEdited(DateTime date) {
     return DateFormat('dd.MM.yyyy').format(date);
