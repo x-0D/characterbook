@@ -255,7 +255,7 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 TagsInputWidget(
                   tags: _tags,
