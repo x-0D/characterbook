@@ -170,39 +170,71 @@ class _SearchPageState extends State<SearchPage> {
     await _loadInitialData();
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final s = S.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: SearchBar(
           focusNode: _searchFocusNode,
           controller: _searchController,
-          hintText: S.of(context).search_hint,
-          leading: const Icon(Icons.search),
-          elevation: const WidgetStatePropertyAll(1.0),
+          hintText: s.search_hint,
+          leading: const Icon(Icons.search_rounded),
+          trailing: [
+            if (_searchController.text.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () {
+                  _searchController.clear();
+                  _searchFocusNode.unfocus();
+                },
+              ),
+          ],
+          elevation: const WidgetStatePropertyAll(0),
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
+              borderRadius: BorderRadius.circular(28.0),
             ),
           ),
           padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 16.0),
+            EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           ),
           backgroundColor: WidgetStatePropertyAll(
-            colorScheme.surfaceContainerLow,
+            colorScheme.surfaceContainerHigh,
           ),
-          surfaceTintColor: WidgetStatePropertyAll(colorScheme.surfaceTint),
+          surfaceTintColor: WidgetStatePropertyAll(Colors.transparent),
+          overlayColor: WidgetStatePropertyAll(colorScheme.onSurface),
           onTap: () => _searchFocusNode.requestFocus(),
         ),
+        centerTitle: false,
+        titleSpacing: 24,
+        toolbarHeight: 80,
+        scrolledUnderElevation: 3,
+        shadowColor: colorScheme.shadow,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: colorScheme.surfaceContainerLowest,
+        shape: const ContinuousRectangleBorder(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(32),
+            bottomRight: Radius.circular(32),
+          ),
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SettingsPage()),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: IconButton.filledTonal(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
+              ),
+              icon: const Icon(Icons.settings_outlined),
+              style: IconButton.styleFrom(
+                shape: const CircleBorder(),
+                padding: const EdgeInsets.all(16),
+              ),
             ),
           ),
         ],

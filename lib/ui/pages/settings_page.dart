@@ -14,13 +14,32 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final s = S.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(s.settings),
+        title: Text(
+          s.settings,
+          style: theme.textTheme.headlineLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+            height: 1.2,
+            letterSpacing: -0.5,
+          ),
+        ),
         centerTitle: false,
-        scrolledUnderElevation: 1,
+        titleSpacing: 24,
+        scrolledUnderElevation: 3,
+        shadowColor: theme.colorScheme.shadow,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: theme.colorScheme.surfaceContainerLowest,
+        toolbarHeight: 80,
+        shape: const ContinuousRectangleBorder(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(32),
+            bottomRight: Radius.circular(32),
+          ),
+        ),
       ),
       body: const _SettingsBody(),
     );
@@ -114,41 +133,26 @@ class __SecretUpdateButtonState extends State<_SecretUpdateButton>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const animationDuration = Duration(milliseconds: 300);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: TweenAnimationBuilder<double>(
-          duration: animationDuration,
-          tween: Tween(begin: 1.0, end: 1.0),
-          builder: (context, scale, child) {
-            return Transform.scale(
-              scale: scale,
-              child: child,
-            );
-          },
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return FilledButton.tonal(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const RandomNumberPage()),
-                  );
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: _colorAnimation.value?.withOpacity(0.2),
-                  foregroundColor: _colorAnimation.value,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  animationDuration: animationDuration,
-                  enableFeedback: true,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          return MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const RandomNumberPage()),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  color: _colorAnimation.value?.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -162,12 +166,15 @@ class __SecretUpdateButtonState extends State<_SecretUpdateButton>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      'Секреты следующего обновления',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                        color: _colorAnimation.value,
+                    Flexible(
+                      child: Text(
+                        'Секреты следующего обновления',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                          color: _colorAnimation.value,
+                        ),
+                        overflow: TextOverflow.visible,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -178,10 +185,10 @@ class __SecretUpdateButtonState extends State<_SecretUpdateButton>
                     ),
                   ],
                 ),
-              );
-            },
-          ),
-        ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

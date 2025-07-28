@@ -167,13 +167,15 @@ class _NoteEditPageState extends State<NoteEditPage> with UnsavedChangesHandler 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final s = S.of(context);
 
     return WillPopScope(
       onWillPop: () async {
         if (!hasUnsavedChanges) return true;
         final shouldSave = await UnsavedChangesDialog(
-          saveText: S.of(context).save,
+          saveText: s.save,
         ).show(context);
         if (shouldSave == null) return false;
         if (shouldSave) await _saveNote();
@@ -183,28 +185,61 @@ class _NoteEditPageState extends State<NoteEditPage> with UnsavedChangesHandler 
         appBar: AppBar(
           title: Text(
             widget.note == null
-                ? S.of(context).create
+                ? s.create
                 : widget.isCopyMode
-                ? '${S.of(context).copy} ${S.of(context).posts.toLowerCase()}'
-                : S.of(context).edit,
-            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    ? '${s.copy} ${s.posts.toLowerCase()}'
+                    : s.edit,
+            style: textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+              letterSpacing: -0.5,
+            ),
           ),
           centerTitle: true,
+          titleSpacing: 24,
+          toolbarHeight: 80,
+          scrolledUnderElevation: 3,
+          shadowColor: colorScheme.shadow,
+          surfaceTintColor: Colors.transparent,
+          backgroundColor: colorScheme.surfaceContainerLowest,
+          shape: const ContinuousRectangleBorder(
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(32),
+              bottomRight: Radius.circular(32),
+            ),
+          ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.copy_all),
+            IconButton.filledTonal(
               onPressed: _copyToClipboard,
-              tooltip: S.of(context).copy,
+              icon: const Icon(Icons.copy_rounded),
+              tooltip: s.copy,
+              style: IconButton.styleFrom(
+                shape: const CircleBorder(),
+                padding: const EdgeInsets.all(16),
+              ),
             ),
-            IconButton(
-              icon: Icon(_isPreviewMode ? Icons.edit : Icons.preview),
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
               onPressed: () => setState(() => _isPreviewMode = !_isPreviewMode),
-              tooltip: _isPreviewMode ? S.of(context).edit : S.of(context).empty_list,
+              icon: Icon(_isPreviewMode ? Icons.edit_rounded : Icons.preview_rounded),
+              tooltip: s.edit,
+              style: IconButton.styleFrom(
+                shape: const CircleBorder(),
+                padding: const EdgeInsets.all(16),
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: _saveNote,
-              tooltip: S.of(context).save,
+            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: IconButton.filled(
+                onPressed: _saveNote,
+                icon: const Icon(Icons.save_rounded),
+                tooltip: s.save,
+                style: IconButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(16),
+                ),
+              ),
             ),
           ],
         ),

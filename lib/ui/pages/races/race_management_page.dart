@@ -156,6 +156,8 @@ class _RaceManagementPageState extends State<RaceManagementPage> with UnsavedCha
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     final s = S.of(context);
 
     return WillPopScope(
@@ -172,14 +174,37 @@ class _RaceManagementPageState extends State<RaceManagementPage> with UnsavedCha
         appBar: AppBar(
           title: Text(
             widget.race == null ? s.new_race : s.edit_race,
-            style: theme.textTheme.titleLarge,
+            style: textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+              letterSpacing: -0.5,
+            ),
           ),
           centerTitle: true,
+          titleSpacing: 24,
+          toolbarHeight: 80,
+          scrolledUnderElevation: 3,
+          shadowColor: colorScheme.shadow,
+          surfaceTintColor: Colors.transparent,
+          backgroundColor: colorScheme.surfaceContainerLowest,
+          shape: const ContinuousRectangleBorder(
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(32),
+              bottomRight: Radius.circular(32),
+            ),
+          ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: _saveRace,
-              tooltip: s.save,
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: IconButton.filled(
+                onPressed: _saveRace,
+                icon: const Icon(Icons.save_rounded),
+                tooltip: s.save,
+                style: IconButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(16),
+                ),
+              ),
             ),
           ],
         ),

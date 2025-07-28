@@ -388,21 +388,49 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
   }
 
   AppBar _buildAppBar() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final s = S.of(context);
+
     return AppBar(
       title: Text(
         widget.character == null
             ? widget.template == null
-                ? S.of(context).new_character
-                : '${S.of(context).new_character} (${S.of(context).from_template})'
-            : S.of(context).edit,
-        style: Theme.of(context).textTheme.titleLarge,
+                ? s.new_character
+                : '${s.new_character} (${s.from_template})'
+            : s.edit_character,
+        style: textTheme.headlineMedium?.copyWith(
+          fontWeight: FontWeight.w800,
+          height: 1.2,
+          letterSpacing: -0.5,
+        ),
       ),
       centerTitle: true,
+      titleSpacing: 24,
+      toolbarHeight: 80,
+      scrolledUnderElevation: 3,
+      shadowColor: colorScheme.shadow,
+      surfaceTintColor: Colors.transparent,
+      backgroundColor: colorScheme.surfaceContainerLowest,
+      shape: const ContinuousRectangleBorder(
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
+        ),
+      ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.save),
-          onPressed: _saveCharacter,
-          tooltip: S.of(context).save,
+        Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: IconButton.filledTonal(
+            onPressed: _saveCharacter,
+            icon: const Icon(Icons.save_rounded),
+            tooltip: s.save,
+            style: IconButton.styleFrom(
+              shape: const CircleBorder(),
+              padding: const EdgeInsets.all(16),
+            ),
+          ),
         ),
       ],
     );

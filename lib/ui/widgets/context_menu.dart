@@ -204,72 +204,104 @@ class ContextMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final s = S.of(context);
+
+    Widget buildMenuItem({
+      required IconData icon,
+      required String label,
+      required Color color,
+      required VoidCallback onTap,
+    }) {
+      final theme = Theme.of(context);
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: () {
+            Navigator.pop(context);
+            onTap();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(icon, size: 24, color: color),
+                const SizedBox(width: 16),
+                Text(
+                  label,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHigh,
+        color: colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ListTile(
-            leading: Icon(Icons.edit, color: theme.colorScheme.onSurface),
-            title: Text(s.edit, style: theme.textTheme.bodyLarge),
-            onTap: () {
-              Navigator.pop(context);
-              onEdit();
-            },
+          buildMenuItem(
+            icon: Icons.edit_rounded,
+            label: s.edit,
+            color: colorScheme.onSurface,
+            onTap: onEdit,
           ),
           
-          Divider(height: 1, color: theme.colorScheme.surfaceContainerHighest),
-          
-          if (showCopy) 
-            ListTile(
-              leading: Icon(Icons.copy, color: theme.colorScheme.onSurface),
-              title: Text(s.copy, style: theme.textTheme.bodyLarge),
-              onTap: () {
-                Navigator.pop(context);
-                _copyToClipboard(context);
-              },
+          if (showCopy)
+            buildMenuItem(
+              icon: Icons.copy_rounded,
+              label: s.copy,
+              color: colorScheme.onSurface,
+              onTap: () => _copyToClipboard(context),
             ),
           
           if (showShare)
-            ListTile(
-              leading: Icon(Icons.share, color: theme.colorScheme.onSurface),
-              title: Text(s.share_character, style: theme.textTheme.bodyLarge),
-              onTap: () {
-                Navigator.pop(context);
-                _shareAsFile(context);
-              },
+            buildMenuItem(
+              icon: Icons.share_rounded,
+              label: s.share_character,
+              color: colorScheme.onSurface,
+              onTap: () => _shareAsFile(context),
             ),
           
           if (showExportPdf)
-            ListTile(
-              leading: Icon(Icons.picture_as_pdf, color: theme.colorScheme.onSurface),
-              title: Text(s.export, style: theme.textTheme.bodyLarge),
-              onTap: () {
-                Navigator.pop(context);
-                _exportToPdf(context);
-              },
+            buildMenuItem(
+              icon: Icons.picture_as_pdf_rounded,
+              label: s.export,
+              color: colorScheme.onSurface,
+              onTap: () => _exportToPdf(context),
             ),
           
-          Divider(height: 1, color: theme.colorScheme.surfaceContainerHighest),
-          
-          ListTile(
-            leading: Icon(Icons.delete, color: theme.colorScheme.error),
-            title: Text(s.delete, style: theme.textTheme.bodyLarge?.copyWith(
-              color: theme.colorScheme.error,
-            )),
-            onTap: () {
-              Navigator.pop(context);
-              onDelete();
-            },
+          Divider(
+            height: 1,
+            color: colorScheme.outlineVariant,
+            indent: 16,
+            endIndent: 16,
           ),
           
-          const SizedBox(height: 8),
+          buildMenuItem(
+            icon: Icons.delete_rounded,
+            label: s.delete,
+            color: colorScheme.error,
+            onTap: onDelete,
+          ),
         ],
       ),
     );

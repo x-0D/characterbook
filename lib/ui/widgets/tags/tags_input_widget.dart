@@ -66,65 +66,113 @@ class _TagsInputWidgetState extends State<TagsInputWidget> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+    final colorScheme = theme.colorScheme;
+    final s = S.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        InputDecorator(
-          decoration: InputDecoration(
-            labelText: S.of(context).tags,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colorScheme.outlineVariant,
+              width: 1.0,
             ),
           ),
-          child: Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          child: Column(
             children: [
-              ..._currentTags.map((tag) => InputChip(
-                label: Text(tag),
-                onDeleted: () => _removeTag(tag),
-                deleteIcon: const Icon(Icons.close, size: 16),
-                side: BorderSide(
-                  color: theme.colorScheme.outline,
-                  width: 1.0,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                backgroundColor: theme.colorScheme.surface,
-                labelStyle: theme.textTheme.bodyMedium,
-              )),
-              SizedBox(
-                width: _currentTags.isNotEmpty ? null : double.infinity,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: _currentTags.isNotEmpty ? 120 : double.infinity,
-                  ),
-                  child: TextField(
-                    controller: _tagController,
-                    focusNode: _focusNode,
-                    decoration: InputDecoration(
-                      isDense: true,
-                      border: InputBorder.none,
-                      hintText: S.of(context).add_tag,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
-                    style: theme.textTheme.bodyMedium,
-                    onSubmitted: _addTag,
-                  ),
-                ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  ..._currentTags.map((tag) => _buildExpressiveTag(tag, context)),
+                  _buildTagInputField(context),
+                ],
               ),
+              
+              if (_currentTags.isEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  s.add_tag,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildExpressiveTag(String tag, BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {},
+          child: Chip(
+            label: Text(tag),
+            deleteIcon: Icon(Icons.close_rounded, size: 18),
+            onDeleted: () => _removeTag(tag),
+            side: BorderSide.none,
+            shape: ContinuousRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: colorScheme.secondaryContainer,
+            labelStyle: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSecondaryContainer,
+              fontWeight: FontWeight.w500,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTagInputField(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    return SizedBox(
+      width: _currentTags.isNotEmpty ? 120 : double.infinity,
+      child: TextField(
+        controller: _tagController,
+        focusNode: _focusNode,
+        decoration: InputDecoration(
+          isDense: true,
+          border: InputBorder.none,
+          hintText: S.of(context).add_tag,
+          hintStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        ),
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurface,
+        ),
+        onSubmitted: _addTag,
+        cursorColor: colorScheme.primary,
+      ),
     );
   }
 }

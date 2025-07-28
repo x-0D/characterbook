@@ -1,11 +1,8 @@
 import 'dart:typed_data';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/services/folder_service.dart';
-import 'package:characterbook/ui/pages/folders/folder_list_page.dart';
 import 'package:characterbook/ui/pages/notes/note_management_page.dart';
 import 'package:characterbook/ui/widgets/avatar_widget.dart';
-import 'package:characterbook/ui/widgets/context_menu.dart';
-import 'package:characterbook/ui/widgets/sections/build_section.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
@@ -278,158 +275,6 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
     ),
   );
 
-  Widget _buildSectionTitle(String title, String sectionKey, IconData icon) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: () => setState(() => _expandedSections[sectionKey] = !_expandedSections[sectionKey]!),
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          children: [
-            Icon(
-              _expandedSections[sectionKey]! ? Icons.expand_less : Icons.expand_more,
-              color: theme.colorScheme.onSurface,
-            ),
-            const SizedBox(width: 8),
-            Icon(icon, color: theme.colorScheme.primary, size: 24),
-            const SizedBox(width: 12),
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoteCard(Note note) {
-    final theme = Theme.of(context);
-    final characterBox = Hive.box<Character>('characters');
-    final characters = note.characterIds
-        .map((id) => characterBox.get(id))
-        .whereType<Character>()
-        .toList();
-    final folder = note.folderId != null 
-        ? _folderService.getFolderById(note.folderId!)
-        : null;
-
-    void showNoteContextMenu() {
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (context) => ContextMenu.note(
-          note: note,
-          onEdit: () => _openNoteForEditing(note),
-          onDelete: () => _deleteNote(note),
-        ),
-      );
-    }
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.outlineVariant),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _openNoteForEditing(note),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      note.title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.more_vert, 
-                        color: theme.colorScheme.onSurfaceVariant),
-                    onPressed: showNoteContextMenu,
-                  ),
-                ],
-              ),
-              if (folder != null) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.folder, 
-                        size: 16, 
-                        color: theme.colorScheme.onPrimaryContainer),
-                      const SizedBox(width: 4),
-                      Text(
-                        folder.name,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 8),
-              Text(
-                note.content,
-                style: theme.textTheme.bodyMedium,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (characters.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 4,
-                  children: characters.map((character) => Chip(
-                    label: Text(character.name),
-                    labelStyle: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSecondaryContainer,
-                    ),
-                    backgroundColor: theme.colorScheme.secondaryContainer,
-                    visualDensity: VisualDensity.compact,
-                  )).toList(),
-                ),
-              ],
-              if (note.tags.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 4,
-                  children: note.tags.map((tag) => Chip(
-                    label: Text(tag),
-                    labelStyle: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSecondaryContainer,
-                    ),
-                    backgroundColor: theme.colorScheme.secondaryContainer,
-                    visualDensity: VisualDensity.compact,
-                  )).toList(),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _deleteNote(Note note) async {
     final confirmed = await _showConfirmationDialog(
       title: S.of(context).delete,
@@ -463,90 +308,6 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
     if (result == true) {
       await _loadRelatedNotes();
     }
-  }
-
-  Widget _buildReferenceImage() {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: widget.character.referenceImageBytes != null
-          ? () => _showFullImage(
-              widget.character.referenceImageBytes!, 
-              S.of(context).character_reference)
-          : null,
-      child: Container(
-        width: 120,
-        height: 120,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
-          image: widget.character.referenceImageBytes != null
-              ? DecorationImage(
-                  image: MemoryImage(widget.character.referenceImageBytes!),
-                  fit: BoxFit.cover,
-                )
-              : null,
-        ),
-        child: widget.character.referenceImageBytes == null
-            ? Icon(Icons.people, size: 40, color: theme.colorScheme.onSurfaceVariant)
-            : null,
-      ),
-    );
-  }
-
-  Widget _buildGallery() {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-      ),
-      itemCount: widget.character.additionalImages.length,
-      itemBuilder: (context, index) => InkWell(
-        onTap: () => _showFullImage(
-          widget.character.additionalImages[index],
-          '${S.of(context).character_gallery} ${index + 1}',
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.memory(
-            widget.character.additionalImages[index],
-            fit: BoxFit.cover,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomFields() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: widget.character.customFields.map((field) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(field.key, style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              SelectableText(field.value),
-            ],
-          ),
-        ),
-      )).toList(),
-    );
-  }
-
-  Widget _buildSection(String title, String key, String content, IconData icon) {
-    return BuildSection(
-      title: title,
-      content: content,
-      icon: icon,
-      isExpanded: _expandedSections[key]!,
-      onToggleExpand: () => setState(() => _expandedSections[key] = !_expandedSections[key]!),
-    );
   }
 
   void _showShareMenu(BuildContext context) {
@@ -593,122 +354,139 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
 
     return Scaffold(
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
           SliverAppBar(
-            expandedHeight: _maxAppBarHeight,
-            collapsedHeight: _minAppBarHeight,
+            expandedHeight: 200,
+            collapsedHeight: 80,
             pinned: true,
-            flexibleSpace: LayoutBuilder(
-              builder: (context, constraints) {
-                final expandRatio = (constraints.maxHeight - _minAppBarHeight) / 
-                                  (_maxAppBarHeight - _minAppBarHeight);
-                final opacity = expandRatio.clamp(0.0, 1.0);
-                final fontSize = 36.0 * opacity + 20.0 * (1 - opacity);
-                return FlexibleSpaceBar(
-                  centerTitle: true,
-                  title: Opacity(
-                    opacity: 1.0 - opacity,
-                    child: Text(
-                      widget.character.name,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontSize: fontSize,
-                        fontWeight: FontWeight.bold,
+            floating: false,
+            snap: false,
+            surfaceTintColor: Colors.transparent,
+            shadowColor: colorScheme.shadow,
+            backgroundColor: colorScheme.surfaceContainerLowest,
+            shape: const ContinuousRectangleBorder(
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
+              ),
+            ),
+            flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
+              titlePadding: const EdgeInsets.only(bottom: 16),
+              title: Text(
+                widget.character.name,
+                style: textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  height: 1.2,
+                  letterSpacing: -0.5,
+                  shadows: [
+                    Shadow(
+                      color: colorScheme.surfaceContainerLowest.withOpacity(0.5),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      colorScheme.surfaceContainerLowest,
+                      colorScheme.surfaceContainerLowest.withOpacity(0.3),
+                    ],
+                  ),
+                ),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 40),
+                    child: Hero(
+                      tag: 'character-avatar-${widget.character.key}',
+                      child: AvatarWidget.character(
+                        imageBytes: widget.character.imageBytes,
+                        size: 80,
                       ),
                     ),
                   ),
-                  background: Opacity(
-                    opacity: opacity,
-                    child: Container(
-                      color: theme.colorScheme.surface,
-                      alignment: Alignment.bottomCenter,
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Text(
-                        widget.character.name,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontSize: fontSize,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
+                ),
+              ),
             ),
             actions: [
-              IconButton(
-                icon: Icon(Icons.share, color: theme.colorScheme.onSurface),
-                onPressed: () => _showShareMenu(context),
-                tooltip: S.of(context).share_character,
+              IconButton.filledTonal(
+                onPressed: () => _showShareMenu,
+                icon: const Icon(Icons.share_rounded),
+                style: IconButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(16),
+                ),
               ),
               PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert, color: theme.colorScheme.onSurface),
+                icon: Icon(Icons.more_vert_rounded, color: colorScheme.onSurface),
                 position: PopupMenuPosition.under,
-                surfaceTintColor: theme.colorScheme.surfaceContainerHighest,
-                onSelected: (value) => switch (value) {
-                  'copy' => _copyToClipboard(),
-                  'edit' => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CharacterEditPage(character: widget.character),
-                    ),
-                  ),
-                  'delete' => _handleDelete(),
-                  _ => null,
-                },
+                surfaceTintColor: colorScheme.surfaceContainerHighest,
                 itemBuilder: (context) => [
-                  PopupMenuItem<String>(
+                  PopupMenuItem(
                     value: 'copy',
                     child: ListTile(
-                      leading: Icon(Icons.copy, color: theme.colorScheme.onSurfaceVariant),
+                      leading: Icon(Icons.copy_rounded, color: colorScheme.onSurfaceVariant),
                       title: Text(S.of(context).copy_character),
                     ),
                   ),
-                  PopupMenuItem<String>(
+                  PopupMenuItem(
                     value: 'edit',
                     child: ListTile(
-                      leading: Icon(Icons.edit, color: theme.colorScheme.onSurfaceVariant),
+                      leading: Icon(Icons.edit_rounded, color: colorScheme.onSurfaceVariant),
                       title: Text(S.of(context).edit_character),
                     ),
                   ),
                   const PopupMenuDivider(),
-                  PopupMenuItem<String>(
+                  PopupMenuItem(
                     value: 'delete',
                     child: ListTile(
-                      leading: Icon(Icons.delete, color: theme.colorScheme.error),
+                      leading: Icon(Icons.delete_rounded, color: colorScheme.error),
                       title: Text(
                         S.of(context).delete_character,
-                        style: TextStyle(color: theme.colorScheme.error),
+                        style: TextStyle(color: colorScheme.error),
                       ),
                     ),
                   ),
                 ],
+                onSelected: (value) => switch (value) {
+                  'copy' => _copyToClipboard(),
+                  'edit' => _navigateToEdit(),
+                  'delete' => _handleDelete(),
+                  _ => null,
+                },
               ),
             ],
           ),
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 _buildHeroSection(context),
-                const SizedBox(height: 8),
-                
+                const SizedBox(height: 24),
                 _buildMetadataSection(context),
-                const SizedBox(height: 8),
-                
+                const SizedBox(height: 24),
                 _buildContentSections(context),
               ]),
             ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.large(
         onPressed: _navigateToEdit,
         tooltip: S.of(context).edit_character,
-        child: const Icon(Icons.edit),
+        child: const Icon(Icons.edit_rounded),
       ),
     );
   }
@@ -718,19 +496,20 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    return Card(
-      elevation: 0,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(28),
-        side: BorderSide(color: colorScheme.outlineVariant, width: 1),
+        border: Border.all(
+          color: colorScheme.outlineVariant,
+          width: 1,
+        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
+      child: Column(
+        children: [
+          Center(
+            child: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
@@ -740,60 +519,58 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
               ),
               child: InkWell(
                 onTap: widget.character.imageBytes != null
-                    ? () => _showFullImage(
-                        widget.character.imageBytes!, 
-                        S.of(context).character_avatar)
+                    ? () => _showFullImage(widget.character.imageBytes!, S.of(context).character_avatar)
                     : null,
                 borderRadius: BorderRadius.circular(60),
-                child: AvatarWidget.character(
-                  imageBytes: widget.character.imageBytes,
-                  size: 120,
+                child: Hero(
+                  tag: 'character-avatar-${widget.character.key}',
+                  child: AvatarWidget.character(
+                    imageBytes: widget.character.imageBytes,
+                    size: 120,
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-            
-            Text(
-              widget.character.name,
-              style: textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-              textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            widget.character.name,
+            style: textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
             ),
-            const SizedBox(height: 8),
-            
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              children: [
-                if (widget.character.age > 0)
-                  _buildInfoChip(
-                    icon: Icons.cake,
-                    label: '${widget.character.age} ${S.of(context).years}',
-                    color: colorScheme.surfaceContainerHigh,
-                  ),
-                _buildInfoChip(
-                  icon: Icons.transgender,
-                  label: _getLocalizedGender(widget.character.gender),
-                  color: _getGenderColor(widget.character.gender),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              if (widget.character.age > 0)
+                _buildExpressiveChip(
+                  icon: Icons.cake_rounded,
+                  label: '${widget.character.age} ${S.of(context).years}',
+                  color: colorScheme.tertiaryContainer,
                 ),
-                if (widget.character.race != null)
-                  _buildInfoChip(
-                    icon: Icons.people,
-                    label: widget.character.race!.name,
-                    color: colorScheme.surfaceContainerHigh,
-                  ),
-              ],
-            ),
-          ],
-        ),
+              _buildExpressiveChip(
+                icon: _getGenderIcon(widget.character.gender),
+                label: _getLocalizedGender(widget.character.gender),
+                color: _getGenderColor(widget.character.gender),
+              ),
+              if (widget.character.race != null)
+                _buildExpressiveChip(
+                  icon: Icons.people_rounded,
+                  label: widget.character.race!.name,
+                  color: colorScheme.surfaceContainerHigh,
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildInfoChip({
+  Widget _buildExpressiveChip({
     required IconData icon,
     required String label,
     required Color color,
@@ -806,7 +583,10 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
       side: BorderSide.none,
       visualDensity: VisualDensity.compact,
       labelStyle: theme.textTheme.labelLarge,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
     );
   }
 
@@ -816,49 +596,75 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
     final textTheme = theme.textTheme;
 
     return Wrap(
-      spacing: 8,
+      spacing: 12,
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.update,
-              size: 16,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              '${S.of(context).last_updated}: ${_formatLastEdited(widget.character.lastEdited)}',
-              style: textTheme.bodySmall?.copyWith(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.update_rounded,
+                size: 16,
                 color: colorScheme.onSurfaceVariant,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                DateFormat('dd.MM.yyyy').format(widget.character.lastEdited),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         ),
-        
         if (_currentFolder != null)
-          InputChip(
-            avatar: Icon(Icons.folder, size: 18, 
-                color: colorScheme.onSecondaryContainer),
-            label: Text(_currentFolder!.name),
-            backgroundColor: colorScheme.secondaryContainer,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FoldersScreen(
-                    folderType: FolderType.character,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: _currentFolder!.color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _currentFolder!.color.withOpacity(0.4),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.folder_rounded,
+                  size: 16,
+                  color: _currentFolder!.color,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _currentFolder!.name,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: _currentFolder!.color,
                   ),
                 ),
-              );
-            },
+              ],
+            ),
           ),
-        ...widget.character.tags.map((tag) => InputChip(
-          label: Text(tag),
-          backgroundColor: colorScheme.surfaceContainerHighest,
-          onPressed: () {},
+        ...widget.character.tags.map((tag) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            tag,
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
         )),
       ],
     );
@@ -869,61 +675,392 @@ class _CharacterDetailPageState extends State<CharacterDetailPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.character.referenceImageBytes != null) ...[
-          _buildSectionTitle(S.of(context).character_reference, 'reference', Icons.image_search),
+          _buildExpressiveSectionHeader(
+            title: S.of(context).character_reference,
+            icon: Icons.image_search_rounded,
+            isExpanded: _expandedSections['reference']!,
+            onTap: () => setState(() => _expandedSections['reference'] = !_expandedSections['reference']!),
+          ),
           if (_expandedSections['reference']!) ...[
-            Center(child: _buildReferenceImage()),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            Center(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => _showFullImage(
+                  widget.character.referenceImageBytes!, 
+                  S.of(context).character_reference
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.memory(
+                    widget.character.referenceImageBytes!,
+                    width: 160,
+                    height: 160,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ],
         
-        if (widget.character.appearance.isNotEmpty) 
-          _buildSection(S.of(context).appearance, 'appearance', widget.character.appearance, Icons.face_retouching_natural),
+        _buildExpressiveContentSection(
+          title: S.of(context).appearance,
+          content: widget.character.appearance,
+          icon: Icons.face_retouching_natural_rounded,
+          isExpanded: _expandedSections['appearance']!,
+          onToggle: () => setState(() => _expandedSections['appearance'] = !_expandedSections['appearance']!),
+        ),
         
-        if (widget.character.personality.isNotEmpty) 
-          _buildSection(S.of(context).personality, 'personality', widget.character.personality, Icons.psychology),
+        _buildExpressiveContentSection(
+          title: S.of(context).personality,
+          content: widget.character.personality,
+          icon: Icons.psychology_rounded,
+          isExpanded: _expandedSections['personality']!,
+          onToggle: () => setState(() => _expandedSections['personality'] = !_expandedSections['personality']!),
+        ),
         
-        if (widget.character.biography.isNotEmpty) 
-          _buildSection(S.of(context).biography, 'biography', widget.character.biography, Icons.history_edu),
+        _buildExpressiveContentSection(
+          title: S.of(context).biography,
+          content: widget.character.biography,
+          icon: Icons.history_edu_rounded,
+          isExpanded: _expandedSections['biography']!,
+          onToggle: () => setState(() => _expandedSections['biography'] = !_expandedSections['biography']!),
+        ),
         
-        if (widget.character.abilities.isNotEmpty) 
-          _buildSection(S.of(context).abilities, 'abilities', widget.character.abilities, Icons.auto_awesome),
+        _buildExpressiveContentSection(
+          title: S.of(context).abilities,
+          content: widget.character.abilities,
+          icon: Icons.auto_awesome_rounded,
+          isExpanded: _expandedSections['abilities']!,
+          onToggle: () => setState(() => _expandedSections['abilities'] = !_expandedSections['abilities']!),
+        ),
         
-        if (widget.character.other.isNotEmpty) 
-          _buildSection(S.of(context).other, 'other', widget.character.other, Icons.more_horiz),
+        _buildExpressiveContentSection(
+          title: S.of(context).other,
+          content: widget.character.other,
+          icon: Icons.more_horiz_rounded,
+          isExpanded: _expandedSections['other']!,
+          onToggle: () => setState(() => _expandedSections['other'] = !_expandedSections['other']!),
+        ),
 
         if (widget.character.additionalImages.isNotEmpty) ...[
-          _buildSectionTitle(S.of(context).character_gallery, 'additionalImages', Icons.photo_library),
+          _buildExpressiveSectionHeader(
+            title: S.of(context).character_gallery,
+            icon: Icons.photo_library_rounded,
+            isExpanded: _expandedSections['additionalImages']!,
+            onTap: () => setState(() => _expandedSections['additionalImages'] = !_expandedSections['additionalImages']!),
+          ),
           if (_expandedSections['additionalImages']!) ...[
-            _buildGallery(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 120,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: widget.character.additionalImages.length,
+                itemBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => _showFullImage(
+                      widget.character.additionalImages[index],
+                      '${S.of(context).character_gallery} ${index + 1}',
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.memory(
+                        widget.character.additionalImages[index],
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ],
 
         if (widget.character.customFields.isNotEmpty) ...[
-          _buildSectionTitle(S.of(context).custom_fields, 'customFields', Icons.list_alt),
+          _buildExpressiveSectionHeader(
+            title: S.of(context).custom_fields,
+            icon: Icons.list_alt_rounded,
+            isExpanded: _expandedSections['customFields']!,
+            onTap: () => setState(() => _expandedSections['customFields'] = !_expandedSections['customFields']!),
+          ),
           if (_expandedSections['customFields']!) ...[
-            _buildCustomFields(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: widget.character.customFields.map((field) => Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      field.key,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      field.value,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ],
+                ),
+              )).toList(),
+            ),
+            const SizedBox(height: 24),
           ],
         ],
 
         if (_relatedNotes.isNotEmpty) ...[
-          _buildSectionTitle(S.of(context).related_notes, 'notes', Icons.note),
+          _buildExpressiveSectionHeader(
+            title: S.of(context).related_notes,
+            icon: Icons.note_rounded,
+            isExpanded: _expandedSections['notes']!,
+            onTap: () => setState(() => _expandedSections['notes'] = !_expandedSections['notes']!),
+          ),
           if (_expandedSections['notes']!) ...[
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _relatedNotes.length,
-              itemBuilder: (context, index) => _buildNoteCard(_relatedNotes[index]),
-            ),
+            const SizedBox(height: 12),
+            ..._relatedNotes.map((note) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildExpressiveNoteCard(note),
+            )),
           ],
         ],
       ],
     );
   }
 
+  Widget _buildExpressiveSectionHeader({
+    required String title,
+    required IconData icon,
+    required bool isExpanded,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-  String _formatLastEdited(DateTime date) {
-    return DateFormat('dd.MM.yyyy').format(date);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Icon(
+              isExpanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+              color: colorScheme.onSurface,
+            ),
+            const SizedBox(width: 8),
+            Icon(icon, color: colorScheme.primary, size: 24),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpressiveContentSection({
+    required String title,
+    required String content,
+    required IconData icon,
+    required bool isExpanded,
+    required VoidCallback onToggle,
+  }) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildExpressiveSectionHeader(
+          title: title,
+          icon: icon,
+          isExpanded: isExpanded,
+          onTap: onToggle,
+        ),
+        if (isExpanded) ...[
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              content,
+              style: theme.textTheme.bodyLarge,
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildExpressiveNoteCard(Note note) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final folder = note.folderId != null 
+        ? _folderService.getFolderById(note.folderId!)
+        : null;
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: colorScheme.outlineVariant,
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _openNoteForEditing(note),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      note.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.more_vert_rounded,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    onPressed: () => _showNoteContextMenu(note),
+                  ),
+                ],
+              ),
+              
+              if (folder != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: folder.color.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.folder_rounded,
+                        size: 16,
+                        color: folder.color,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        folder.name,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: folder.color,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              
+              const SizedBox(height: 12),
+              Text(
+                note.content,
+                style: theme.textTheme.bodyLarge,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showNoteContextMenu(Note note) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(
+                Icons.edit_rounded,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              title: Text(S.of(context).edit),
+              onTap: () {
+                Navigator.pop(context);
+                _openNoteForEditing(note);
+              },
+            ),
+            Divider(
+              height: 1,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.delete_rounded,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
+                S.of(context).delete,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _deleteNote(note);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getGenderIcon(String genderKey) {
+    return switch (genderKey) {
+      'male' => Icons.male_rounded,
+      'female' => Icons.female_rounded,
+      _ => Icons.transgender_rounded,
+    };
   }
 }

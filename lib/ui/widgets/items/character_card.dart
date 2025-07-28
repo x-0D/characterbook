@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/folder_model.dart';
@@ -28,14 +30,22 @@ class CharacterCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final s = S.of(context);
+    final random = Random(character.name.hashCode);
     final folder = character.folderId != null 
         ? FolderService(Hive.box<Folder>('folders')).getFolderById(character.folderId!)
         : null;
+      
+    final avatarSize = 36.0 + random.nextInt(12);
+    final borderRadius = 16.0 + random.nextInt(8);
+    final elevation = isSelected ? 3.0 : 1.0;
+    final colorVariation = random.nextDouble() * 0.1;
 
     final backgroundColor = folder?.color.withOpacity(0.1) ?? 
         (isSelected 
-            ? theme.colorScheme.secondaryContainer 
-            : theme.colorScheme.surfaceContainer);
+            ? colorScheme.secondaryContainer.withOpacity(0.8 + colorVariation)
+            : colorScheme.surfaceContainerHigh.withOpacity(0.9 + colorVariation));
 
     return Dismissible(
       key: Key(character.id),
@@ -44,15 +54,15 @@ class CharacterCard extends StatelessWidget {
         context,
         alignment: Alignment.centerLeft,
         icon: Icons.edit_rounded,
-        color: theme.colorScheme.tertiaryContainer,
-        label: S.of(context).edit,
+        color: colorScheme.tertiaryContainer,
+        label: s.edit,
       ),
       secondaryBackground: _buildSwipeBackground(
         context,
         alignment: Alignment.centerRight,
         icon: Icons.delete_rounded,
-        color: theme.colorScheme.errorContainer,
-        label: S.of(context).delete,
+        color: colorScheme.errorContainer,
+        label: s.delete,
       ),
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
@@ -72,72 +82,101 @@ class CharacterCard extends StatelessWidget {
       },
       child: Card(
         key: key,
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-        elevation: 0,
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+        elevation: elevation,
         color: backgroundColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide.none,
+        shape: ContinuousRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+          side: isSelected
+              ? BorderSide(
+                  color: colorScheme.primary,
+                  width: 2,
+                )
+              : BorderSide.none,
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(borderRadius),
           onTap: onTap,
           onLongPress: enableDrag ? null : onLongPress,
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12 + random.nextInt(4).toDouble()),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    AvatarWidget.character(imageBytes: character.imageBytes, size: 28),
+                    Hero(
+                      tag: 'avatar-${character.id}',
+                      child: AvatarWidget.character(
+                        imageBytes: character.imageBytes,
+                        size: avatarSize,
+                      ),
+                    ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(character.name, style: theme.textTheme.bodyLarge),
-                          Row(
+                          Text(
+                            character.name,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.3,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
                             children: [
-                              _buildInfoChip(
+                              _buildExpressiveChip(
                                 context,
                                 icon: Icons.cake_rounded,
-                                text: '${character.age} ${S.of(context).years}',
-                                color: theme.colorScheme.tertiaryContainer,
-                                iconColor: theme.colorScheme.onTertiaryContainer,
+                                text: '${character.age} ${s.years}',
+                                color: colorScheme.tertiaryContainer,
+                                iconColor: colorScheme.onTertiaryContainer,
+                                isSquare: random.nextBool(),
                               ),
-                              const SizedBox(width: 8),
-                              _buildInfoChip(
+                              _buildExpressiveChip(
                                 context,
                                 icon: _getGenderIcon(character.gender),
                                 text: _getLocalizedGender(context, character.gender),
                                 color: _getGenderColor(context, character.gender),
                                 iconColor: _getGenderIconColor(context, character.gender),
+                                isSquare: random.nextBool(),
                               ),
                             ],
                           ),
                         ],
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.more_vert, 
-                        color: theme.colorScheme.onSurfaceVariant),
+                    IconButton.filledTonal(
+                      icon: Icon(Icons.more_vert_rounded),
                       onPressed: onMenuPressed,
+                      style: IconButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ],
                 ),
                 if (folder != null || character.tags.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    child: Row(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         if (folder != null)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: folder.color.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular((12 + random.nextInt(4)) as double),
                               border: Border.all(
                                 color: folder.color.withOpacity(0.4),
                                 width: 1,
@@ -146,35 +185,31 @@ class CharacterCard extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.folder, 
+                                Icon(Icons.folder_rounded, 
                                   size: 16, 
-                                  color: theme.colorScheme.onPrimaryContainer),
-                                const SizedBox(width: 4),
+                                  color: folder.color),
+                                const SizedBox(width: 6),
                                 Text(
                                   folder.name,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onPrimaryContainer,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: folder.color,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        if (folder != null && character.tags.isNotEmpty)
-                          const SizedBox(width: 8),
                         ...character.tags.map((tag) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                tag,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular((12 + random.nextInt(4)) as double),
+                            ),
+                            child: Text(
+                              tag,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                           );
@@ -187,6 +222,40 @@ class CharacterCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+   Widget _buildExpressiveChip(
+    BuildContext context, {
+    required IconData icon,
+    required String text,
+    required Color color,
+    required Color iconColor,
+    bool isSquare = false,
+  }) {
+    final theme = Theme.of(context);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(isSquare ? 12 : 20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: iconColor),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -247,34 +316,6 @@ class CharacterCard extends StatelessWidget {
     ) ?? false;
   }
 
-  Widget _buildInfoChip(
-    BuildContext context, {
-    required IconData icon,
-    required String text,
-    required Color color,
-    required Color iconColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: iconColor),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   String _getLocalizedGender(BuildContext context, String genderKey) {
     final s = S.of(context);
@@ -293,7 +334,7 @@ class CharacterCard extends StatelessWidget {
       _ => Icons.transgender_rounded,
     };
   }
-
+  
   Color _getGenderColor(BuildContext context, String genderKey) {
     final theme = Theme.of(context);
     return switch (genderKey) {
