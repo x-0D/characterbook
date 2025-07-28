@@ -55,9 +55,14 @@ class FilePickerService {
 
   Future<File?> _pickFileNative({String? fileExtension}) async {
     try {
-      final filePath = await _channel.invokeMethod<String>('pickFile', {
+      var filePath = await _channel.invokeMethod<String>('pickFile', {
         'fileExtension': fileExtension,
       });
+
+      if (Platform.isWindows)
+        filePath = await _showWindowsFileDialog(fileExtension: fileExtension);
+      else if (Platform.isMacOS)
+        filePath = await _showMacOSFileDialog(fileExtension: fileExtension);
       if (filePath == null || filePath.isEmpty) return null;
       return File(filePath);
     } catch (e) {
@@ -164,6 +169,84 @@ class FilePickerService {
       return QuestionnaireTemplate.fromJson(jsonMap);
     } catch (e) {
       throw Exception(e);
+    }
+  }
+
+  // Native platform implementations for Windows and macOS
+  static Future<void> setupPlatformChannels() async {
+    if (kIsWeb) return;
+
+    const MethodChannel channel = MethodChannel('file_picker');
+    
+    channel.setMethodCallHandler((MethodCall call) async {
+      switch (call.method) {
+        case 'pickFile':
+          final String? fileExtension = call.arguments['fileExtension'];
+          return await _showNativeFileDialog(fileExtension: fileExtension);
+        default:
+          throw PlatformException(
+            code: 'Unimplemented',
+            details: "The file_picker plugin doesn't implement the method '${call.method}'",
+          );
+      }
+    });
+  }
+
+  static Future<String?> _showNativeFileDialog({String? fileExtension}) async {
+    if (Platform.isWindows) {
+      return await _showWindowsFileDialog(fileExtension: fileExtension);
+    } else if (Platform.isMacOS) {
+      return await _showMacOSFileDialog(fileExtension: fileExtension);
+    }
+    return null;
+  }
+
+  static Future<String?> _showWindowsFileDialog({String? fileExtension}) async {
+    try {
+      final result = await Process.run('powershell', [
+        '-Command',
+        '''
+        Add-Type -AssemblyName System.Windows.Forms
+        \$dialog = New-Object System.Windows.Forms.OpenFileDialog
+        \$dialog.Title = "Select File"
+        \$dialog.Filter = "Supported files (*.json, *.characterbook, *.character, *.race, *.chax)|*.json;*.characterbook;*.character;*.race;*.chax|All files (*.*)|*.*"
+        \$dialog.Multiselect = \$false
+        if (\$dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+          Write-Output \$dialog.FileName
+        }
+        '''
+      ]);
+
+      if (result.exitCode == 0 && result.stdout.toString().trim().isNotEmpty) {
+        return result.stdout.toString().trim();
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Windows file dialog error: $e');
+      return null;
+    }
+  }
+
+  static Future<String?> _showMacOSFileDialog({String? fileExtension}) async {
+    try {
+      List<String> arguments = [
+        '-e',
+        'tell application "System Events"',
+        '-e', 'activate',
+        '-e', 'set theFile to choose file with prompt "Select File"',
+        '-e', 'POSIX path of theFile',
+        '-e', 'end tell'
+      ];
+
+      final result = await Process.run('osascript', arguments);
+
+      if (result.exitCode == 0 && result.stdout.toString().trim().isNotEmpty) {
+        return result.stdout.toString().trim();
+      }
+      return null;
+    } catch (e) {
+      debugPrint('macOS file dialog error: $e');
+      return null;
     }
   }
 }
