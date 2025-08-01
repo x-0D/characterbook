@@ -28,5 +28,9 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>Need access to select files</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>This app needs access to System Events to show file dialogs.</string>
 </dict>
 </plist>

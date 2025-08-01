@@ -222,7 +222,7 @@ class FilePickerService {
         '-e', 'end tell'
       ];
 
-      final result = await Process.run('osascript', arguments);
+      final result = await Process.run('osascript', arguments, runInShell: true);
 
       if (result.exitCode == 0 && result.stdout.toString().trim().isNotEmpty) {
         return result.stdout.toString().trim();
