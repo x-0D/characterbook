@@ -231,7 +231,7 @@ class _NoteEditPageState extends State<NoteEditPage> with UnsavedChangesHandler 
             const SizedBox(width: 8),
             Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: IconButton.filled(
+              child: IconButton.filledTonal(
                 onPressed: _saveNote,
                 icon: const Icon(Icons.save_rounded),
                 tooltip: s.save,

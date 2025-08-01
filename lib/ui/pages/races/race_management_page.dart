@@ -196,7 +196,7 @@ class _RaceManagementPageState extends State<RaceManagementPage> with UnsavedCha
           actions: [
             Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: IconButton.filled(
+              child: IconButton.filledTonal(
                 onPressed: _saveRace,
                 icon: const Icon(Icons.save_rounded),
                 tooltip: s.save,
