@@ -5,6 +5,7 @@
 - [![Google Play](https://img.shields.io/badge/Google_Play-414141?style=for-the-badge&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=ru.maxgog.listcharacters&hl)
 - [![RuStore](https://img.shields.io/badge/RuStore-5551FF?style=for-the-badge&logo=rustore&logoColor=white)](https://www.rustore.ru/catalog/app/ru.maxgog.listcharacters)
 - [![Microsoft Store](https://img.shields.io/badge/Microsoft_Store-0078D6?style=for-the-badge&logo=microsoft&logoColor=white)](https://apps.microsoft.com/detail/9NKV4DBQJW0S)
+- [Поддержать разработчика](https://boosty.to/maxupshur/donate)
 
 ## 📌 О проекте
 
@@ -56,7 +57,8 @@
 
 ---  
 **👨‍💻 Автор:** MaxGog  
-**📧 Почта:** max.gog2005@outlook.com
+**📧 Почта:** max.gog2005@outlook.com  
+**💖 Поддержать:** [boosty.to/maxupshur](https://boosty.to/maxupshur/donate)
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.13-blue)]()
 [![Platforms](https://img.shields.io/badge/Platforms-Android%20|%20Windows%20|%20Web-blue)]()  
