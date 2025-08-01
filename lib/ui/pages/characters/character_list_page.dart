@@ -202,12 +202,18 @@ class _CharacterListPageState extends State<CharacterListPage> with ListPageMixi
         additionalActions: [
           IconButton(
             icon: const Icon(Icons.folder_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const FoldersScreen(folderType: FolderType.character),
-              ),
-            ),
+            onPressed: () => {
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FoldersScreen(
+                      folderType: FolderType.character
+                    ),
+                  ),
+                )
+              }
+            },
             tooltip: S.of(context).folders,
           ),
         ],
@@ -250,7 +256,7 @@ class _CharacterListPageState extends State<CharacterListPage> with ListPageMixi
                     setState(() => selectedTag = tag);
                     filterCharacters(searchController.text, allCharacters);
                   },
-                  onScroll: (ScrollDirection ) {  },
+                  onScroll: (ScrollDirection) {  },
                 );
               }
             ),
