@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final CharacterService _characterService = CharacterService.forDatabase();
   final RaceService _raceService = RaceService.forDatabase();
+  final Random _random = Random();
   
   List<Character> _characters = [];
   List<Race> _races = [];
@@ -26,6 +27,11 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Race> _filteredRaces = [];
   String _searchQuery = '';
   HomeContentType _selectedContentType = HomeContentType.characters;
+
+  final Map<int, Offset> _characterOffsets = {};
+  final Map<int, double> _characterSizes = {};
+  final Map<int, Offset> _raceOffsets = {};
+  final Map<int, double> _raceSizes = {};
 
   @override
   void initState() {
@@ -42,7 +48,32 @@ class _HomeScreenState extends State<HomeScreen> {
       _races = races;
       _filteredCharacters = characters;
       _filteredRaces = races;
+      
+      _generateRandomParameters();
     });
+  }
+
+  void _generateRandomParameters() {
+    _characterOffsets.clear();
+    _characterSizes.clear();
+    _raceOffsets.clear();
+    _raceSizes.clear();
+
+    for (var i = 0; i < _characters.length; i++) {
+      _characterOffsets[i] = Offset(
+        (_random.nextDouble() - 0.5) * 30,
+        (_random.nextDouble() - 0.5) * 30,
+      );
+      _characterSizes[i] = 60 + _random.nextDouble() * 40;
+    }
+
+    for (var i = 0; i < _races.length; i++) {
+      _raceOffsets[i] = Offset(
+        (_random.nextDouble() - 0.5) * 40,
+        (_random.nextDouble() - 0.5) * 40,
+      );
+      _raceSizes[i] = 70 + _random.nextDouble() * 50;
+    }
   }
 
   void _filterContent(String query) {
@@ -72,12 +103,25 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _shuffleAvatars() {
+    setState(() {
+      _generateRandomParameters();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: _shuffleAvatars,
+        child: const Icon(Icons.shuffle),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -203,14 +247,14 @@ class _HomeScreenState extends State<HomeScreen> {
       sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.8,
+          crossAxisSpacing: 24,
+          mainAxisSpacing: 24,
+          childAspectRatio: 0.7,
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             final character = _filteredCharacters[index];
-            return _buildCharacterCard(character);
+            return _buildCharacterCard(character, index);
           },
           childCount: _filteredCharacters.length,
         ),
@@ -224,14 +268,14 @@ class _HomeScreenState extends State<HomeScreen> {
       sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.9,
+          crossAxisSpacing: 24,
+          mainAxisSpacing: 24,
+          childAspectRatio: 0.8,
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             final race = _filteredRaces[index];
-            return _buildRaceCard(race);
+            return _buildRaceCard(race, index);
           },
           childCount: _filteredRaces.length,
         ),
@@ -239,162 +283,198 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCharacterCard(Character character) {
+  Widget _buildCharacterCard(Character character, int index) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     
+    final offset = _characterOffsets[index] ?? Offset.zero;
+    final size = _characterSizes[index] ?? 80;
+
     return Card(
-      elevation: 2,
+      elevation: 3,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         onTap: () {
-          // Навигация к деталям персонажа
         },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: ExpressiveAvatar(
-                  imageBytes: character.imageBytes,
-                  size: 80,
-                  shape: ExpressiveShape.values[Random().nextInt(ExpressiveShape.values.length)],
+        child: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.surfaceContainerLowest,
+                    colorScheme.surfaceContainerHighest,
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              
-              Text(
-                character.name,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                maxLines: 1,
+            ),
+            
+            Positioned(
+              top: 20 + offset.dy,
+              left: 20 + offset.dx,
+              child: ExpressiveAvatar.random(
+                imageBytes: character.imageBytes,
+                minSize: size - 10,
+                maxSize: size + 10,
               ),
-
-              if (character.race != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  character.race!.name,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              ],
-              
-              if (character.tags.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: character.tags.take(2).map((tag) => Chip(
-                    label: Text(
-                      tag,
-                      style: theme.textTheme.labelSmall,
-                    ),
-                    backgroundColor: colorScheme.surfaceVariant,
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                  )).toList(),
-                ),
-              ],
-              
-              const Spacer(),
-              
-              Row(
+            ),
+            
+            Positioned(
+              bottom: 16,
+              left: 16,
+              right: 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.circle,
-                    size: 8,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(width: 4),
                   Text(
-                    'Активен',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.6),
+                    character.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    maxLines: 1,
                   ),
+                  
+                  if (character.race != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      character.race!.name,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                  
+                  if (character.tags.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: character.tags.take(2).map((tag) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceVariant,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          tag,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      )).toList(),
+                    ),
+                  ],
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildRaceCard(Race race) {
+  Widget _buildRaceCard(Race race, int index) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     
+    final offset = _raceOffsets[index] ?? Offset.zero;
+    final size = _raceSizes[index] ?? 90;
+
     return Card(
-      elevation: 2,
+      elevation: 3,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         onTap: () {
-          // Навигация к деталям расы
         },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: ExpressiveAvatar(
-                  imageBytes: race.logo,
-                  size: 80,
-                  shape: ExpressiveShape.values[Random().nextInt(ExpressiveShape.values.length)],
+        child: Stack(
+          children: [
+            // Фон
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.surfaceContainerLowest,
+                    colorScheme.surfaceContainer,
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              
-              Text(
-                race.name,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                maxLines: 1,
+            ),
+
+            Positioned(
+              top: 16 + offset.dy,
+              left: 16 + offset.dx,
+              child: ExpressiveAvatar.random(
+                imageBytes: race.logo,
+                minSize: size - 15,
+                maxSize: size + 15,
               ),
-              
-              if (race.description.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  race.description,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-              
-              if (race.tags.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: race.tags.take(2).map((tag) => Chip(
-                    label: Text(
-                      tag,
-                      style: theme.textTheme.labelSmall,
+            ),
+            
+            Positioned(
+              bottom: 16,
+              left: 16,
+              right: 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    race.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    backgroundColor: colorScheme.surfaceVariant,
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                  )).toList(),
-                ),
-              ],
-            ],
-          ),
+                    maxLines: 1,
+                  ),
+                  
+                  if (race.description.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      race.description,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  
+                  if (race.tags.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: race.tags.take(2).map((tag) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceVariant,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          tag,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      )).toList(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
