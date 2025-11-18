@@ -8,7 +8,7 @@ import 'package:hive/hive.dart';
 import 'package:characterbook/models/template_model.dart';
 import 'package:characterbook/services/template_service.dart';
 import 'package:characterbook/ui/widgets/context_menu.dart';
-import 'package:characterbook/ui/widgets/custom_app_bar.dart';
+import 'package:characterbook/ui/widgets/appbar/custom_app_bar.dart';
 import 'package:characterbook/ui/widgets/custom_floating_buttons.dart';
 import 'package:characterbook/ui/pages/templates/template_edit_page.dart';
 import 'package:hive_flutter/hive_flutter.dart';

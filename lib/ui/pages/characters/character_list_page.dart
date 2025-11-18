@@ -6,7 +6,7 @@ import 'package:characterbook/ui/widgets/list/optimized_list_view.dart';
 import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
 import 'package:characterbook/ui/widgets/items/character_card.dart';
 import 'package:characterbook/ui/widgets/context_menu.dart';
-import 'package:characterbook/ui/widgets/custom_app_bar.dart';
+import 'package:characterbook/ui/widgets/appbar/custom_app_bar.dart';
 import 'package:characterbook/ui/widgets/custom_floating_buttons.dart';
 import 'package:characterbook/ui/widgets/tags/tag_filter.dart';
 import 'package:flutter/material.dart';

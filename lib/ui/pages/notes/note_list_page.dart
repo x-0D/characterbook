@@ -6,7 +6,7 @@ import 'package:characterbook/ui/widgets/items/note_card.dart';
 import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
 import 'package:characterbook/ui/widgets/list/optimized_list_view.dart';
 import 'package:characterbook/ui/widgets/mixins/tag_mixin.dart';
-import 'package:characterbook/ui/widgets/empty_notes_state.dart';
+import 'package:characterbook/ui/widgets/states/empty_notes_state.dart';
 import 'package:characterbook/ui/widgets/performance/optimized_value_listenable.dart';
 import 'package:characterbook/ui/widgets/tags/tag_filter.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +16,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../../../generated/l10n.dart';
 import '../../../models/character_model.dart';
 import '../../../models/note_model.dart';
-import '../../widgets/custom_app_bar.dart';
+import '../../widgets/appbar/custom_app_bar.dart';
 import '../../widgets/custom_floating_buttons.dart';
 import 'note_management_page.dart';
 
