@@ -1,74 +1,314 @@
-import 'package:characterbook/ui/pages/characters/character_management_page.dart';
-import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
+import 'package:characterbook/ui/widgets/list/base_list_page.dart';
 import 'package:characterbook/ui/widgets/list/optimized_list_view.dart';
-import 'package:characterbook/ui/widgets/performance/optimized_value_listenable.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:hive/hive.dart';
-import 'package:characterbook/models/characters/template_model.dart';
-import 'package:characterbook/services/template_service.dart';
+import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
+import 'package:characterbook/ui/widgets/items/template_card.dart';
 import 'package:characterbook/ui/widgets/context_menu.dart';
 import 'package:characterbook/ui/widgets/appbar/custom_app_bar.dart';
 import 'package:characterbook/ui/widgets/custom_floating_buttons.dart';
 import 'package:characterbook/ui/pages/templates/template_edit_page.dart';
+import 'package:characterbook/ui/pages/characters/character_management_page.dart';
+import 'package:characterbook/ui/widgets/tags/tag_filter.dart';
+import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../../generated/l10n.dart';
+import '../../../models/characters/template_model.dart';
+import '../../../services/template_service.dart';
 
-class TemplatesPage extends StatefulWidget {
-  const TemplatesPage({super.key});
+class TemplatesPage extends BaseListPage<QuestionnaireTemplate> {
+  const TemplatesPage({super.key})
+      : super(
+          boxName: 'templates',
+          titleKey: 'templates',
+        );
 
   @override
   State<TemplatesPage> createState() => _TemplatesPageState();
 }
 
-class _TemplatesPageState extends State<TemplatesPage> {
+class _TemplatesPageState extends BaseListPageState<QuestionnaireTemplate, TemplatesPage> {
   final TemplateService _templateService = TemplateService();
-  final TextEditingController searchController = TextEditingController();
-  final ScrollController scrollController = ScrollController();
-  
-  bool isSearching = false;
-  bool isImporting = false;
-  bool isFabVisible = true;
-  String? errorMessage;
-  String _searchQuery = '';
-  QuestionnaireTemplate? _selectedTemplate;
 
   @override
   void initState() {
     super.initState();
-    searchController.addListener(() {
-      setState(() {
-        _searchQuery = searchController.text.toLowerCase();
-      });
-    });
-    scrollController.addListener(_onScroll);
+    _initializeDefaultTemplates();
   }
 
-  @override
-  void dispose() {
-    searchController.dispose();
-    scrollController.dispose();
-    super.dispose();
-  }
-
-  void _refreshTemplates() {
-    setState(() {});
-  }
-
-  Future<void> _deleteTemplate(String name) async {
-    final confirmed = await _showDeleteConfirmationDialog(
-      S.of(context).template_delete_title,
-      S.of(context).template_delete_confirm,
-    );
-
-    if (confirmed) {
-      await _templateService.deleteTemplate(name);
-      if (mounted) _showSnackBar(S.of(context).template_deleted);
-      _refreshTemplates();
+  Future<void> _initializeDefaultTemplates() async {
+    final box = Hive.box<QuestionnaireTemplate>(widget.boxName);
+    if (box.isEmpty) {
+      await _templateService.initializeDefaultTemplates();
+      if (mounted) {
+        final allTemplates = box.values.cast<QuestionnaireTemplate>();
+        filterItems(searchController.text, allTemplates.toList());
+      }
     }
   }
 
-  Future<void> _importTemplate() async {
+  void showTemplateContextMenu(QuestionnaireTemplate template) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ContextMenu(
+        item: template,
+        onEdit: () => navigateToEdit(template),
+        onDelete: () => deleteItem(template),
+        showExportPdf: false,
+        showCopy: false,
+      ),
+    );
+  }
+
+  void navigateToDetail(QuestionnaireTemplate template) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildTemplateDetailsModal(template),
+    );
+  }
+
+  Widget _buildTemplateDetailsModal(QuestionnaireTemplate template) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final s = S.of(context);
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.outline.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.library_books_rounded, 
+                  color: colorScheme.primary, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      template.name,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      s.fields_count(template.standardFields.length + template.customFields.length),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          _buildFieldsSection(
+            context,
+            title: s.standard_fields,
+            fields: template.standardFields,
+            icon: Icons.check_circle_rounded,
+            color: colorScheme.primary,
+          ),
+          
+          const SizedBox(height: 20),
+          
+          if (template.customFields.isNotEmpty)
+            _buildFieldsSection(
+              context,
+              title: s.custom_fields,
+              fields: template.customFields.map((f) => f.key).toList(),
+              icon: Icons.add_circle_rounded,
+              color: colorScheme.tertiary,
+            ),
+          
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(s.cancel),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _createCharacterFromTemplate(template);
+                  },
+                  child: Text(s.create),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFieldsSection(
+    BuildContext context, {
+    required String title,
+    required List<String> fields,
+    required IconData icon,
+    required Color color,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                fields.length.toString(),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: fields.map((field) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                field,
+                style: theme.textTheme.bodyMedium,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _createCharacterFromTemplate(QuestionnaireTemplate template) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CharacterEditPage(template: template),
+      ),
+    );
+
+    if (result == true && mounted) {
+      showSnackBar(S.of(context).character_created_from_template(template.name));
+    }
+  }
+
+  @override
+  List<String> getTags(List<QuestionnaireTemplate> templates) {
+    final s = S.of(context);
+    return [
+      s.a_to_z,
+      s.z_to_a,
+      s.fields_asc,
+      s.fields_desc,
+    ];
+  }
+
+  @override
+  bool matchesSearch(QuestionnaireTemplate template, String query) {
+    final queryLower = query.toLowerCase();
+    return template.name.toLowerCase().contains(queryLower) ||
+        template.standardFields.any((field) => field.toLowerCase().contains(queryLower)) ||
+        template.customFields.any((field) =>
+            field.key.toLowerCase().contains(queryLower) ||
+            field.value.toLowerCase().contains(queryLower));
+  }
+
+  @override
+  bool matchesTagFilter(QuestionnaireTemplate template, String? tag) {
+    if (tag == null) return true;
+    
+    final s = S.of(context);
+    if (tag == s.a_to_z || tag == s.z_to_a || 
+        tag == s.fields_asc || tag == s.fields_desc) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  @override
+  Widget buildItemCard(QuestionnaireTemplate template, int index) {
+    return TemplateCard(
+      key: ValueKey('${template.name}-$index'),
+      template: template,
+      isSelected: false,
+      onTap: () => navigateToDetail(template),
+      onLongPress: () => showTemplateContextMenu(template),
+      onMenuPressed: () => showTemplateContextMenu(template),
+    );
+  }
+
+  @override
+  Future<void> importItem() async {
     try {
       setState(() {
         isImporting = true;
@@ -78,7 +318,7 @@ class _TemplatesPageState extends State<TemplatesPage> {
       final template = await _templateService.pickAndImportTemplate();
 
       if (template != null) {
-        final box = Hive.box<QuestionnaireTemplate>('templates');
+        final box = Hive.box<QuestionnaireTemplate>(widget.boxName);
         if (box.containsKey(template.name)) {
           final shouldReplace = await showDialog<bool>(
             context: context,
@@ -99,22 +339,21 @@ class _TemplatesPageState extends State<TemplatesPage> {
           );
 
           if (shouldReplace != true) {
-            if (mounted) _showSnackBar(S.of(context).import_cancelled);
+            if (mounted) showSnackBar(S.of(context).import_cancelled);
             return;
           }
         }
 
         await box.put(template.name, template);
-        if (mounted) _showSnackBar(S.of(context).template_imported(template.name));
-        _refreshTemplates();
+        if (mounted) showSnackBar(S.of(context).template_imported(template.name));
       } else {
-        if (mounted) _showSnackBar(S.of(context).import_cancelled);
+        if (mounted) showSnackBar(S.of(context).import_cancelled);
       }
     } catch (e) {
       setState(() {
         errorMessage = e.toString();
       });
-      if (mounted) _showSnackBar(S.of(context).import_error(e.toString()));
+      if (mounted) showSnackBar(S.of(context).import_error(e.toString()));
     } finally {
       setState(() {
         isImporting = false;
@@ -122,281 +361,102 @@ class _TemplatesPageState extends State<TemplatesPage> {
     }
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
+  @override
+  Future<void> deleteItem(QuestionnaireTemplate template) async {
+    final confirmed = await showDeleteConfirmation(
+      S.of(context).template_delete_title,
+      S.of(context).template_delete_confirm,
     );
+
+    if (confirmed) {
+      await _templateService.deleteTemplate(template.name);
+      if (mounted) showSnackBar(S.of(context).template_deleted);
+    }
   }
 
-  Future<bool> _showDeleteConfirmationDialog(String title, String content) async {
-    return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(S.of(context).cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              S.of(context).delete,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        ],
-      ),
-    ) ?? false;
+  @override
+  Future<void> reorderItems(int oldIndex, int newIndex) async {
+    return;
   }
 
-  void _showTemplateContextMenu(QuestionnaireTemplate template, BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => ContextMenu(
-        item: template,
-        onEdit: () => _editTemplate(template),
-        onDelete: () => _deleteTemplate(template.name),
-        showExportPdf: false,
-        showCopy: false,
-      ),
-    );
-  }
-
-  Future<void> _editTemplate(QuestionnaireTemplate template) async {
-    final result = await Navigator.push<bool>(
+  @override
+  void navigateToEdit(QuestionnaireTemplate template) {
+    Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) => TemplateEditPage(template: template),
       ),
-    );
-    if (result == true && mounted) {
-      _refreshTemplates();
-    }
+    ).then((result) {
+      if (result == true && mounted) {
+        final templates = Hive.box<QuestionnaireTemplate>(widget.boxName).values.cast<QuestionnaireTemplate>();
+        filterItems(searchController.text, templates.toList());
+      }
+    });
   }
 
-  Future<void> _createCharacterFromTemplate(QuestionnaireTemplate template) async {
-    final result = await Navigator.push(
+  @override
+  void navigateToCreate() {
+    Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CharacterEditPage(template: template),
-      ),
-    );
-
-    if (result == true && mounted) {
-      _showSnackBar(S.of(context).character_created_from_template(template.name));
-    }
-  }
-
-  List<QuestionnaireTemplate> _filterTemplates(List<QuestionnaireTemplate> templates) {
-    if (_searchQuery.isEmpty) return templates;
-    return templates.where((template) =>
-    template.name.toLowerCase().contains(_searchQuery) ||
-        template.standardFields.any((field) => field.toLowerCase().contains(_searchQuery)) ||
-        template.customFields.any((field) =>
-        field.key.toLowerCase().contains(_searchQuery) ||
-            field.value.toLowerCase().contains(_searchQuery))
-    ).toList();
-  }
-
-  Widget _buildTemplateCard(BuildContext context, QuestionnaireTemplate template, int index) {
-    final theme = Theme.of(context);
-    final isWideScreen = MediaQuery.of(context).size.width > 1000;
-    final isSelected = _selectedTemplate?.name == template.name;
-
-    return Card(
-      key: ValueKey(template.name),
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-      elevation: 0,
-      color: isSelected
-          ? theme.colorScheme.secondaryContainer
-          : theme.colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isSelected
-              ? theme.colorScheme.secondary
-              : theme.colorScheme.outlineVariant,
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          if (isWideScreen) {
-            setState(() => _selectedTemplate = template);
-          } else {
-            _createCharacterFromTemplate(template);
-          }
-        },
-        onLongPress: () => _showTemplateContextMenu(template, context),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                child: Icon(
-                  Icons.library_books,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(template.name, style: theme.textTheme.bodyLarge),
-                    Text(
-                      S.of(context).fields_count(template.standardFields.length + template.customFields.length),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.more_vert, color: theme.colorScheme.onSurfaceVariant),
-                onPressed: () => _showTemplateContextMenu(template, context),
-              ),
-            ],
-          ),
-        ),
+        builder: (context) => TemplateEditPage(onSaved: () {
+          final templates = Hive.box<QuestionnaireTemplate>(widget.boxName).values.cast<QuestionnaireTemplate>();
+          filterItems(searchController.text, templates.toList());
+        }),
       ),
     );
   }
 
-  Widget _buildTemplatesList(List<QuestionnaireTemplate> templates, ThemeData theme) {
-    if (templates.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.library_books_outlined,
-              size: 48,
-              color: theme.colorScheme.onSurface,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              isSearching && searchController.text.isNotEmpty
-                  ? S.of(context).templates_not_found
-                  : S.of(context).no_templates,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-            if (!isSearching)
-              TextButton(
-                onPressed: _importTemplate,
-                child: Text(S.of(context).import_template),
-              ),
-          ],
-        ),
-      );
-    }
-
-    return OptimizedListView<QuestionnaireTemplate>(
-      items: templates,
-      itemBuilder: _buildTemplateCard,
-      onReorder: (oldIndex, newIndex) => Future.value(),
-      scrollController: scrollController,
-      enableReorder: false,
-    );
-  }
-
-  Widget _buildTemplateDetails(QuestionnaireTemplate template, ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            template.name,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            S.of(context).standard_fields,
-            style: theme.textTheme.titleMedium,
-          ),
-          ...template.standardFields.map((field) => ListTile(
-            title: Text(field),
-            leading: const Icon(Icons.check_box_outlined),
-          )),
-          if (template.customFields.isNotEmpty) ...[
-            Text(
-              S.of(context).custom_fields,
-              style: theme.textTheme.titleMedium,
-            ),
-            ...template.customFields.map((field) => ListTile(
-              title: Text(field.key),
-              subtitle: field.value.isNotEmpty ? Text(field.value) : null,
-              leading: const Icon(Icons.add_box_outlined),
-            )),
-          ],
-          const Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(S.of(context).back),
-              ),
-              const SizedBox(width: 16),
-              FilledButton(
-                onPressed: () => _createCharacterFromTemplate(template),
-                child: Text(S.of(context).create_character),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _onScroll() {
-    final isScrollingDown = scrollController.position.userScrollDirection == 
-        ScrollDirection.reverse;
-    if (isScrollingDown && isFabVisible) {
-      setState(() => isFabVisible = false);
-    } else if (!isScrollingDown && !isFabVisible) {
-      setState(() => isFabVisible = true);
-    }
-  }
-
-  void _handleSearchToggle() {
+  void filterItems(String query, List<QuestionnaireTemplate> allTemplates) {
+    final queryLower = query.toLowerCase();
+    
     setState(() {
-      isSearching = !isSearching;
-      if (!isSearching) {
-        searchController.clear();
-        _searchQuery = '';
+      filteredItems = allTemplates.where((template) {
+        final matchesSearch = query.isEmpty ||
+            template.name.toLowerCase().contains(queryLower) ||
+            template.standardFields.any((field) => field.toLowerCase().contains(queryLower)) ||
+            template.customFields.any((field) =>
+                field.key.toLowerCase().contains(queryLower) ||
+                field.value.toLowerCase().contains(queryLower));
+
+        return matchesSearch && matchesTagFilter(template, selectedTag);
+      }).toList();
+
+      final s = S.of(context);
+      if (selectedTag == s.a_to_z) {
+        filteredItems.sort((a, b) => a.name.compareTo(b.name));
+      } else if (selectedTag == s.z_to_a) {
+        filteredItems.sort((a, b) => b.name.compareTo(a.name));
+      } else if (selectedTag == s.fields_asc) {
+        filteredItems.sort((a, b) => (a.standardFields.length + a.customFields.length)
+            .compareTo(b.standardFields.length + b.customFields.length));
+      } else if (selectedTag == s.fields_desc) {
+        filteredItems.sort((a, b) => (b.standardFields.length + b.customFields.length)
+            .compareTo(a.standardFields.length + a.customFields.length));
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isWideScreen = MediaQuery.of(context).size.width > 1000;
-
     return Scaffold(
       appBar: CustomAppBar(
         title: S.of(context).templates,
         isSearching: isSearching,
         searchController: searchController,
         searchHint: S.of(context).search,
-        onSearchToggle: _handleSearchToggle,
+        onSearchToggle: () => setState(() {
+          isSearching = !isSearching;
+          if (!isSearching) {
+            searchController.clear();
+            selectedTag = null;
+            filteredItems = [];
+          }
+        }),
+        onSearchChanged: (query) {
+          final allTemplates = Hive.box<QuestionnaireTemplate>(widget.boxName).values.cast<QuestionnaireTemplate>();
+          filterItems(query, allTemplates.toList());
+        },
       ),
       body: Column(
         children: [
@@ -406,15 +466,39 @@ class _TemplatesPageState extends State<TemplatesPage> {
             onErrorClose: () => setState(() => errorMessage = null),
           ),
           Expanded(
-            child: OptimizedValueListenable<QuestionnaireTemplate>(
-              box: Hive.box<QuestionnaireTemplate>('templates'),
-              listen: true,
-              builder: (context, allTemplates) {
-                final templates = _filterTemplates(allTemplates);
+            child: ValueListenableBuilder<Box<QuestionnaireTemplate>>(
+              valueListenable: Hive.box<QuestionnaireTemplate>(widget.boxName).listenable(),
+              builder: (context, box, _) {
+                final allTemplates = box.values.toList().cast<QuestionnaireTemplate>();
+                final tags = getTags(allTemplates);
+                final templatesToShow = isSearching || selectedTag != null
+                    ? filteredItems
+                    : allTemplates;
 
-                return isWideScreen
-                    ? _buildWideLayout(templates, theme)
-                    : _buildMobileLayout(templates, theme);
+                return Column(
+                  children: [
+                    if (tags.isNotEmpty)
+                      TagFilter(
+                        tags: tags,
+                        selectedTag: selectedTag,
+                        onTagSelected: (tag) {
+                          setState(() => selectedTag = tag);
+                          filterItems(searchController.text, allTemplates);
+                        },
+                        context: context,
+                      ),
+                    Expanded(
+                      child: OptimizedListView<QuestionnaireTemplate>(
+                        items: templatesToShow,
+                        itemBuilder: (context, template, index) => 
+                            buildItemCard(template, index),
+                        onReorder: reorderItems,
+                        scrollController: scrollController,
+                        enableReorder: false,
+                      ),
+                    ),
+                  ],
+                );
               },
             ),
           ),
@@ -422,57 +506,12 @@ class _TemplatesPageState extends State<TemplatesPage> {
       ),
       floatingActionButton: isFabVisible 
           ? CustomFloatingButtons(
-              onImport: _importTemplate,
-              onAdd: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => TemplateEditPage(onSaved: _refreshTemplates),
-                ),
-              ),
+              onImport: importItem,
+              onAdd: navigateToCreate,
               importTooltip: S.of(context).import_template_tooltip,
               addTooltip: S.of(context).create_template_tooltip,
-              templateTooltip: S.of(context).create_from_template_tooltip,
             )
           : null,
     );
-  }
-
-  Widget _buildWideLayout(List<QuestionnaireTemplate> templates, ThemeData theme) {
-    return Row(
-      children: [
-        Container(
-          width: 400,
-          decoration: BoxDecoration(
-            border: Border(right: BorderSide(color: theme.dividerColor)),
-          ),
-          child: _buildTemplatesList(templates, theme),
-        ),
-        Expanded(
-          child: _selectedTemplate != null
-              ? _buildTemplateDetails(_selectedTemplate!, theme)
-              : Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.library_books_outlined,
-                  size: 48,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  S.of(context).select_template,
-                  style: theme.textTheme.bodyLarge,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMobileLayout(List<QuestionnaireTemplate> templates, ThemeData theme) {
-    return _buildTemplatesList(templates, theme);
   }
 }

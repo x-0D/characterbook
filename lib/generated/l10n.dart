@@ -50,12 +50,562 @@ class S {
     return Localizations.of<S>(context, S);
   }
 
+  /// `CharacterBook`
+  String get app_name {
+    return Intl.message(
+      'CharacterBook',
+      name: 'app_name',
+      desc: 'Название приложения',
+      args: [],
+    );
+  }
+
+  /// `Назад`
+  String get back {
+    return Intl.message(
+      'Назад',
+      name: 'back',
+      desc: 'Кнопка возврата',
+      args: [],
+    );
+  }
+
+  /// `Отмена`
+  String get cancel {
+    return Intl.message(
+      'Отмена',
+      name: 'cancel',
+      desc: 'Кнопка отмены действия',
+      args: [],
+    );
+  }
+
+  /// `Создать`
+  String get create {
+    return Intl.message(
+      'Создать',
+      name: 'create',
+      desc: 'Кнопка создания',
+      args: [],
+    );
+  }
+
+  /// `Удалить`
+  String get delete {
+    return Intl.message(
+      'Удалить',
+      name: 'delete',
+      desc: 'Кнопка удаления',
+      args: [],
+    );
+  }
+
+  /// `Редактировать`
+  String get edit {
+    return Intl.message(
+      'Редактировать',
+      name: 'edit',
+      desc: 'Кнопка редактирования',
+      args: [],
+    );
+  }
+
+  /// `Ошибка`
+  String get error {
+    return Intl.message(
+      'Ошибка',
+      name: 'error',
+      desc: 'Общее сообщение об ошибке',
+      args: [],
+    );
+  }
+
+  /// `Хорошо`
+  String get ok {
+    return Intl.message(
+      'Хорошо',
+      name: 'ok',
+      desc: 'Кнопка подтверждения',
+      args: [],
+    );
+  }
+
+  /// `Сохранить`
+  String get save {
+    return Intl.message(
+      'Сохранить',
+      name: 'save',
+      desc: 'Кнопка сохранения',
+      args: [],
+    );
+  }
+
+  /// `Поиск`
+  String get search {
+    return Intl.message(
+      'Поиск',
+      name: 'search',
+      desc: 'Поле поиска',
+      args: [],
+    );
+  }
+
+  /// `Выбрано`
+  String get select {
+    return Intl.message(
+      'Выбрано',
+      name: 'select',
+      desc: 'Статус выбранного элемента',
+      args: [],
+    );
+  }
+
+  /// `Настройки`
+  String get settings {
+    return Intl.message(
+      'Настройки',
+      name: 'settings',
+      desc: 'Раздел настроек',
+      args: [],
+    );
+  }
+
+  /// `Версия`
+  String get version {
+    return Intl.message(
+      'Версия',
+      name: 'version',
+      desc: 'Версия приложения',
+      args: [],
+    );
+  }
+
+  /// `Персонаж`
+  String get character {
+    return Intl.message(
+      'Персонаж',
+      name: 'character',
+      desc: 'Сущность персонажа',
+      args: [],
+    );
+  }
+
+  /// `Персонажи`
+  String get characters {
+    return Intl.message(
+      'Персонажи',
+      name: 'characters',
+      desc: 'Раздел персонажей',
+      args: [],
+    );
+  }
+
+  /// `Мои персонажи`
+  String get my_characters {
+    return Intl.message(
+      'Мои персонажи',
+      name: 'my_characters',
+      desc: 'Заголовок раздела персонажей пользователя',
+      args: [],
+    );
+  }
+
+  /// `Новый персонаж`
+  String get new_character {
+    return Intl.message(
+      'Новый персонаж',
+      name: 'new_character',
+      desc: 'Кнопка создания нового персонажа',
+      args: [],
+    );
+  }
+
+  /// `Управление персонажами`
+  String get character_management {
+    return Intl.message(
+      'Управление персонажами',
+      name: 'character_management',
+      desc: 'Заголовок раздела управления персонажами',
+      args: [],
+    );
+  }
+
+  /// `Удалить персонажа?`
+  String get character_delete_title {
+    return Intl.message(
+      'Удалить персонажа?',
+      name: 'character_delete_title',
+      desc: 'Заголовок диалога удаления персонажа',
+      args: [],
+    );
+  }
+
+  /// `Раса`
+  String get race {
+    return Intl.message(
+      'Раса',
+      name: 'race',
+      desc: 'Сущность расы',
+      args: [],
+    );
+  }
+
+  /// `Расы`
+  String get races {
+    return Intl.message(
+      'Расы',
+      name: 'races',
+      desc: 'Раздел рас',
+      args: [],
+    );
+  }
+
+  /// `Новая раса`
+  String get new_race {
+    return Intl.message(
+      'Новая раса',
+      name: 'new_race',
+      desc: 'Кнопка создания новой расы',
+      args: [],
+    );
+  }
+
+  /// `Управление расами`
+  String get race_management {
+    return Intl.message(
+      'Управление расами',
+      name: 'race_management',
+      desc: 'Заголовок раздела управления расами',
+      args: [],
+    );
+  }
+
+  /// `Шаблон`
+  String get template {
+    return Intl.message(
+      'Шаблон',
+      name: 'template',
+      desc: 'Сущность шаблона',
+      args: [],
+    );
+  }
+
+  /// `Шаблоны`
+  String get templates {
+    return Intl.message(
+      'Шаблоны',
+      name: 'templates',
+      desc: 'Раздел шаблонов',
+      args: [],
+    );
+  }
+
+  /// `Новый шаблон`
+  String get new_template {
+    return Intl.message(
+      'Новый шаблон',
+      name: 'new_template',
+      desc: 'Кнопка создания нового шаблона',
+      args: [],
+    );
+  }
+
+  /// `Папка`
+  String get folder {
+    return Intl.message(
+      'Папка',
+      name: 'folder',
+      desc: 'Сущность папки',
+      args: [],
+    );
+  }
+
+  /// `Папки`
+  String get folders {
+    return Intl.message(
+      'Папки',
+      name: 'folders',
+      desc: 'Раздел папок',
+      args: [],
+    );
+  }
+
+  /// `Новая папка`
+  String get new_folder {
+    return Intl.message(
+      'Новая папка',
+      name: 'new_folder',
+      desc: 'Кнопка создания новой папки',
+      args: [],
+    );
+  }
+
+  /// `Имя папки`
+  String get folder_name {
+    return Intl.message(
+      'Имя папки',
+      name: 'folder_name',
+      desc: 'Поле ввода имени папки',
+      args: [],
+    );
+  }
+
+  /// `Цвет папки`
+  String get folder_color {
+    return Intl.message(
+      'Цвет папки',
+      name: 'folder_color',
+      desc: 'Выбор цвета для папки',
+      args: [],
+    );
+  }
+
+  /// `Редактирование папки`
+  String get edit_folder {
+    return Intl.message(
+      'Редактирование папки',
+      name: 'edit_folder',
+      desc: 'Заголовок редактирования папки',
+      args: [],
+    );
+  }
+
+  /// `Фиолетовый`
+  String get color_purple {
+    return Intl.message(
+      'Фиолетовый',
+      name: 'color_purple',
+      desc: 'Название фиолетового цвета',
+      args: [],
+    );
+  }
+
+  /// `Бирюзовый`
+  String get color_teal {
+    return Intl.message(
+      'Бирюзовый',
+      name: 'color_teal',
+      desc: 'Название бирюзового цвета',
+      args: [],
+    );
+  }
+
+  /// `Красный`
+  String get color_red {
+    return Intl.message(
+      'Красный',
+      name: 'color_red',
+      desc: 'Название красного цвета',
+      args: [],
+    );
+  }
+
+  /// `Розовый`
+  String get color_pink {
+    return Intl.message(
+      'Розовый',
+      name: 'color_pink',
+      desc: 'Название розового цвета',
+      args: [],
+    );
+  }
+
+  /// `Тёмный`
+  String get color_dark {
+    return Intl.message(
+      'Тёмный',
+      name: 'color_dark',
+      desc: 'Название тёмного цвета',
+      args: [],
+    );
+  }
+
+  /// `Зелёный`
+  String get color_green {
+    return Intl.message(
+      'Зелёный',
+      name: 'color_green',
+      desc: 'Название зелёного цвета',
+      args: [],
+    );
+  }
+
+  /// `Синий`
+  String get color_blue {
+    return Intl.message(
+      'Синий',
+      name: 'color_blue',
+      desc: 'Название синего цвета',
+      args: [],
+    );
+  }
+
+  /// `Коричневый`
+  String get color_brown {
+    return Intl.message(
+      'Коричневый',
+      name: 'color_brown',
+      desc: 'Название коричневого цвета',
+      args: [],
+    );
+  }
+
+  /// `Оранжевый`
+  String get color_orange {
+    return Intl.message(
+      'Оранжевый',
+      name: 'color_orange',
+      desc: 'Название оранжевого цвета',
+      args: [],
+    );
+  }
+
+  /// `Серый`
+  String get color_grey {
+    return Intl.message(
+      'Серый',
+      name: 'color_grey',
+      desc: 'Название серого цвета',
+      args: [],
+    );
+  }
+
   /// `О приложении`
   String get aboutApp {
     return Intl.message(
       'О приложении',
       name: 'aboutApp',
-      desc: '',
+      desc: 'Раздел информации о приложении',
+      args: [],
+    );
+  }
+
+  /// `Благодарности`
+  String get acknowledgements {
+    return Intl.message(
+      'Благодарности',
+      name: 'acknowledgements',
+      desc: 'Раздел благодарностей',
+      args: [],
+    );
+  }
+
+  /// `Разработчик`
+  String get developer {
+    return Intl.message(
+      'Разработчик',
+      name: 'developer',
+      desc: 'Информация о разработчике',
+      args: [],
+    );
+  }
+
+  /// `GitHub репозиторий`
+  String get githubRepo {
+    return Intl.message(
+      'GitHub репозиторий',
+      name: 'githubRepo',
+      desc: 'Ссылка на репозиторий GitHub',
+      args: [],
+    );
+  }
+
+  /// `Лицензия`
+  String get licenses {
+    return Intl.message(
+      'Лицензия',
+      name: 'licenses',
+      desc: 'Раздел лицензий',
+      args: [],
+    );
+  }
+
+  /// `Используемые библиотеки`
+  String get usedLibraries {
+    return Intl.message(
+      'Используемые библиотеки',
+      name: 'usedLibraries',
+      desc: 'Список используемых библиотек',
+      args: [],
+    );
+  }
+
+  /// `Операция выполнена успешно`
+  String get operationCompleted {
+    return Intl.message(
+      'Операция выполнена успешно',
+      name: 'operationCompleted',
+      desc: 'Сообщение об успешном выполнении операции',
+      args: [],
+    );
+  }
+
+  /// `Скопировано в буфер обмена`
+  String get copied_to_clipboard {
+    return Intl.message(
+      'Скопировано в буфер обмена',
+      name: 'copied_to_clipboard',
+      desc: 'Уведомление о копировании',
+      args: [],
+    );
+  }
+
+  /// `Несохраненные изменения`
+  String get unsaved_changes_title {
+    return Intl.message(
+      'Несохраненные изменения',
+      name: 'unsaved_changes_title',
+      desc: 'Заголовок диалога несохраненных изменений',
+      args: [],
+    );
+  }
+
+  /// `У вас есть несохраненные изменения. Хотите сохранить перед выходом?`
+  String get unsaved_changes_content {
+    return Intl.message(
+      'У вас есть несохраненные изменения. Хотите сохранить перед выходом?',
+      name: 'unsaved_changes_content',
+      desc: 'Текст диалога несохраненных изменений',
+      args: [],
+    );
+  }
+
+  /// `Здесь пусто!`
+  String get empty_list {
+    return Intl.message(
+      'Здесь пусто!',
+      name: 'empty_list',
+      desc: 'Сообщение для пустого списка',
+      args: [],
+    );
+  }
+
+  /// `Данные не найдены`
+  String get no_data_found {
+    return Intl.message(
+      'Данные не найдены',
+      name: 'no_data_found',
+      desc: 'Сообщение об отсутствии данных',
+      args: [],
+    );
+  }
+
+  /// `Ничего не найдено по запросу`
+  String get nothing_found {
+    return Intl.message(
+      'Ничего не найдено по запросу',
+      name: 'nothing_found',
+      desc: 'Сообщение о неудачном поиске',
+      args: [],
+    );
+  }
+
+  /// `Недоступно для веба`
+  String get web_not_supported {
+    return Intl.message(
+      'Недоступно для веба',
+      name: 'web_not_supported',
+      desc: 'Сообщение о неподдерживаемой функции в веб-версии',
       args: [],
     );
   }
@@ -75,16 +625,6 @@ class S {
     return Intl.message(
       'Акцентный цвет',
       name: 'accentColor',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Благодарности`
-  String get acknowledgements {
-    return Intl.message(
-      'Благодарности',
-      name: 'acknowledgements',
       desc: '',
       args: [],
     );
@@ -180,16 +720,6 @@ class S {
     );
   }
 
-  /// `CharacterBook`
-  String get app_name {
-    return Intl.message(
-      'CharacterBook',
-      name: 'app_name',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Внешность`
   String get appearance {
     return Intl.message(
@@ -215,16 +745,6 @@ class S {
     return Intl.message(
       'Не удалось получить клиент для API',
       name: 'auth_client_error',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Назад`
-  String get back {
-    return Intl.message(
-      'Назад',
-      name: 'back',
       desc: '',
       args: [],
     );
@@ -280,26 +800,6 @@ class S {
     );
   }
 
-  /// `Отмена`
-  String get cancel {
-    return Intl.message(
-      'Отмена',
-      name: 'cancel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Персонаж`
-  String get character {
-    return Intl.message(
-      'Персонаж',
-      name: 'character',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Аватар персонажа`
   String get character_avatar {
     return Intl.message(
@@ -325,16 +825,6 @@ class S {
     return Intl.message(
       'Вы уверены, что хотите удалить этого персонажа? Это действие нельзя отменить.',
       name: 'character_delete_confirm',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Удалить персонажа?`
-  String get character_delete_title {
-    return Intl.message(
-      'Удалить персонажа?',
-      name: 'character_delete_title',
       desc: '',
       args: [],
     );
@@ -380,16 +870,6 @@ class S {
     );
   }
 
-  /// `Управление персонажами`
-  String get character_management {
-    return Intl.message(
-      'Управление персонажами',
-      name: 'character_management',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Референс персонажа`
   String get character_reference {
     return Intl.message(
@@ -407,16 +887,6 @@ class S {
       name: 'character_share_text',
       desc: '',
       args: [name],
-    );
-  }
-
-  /// `Персонажи`
-  String get characters {
-    return Intl.message(
-      'Персонажи',
-      name: 'characters',
-      desc: '',
-      args: [],
     );
   }
 
@@ -567,36 +1037,6 @@ class S {
     );
   }
 
-  /// `Скопировано в буфер обмена`
-  String get copied_to_clipboard {
-    return Intl.message(
-      'Скопировано в буфер обмена',
-      name: 'copied_to_clipboard',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Создать`
-  String get create {
-    return Intl.message(
-      'Создать',
-      name: 'create',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Создать резервную копию`
-  String get createBackup {
-    return Intl.message(
-      'Создать резервную копию',
-      name: 'createBackup',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Создание PDF...`
   String get creating_pdf {
     return Intl.message(
@@ -612,16 +1052,6 @@ class S {
     return Intl.message(
       'Создание файла...',
       name: 'creating_file',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Создать персонажа`
-  String get create_character {
-    return Intl.message(
-      'Создать персонажа',
-      name: 'create_character',
       desc: '',
       args: [],
     );
@@ -677,16 +1107,6 @@ class S {
     );
   }
 
-  /// `Удалить`
-  String get delete {
-    return Intl.message(
-      'Удалить',
-      name: 'delete',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Удалить персонажа`
   String get delete_character {
     return Intl.message(
@@ -717,31 +1137,11 @@ class S {
     );
   }
 
-  /// `Разработчик`
-  String get developer {
-    return Intl.message(
-      'Разработчик',
-      name: 'developer',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Не сохранять`
   String get discard_changes {
     return Intl.message(
       'Не сохранять',
       name: 'discard_changes',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Редактировать`
-  String get edit {
-    return Intl.message(
-      'Редактировать',
-      name: 'edit',
       desc: '',
       args: [],
     );
@@ -787,16 +1187,6 @@ class S {
     );
   }
 
-  /// `Здесь пусто!`
-  String get empty_list {
-    return Intl.message(
-      'Здесь пусто!',
-      name: 'empty_list',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Введите возраст`
   String get enter_age {
     return Intl.message(
@@ -812,16 +1202,6 @@ class S {
     return Intl.message(
       'Введите название расы',
       name: 'enter_race_name',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Ошибка`
-  String get error {
-    return Intl.message(
-      'Ошибка',
-      name: 'error',
       desc: '',
       args: [],
     );
@@ -932,16 +1312,6 @@ class S {
     return Intl.message(
       'Гендер',
       name: 'gender',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `GitHub репозиторий`
-  String get githubRepo {
-    return Intl.message(
-      'GitHub репозиторий',
-      name: 'githubRepo',
       desc: '',
       args: [],
     );
@@ -1197,16 +1567,6 @@ class S {
     );
   }
 
-  /// `Мои персонажи`
-  String get my_characters {
-    return Intl.message(
-      'Мои персонажи',
-      name: 'my_characters',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Имя`
   String get name {
     return Intl.message(
@@ -1217,41 +1577,11 @@ class S {
     );
   }
 
-  /// `Новый персонаж`
-  String get new_character {
-    return Intl.message(
-      'Новый персонаж',
-      name: 'new_character',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Новый персонаж (из шаблона)`
   String get new_character_from_template {
     return Intl.message(
       'Новый персонаж (из шаблона)',
       name: 'new_character_from_template',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Новая раса`
-  String get new_race {
-    return Intl.message(
-      'Новая раса',
-      name: 'new_race',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Новый шаблон`
-  String get new_template {
-    return Intl.message(
-      'Новый шаблон',
-      name: 'new_template',
       desc: '',
       args: [],
     );
@@ -1282,16 +1612,6 @@ class S {
     return Intl.message(
       'Содержание отсутствует',
       name: 'no_content',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Данные не найдены`
-  String get no_data_found {
-    return Intl.message(
-      'Данные не найдены',
-      name: 'no_data_found',
       desc: '',
       args: [],
     );
@@ -1352,36 +1672,6 @@ class S {
     return Intl.message(
       'Не выбрано',
       name: 'not_selected',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Ничего не найдено по запросу`
-  String get nothing_found {
-    return Intl.message(
-      'Ничего не найдено по запросу',
-      name: 'nothing_found',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Хорошо`
-  String get ok {
-    return Intl.message(
-      'Хорошо',
-      name: 'ok',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Операция выполнена успешно`
-  String get operationCompleted {
-    return Intl.message(
-      'Операция выполнена успешно',
-      name: 'operationCompleted',
       desc: '',
       args: [],
     );
@@ -1457,16 +1747,6 @@ class S {
     );
   }
 
-  /// `Раса`
-  String get race {
-    return Intl.message(
-      'Раса',
-      name: 'race',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Раса скопирована в буфер`
   String get race_copied {
     return Intl.message(
@@ -1537,16 +1817,6 @@ class S {
     );
   }
 
-  /// `Управление расами`
-  String get race_management {
-    return Intl.message(
-      'Управление расами',
-      name: 'race_management',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Название расы`
   String get race_name {
     return Intl.message(
@@ -1564,16 +1834,6 @@ class S {
       name: 'race_share_text',
       desc: '',
       args: [name],
-    );
-  }
-
-  /// `Расы`
-  String get races {
-    return Intl.message(
-      'Расы',
-      name: 'races',
-      desc: '',
-      args: [],
     );
   }
 
@@ -1637,16 +1897,6 @@ class S {
     );
   }
 
-  /// `Сохранить`
-  String get save {
-    return Intl.message(
-      'Сохранить',
-      name: 'save',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Ошибка сохранения`
   String get save_error {
     return Intl.message(
@@ -1677,16 +1927,6 @@ class S {
     );
   }
 
-  /// `Поиск`
-  String get search {
-    return Intl.message(
-      'Поиск',
-      name: 'search',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Поиск персонажей...`
   String get search_characters {
     return Intl.message(
@@ -1712,16 +1952,6 @@ class S {
     return Intl.message(
       'Поиск рас...',
       name: 'search_race_hint',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Выбрано`
-  String get select {
-    return Intl.message(
-      'Выбрано',
-      name: 'select',
       desc: '',
       args: [],
     );
@@ -1787,16 +2017,6 @@ class S {
     );
   }
 
-  /// `Настройки`
-  String get settings {
-    return Intl.message(
-      'Настройки',
-      name: 'settings',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Поделиться`
   String get share_character {
     return Intl.message(
@@ -1832,16 +2052,6 @@ class S {
     return Intl.message(
       'Системная',
       name: 'system',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Шаблон`
-  String get template {
-    return Intl.message(
-      'Шаблон',
-      name: 'template',
       desc: '',
       args: [],
     );
@@ -1927,16 +2137,6 @@ class S {
     );
   }
 
-  /// `Шаблоны`
-  String get templates {
-    return Intl.message(
-      'Шаблоны',
-      name: 'templates',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Шаблоны не найдены`
   String get templates_not_found {
     return Intl.message(
@@ -1962,46 +2162,6 @@ class S {
     return Intl.message(
       'Тема',
       name: 'theme',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `У вас есть несохраненные изменения. Хотите сохранить перед выходом?`
-  String get unsaved_changes_content {
-    return Intl.message(
-      'У вас есть несохраненные изменения. Хотите сохранить перед выходом?',
-      name: 'unsaved_changes_content',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Несохраненные изменения`
-  String get unsaved_changes_title {
-    return Intl.message(
-      'Несохраненные изменения',
-      name: 'unsaved_changes_title',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Версия`
-  String get version {
-    return Intl.message(
-      'Версия',
-      name: 'version',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Недоступно для веба`
-  String get web_not_supported {
-    return Intl.message(
-      'Недоступно для веба',
-      name: 'web_not_supported',
       desc: '',
       args: [],
     );
@@ -2257,16 +2417,6 @@ class S {
     );
   }
 
-  /// `Лицензия`
-  String get licenses {
-    return Intl.message(
-      'Лицензия',
-      name: 'licenses',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Flutter лицензия`
   String get flutterLicense {
     return Intl.message(
@@ -2282,36 +2432,6 @@ class S {
     return Intl.message(
       'CharacterBook лицензия (GNU GPL v3.0)',
       name: 'characterbookLicense',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Используемые библиотеки`
-  String get usedLibraries {
-    return Intl.message(
-      'Используемые библиотеки',
-      name: 'usedLibraries',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Папки`
-  String get folders {
-    return Intl.message(
-      'Папки',
-      name: 'folders',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Папка`
-  String get folder {
-    return Intl.message(
-      'Папка',
-      name: 'folder',
       desc: '',
       args: [],
     );
@@ -2347,46 +2467,6 @@ class S {
     );
   }
 
-  /// `Имя папки`
-  String get folder_name {
-    return Intl.message(
-      'Имя папки',
-      name: 'folder_name',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Новая папка`
-  String get new_folder {
-    return Intl.message(
-      'Новая папка',
-      name: 'new_folder',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Редактирование папки`
-  String get edit_folder {
-    return Intl.message(
-      'Редактирование папки',
-      name: 'edit_folder',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Цвет папки`
-  String get folder_color {
-    return Intl.message(
-      'Цвет папки',
-      name: 'folder_color',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Теги`
   String get tags {
     return Intl.message(
@@ -2417,103 +2497,73 @@ class S {
     );
   }
 
-  /// `Фиолетовый`
-  String get color_purple {
+  /// `Создать резервную копию`
+  String get createBackup {
     return Intl.message(
-      'Фиолетовый',
-      name: 'color_purple',
-      desc: 'Название фиолетового цвета',
+      'Создать резервную копию',
+      name: 'createBackup',
+      desc: '',
       args: [],
     );
   }
 
-  /// `Бирюзовый`
-  String get color_teal {
+  /// `По количеству полей (возр.)`
+  String get fields_asc {
     return Intl.message(
-      'Бирюзовый',
-      name: 'color_teal',
-      desc: 'Название бирюзового цвета',
+      'По количеству полей (возр.)',
+      name: 'fields_asc',
+      desc: '',
       args: [],
     );
   }
 
-  /// `Красный`
-  String get color_red {
+  /// `По количеству полей (убыв.)`
+  String get fields_desc {
     return Intl.message(
-      'Красный',
-      name: 'color_red',
-      desc: 'Название красного цвета',
+      'По количеству полей (убыв.)',
+      name: 'fields_desc',
+      desc: '',
       args: [],
     );
   }
 
-  /// `Розовый`
-  String get color_pink {
+  /// `стандартных`
+  String get standard {
     return Intl.message(
-      'Розовый',
-      name: 'color_pink',
-      desc: 'Название розового цвета',
+      'стандартных',
+      name: 'standard',
+      desc: '',
       args: [],
     );
   }
 
-  /// `Тёмный`
-  String get color_dark {
+  /// `пользовательских`
+  String get custom {
     return Intl.message(
-      'Тёмный',
-      name: 'color_dark',
-      desc: 'Название тёмного цвета',
+      'пользовательских',
+      name: 'custom',
+      desc: '',
       args: [],
     );
   }
 
-  /// `Зелёный`
-  String get color_green {
+  /// `Подробный`
+  String get detailed {
     return Intl.message(
-      'Зелёный',
-      name: 'color_green',
-      desc: 'Название зелёного цвета',
+      'Подробный',
+      name: 'detailed',
+      desc: '',
       args: [],
     );
   }
 
-  /// `Синий`
-  String get color_blue {
+  /// `{count} еще`
+  String more_fields(Object count) {
     return Intl.message(
-      'Синий',
-      name: 'color_blue',
-      desc: 'Название синего цвета',
-      args: [],
-    );
-  }
-
-  /// `Коричневый`
-  String get color_brown {
-    return Intl.message(
-      'Коричневый',
-      name: 'color_brown',
-      desc: 'Название коричневого цвета',
-      args: [],
-    );
-  }
-
-  /// `Оранжевый`
-  String get color_orange {
-    return Intl.message(
-      'Оранжевый',
-      name: 'color_orange',
-      desc: 'Название оранжевого цвета',
-      args: [],
-    );
-  }
-
-  /// `Серый`
-  String get color_grey {
-    return Intl.message(
-      'Серый',
-      name: 'color_grey',
-      desc: 'Название серого цвета',
-      args: [],
+      '$count еще',
+      name: 'more_fields',
+      desc: '',
+      args: [count],
     );
   }
 }

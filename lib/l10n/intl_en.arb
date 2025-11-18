@@ -410,5 +410,12 @@
   "tags": "Tags",
   "add_tag": "Add Tag",
   "items": "items",
-  "edit_folder": "Edit Folder"
+  "edit_folder": "Edit Folder",
+  "fields_asc": "По количеству полей (возр.)",
+  "fields_desc": "По количеству полей (убыв.)",
+  "standard": "стандартных",
+  "custom": "пользовательских", 
+  "detailed": "Подробный",
+  "more_fields": "{count} еще",
+  "fields_count": "{count} полей"
 }
