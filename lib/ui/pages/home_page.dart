@@ -15,7 +15,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   static const List<Widget> _pages = [
     HomeScreen(),
     CharacterListPage(),
@@ -47,7 +47,31 @@ class _HomePageState extends State<HomePage> {
   ];
 
   int _currentIndex = 0;
-  static const bool _isExpanded = false;
+  late AnimationController _animationController;
+  late Animation<double> _widthAnimation;
+  bool _isExpanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _widthAnimation = Tween<double>(
+      begin: 80.0,
+      end: 200.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   List<String> _getPageTitles(BuildContext context) => [
         'Home',
@@ -58,6 +82,17 @@ class _HomePageState extends State<HomePage> {
         S.of(context).settings,
         'D&D',
       ];
+
+  void _toggleExpanded() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+      if (_isExpanded) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +108,9 @@ class _HomePageState extends State<HomePage> {
                 pageIcons: _pageIcons,
                 selectedPageIcons: _selectedPageIcons,
                 onIndexChanged: _updateIndex,
+                isExpanded: _isExpanded,
+                widthAnimation: _widthAnimation,
+                onToggleExpanded: _toggleExpanded,
               );
             } else {
               return _MobileLayout(
@@ -105,6 +143,9 @@ class _DesktopLayout extends StatelessWidget {
     required this.pageIcons,
     required this.selectedPageIcons,
     required this.onIndexChanged,
+    required this.isExpanded,
+    required this.widthAnimation,
+    required this.onToggleExpanded,
   });
 
   final int currentIndex;
@@ -113,17 +154,23 @@ class _DesktopLayout extends StatelessWidget {
   final List<IconData> pageIcons;
   final List<IconData> selectedPageIcons;
   final ValueChanged<int> onIndexChanged;
+  final bool isExpanded;
+  final Animation<double> widthAnimation;
+  final VoidCallback onToggleExpanded;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _NavigationRail(
+        _AnimatedNavigationRail(
           currentIndex: currentIndex,
           pageTitles: pageTitles,
           pageIcons: pageIcons,
           selectedPageIcons: selectedPageIcons,
           onIndexChanged: onIndexChanged,
+          isExpanded: isExpanded,
+          widthAnimation: widthAnimation,
+          onToggleExpanded: onToggleExpanded,
         ),
         Expanded(
           child: AnimatedSwitcher(
@@ -175,13 +222,16 @@ class _MobileLayout extends StatelessWidget {
   }
 }
 
-class _NavigationRail extends StatelessWidget {
-  const _NavigationRail({
+class _AnimatedNavigationRail extends StatelessWidget {
+  const _AnimatedNavigationRail({
     required this.currentIndex,
     required this.pageTitles,
     required this.pageIcons,
     required this.selectedPageIcons,
     required this.onIndexChanged,
+    required this.isExpanded,
+    required this.widthAnimation,
+    required this.onToggleExpanded,
   });
 
   final int currentIndex;
@@ -189,32 +239,206 @@ class _NavigationRail extends StatelessWidget {
   final List<IconData> pageIcons;
   final List<IconData> selectedPageIcons;
   final ValueChanged<int> onIndexChanged;
+  final bool isExpanded;
+  final Animation<double> widthAnimation;
+  final VoidCallback onToggleExpanded;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Container(
-      width: _HomePageState._isExpanded ? 200 : 80,
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
+    return MouseRegion(
+      onEnter: (_) => onToggleExpanded(),
+      onExit: (_) => onToggleExpanded(),
+      child: AnimatedBuilder(
+        animation: widthAnimation,
+        builder: (context, child) {
+          return Container(
+            width: widthAnimation.value,
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLowest,
+              border: Border(
+                right: BorderSide(
+                  color: colorScheme.outline.withOpacity(0.1),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Column(
+              children: [
+                _NavigationHeader(
+                  isExpanded: isExpanded,
+                  onToggle: onToggleExpanded,
+                  widthAnimation: widthAnimation,
+                ),
+                
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: List.generate(
+                        pageTitles.length,
+                        (index) => _AnimatedNavItem(
+                          icon: currentIndex == index 
+                              ? selectedPageIcons[index] 
+                              : pageIcons[index],
+                          label: pageTitles[index],
+                          isSelected: currentIndex == index,
+                          isExpanded: isExpanded,
+                          widthAnimation: widthAnimation,
+                          onTap: () => onIndexChanged(index),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          children: List.generate(
-            pageTitles.length,
-            (index) => _NavItem(
-              icon: currentIndex == index 
-                  ? selectedPageIcons[index] 
-                  : pageIcons[index],
-              label: pageTitles[index],
-              isSelected: currentIndex == index,
-              onTap: () => onIndexChanged(index),
+    );
+  }
+}
+
+class _NavigationHeader extends StatelessWidget {
+  const _NavigationHeader({
+    required this.isExpanded,
+    required this.onToggle,
+    required this.widthAnimation,
+  });
+
+  final bool isExpanded;
+  final VoidCallback onToggle;
+  final Animation<double> widthAnimation;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return AnimatedBuilder(
+      animation: widthAnimation,
+      builder: (context, child) {
+        return Container(
+          height: 60,
+          padding: EdgeInsets.symmetric(
+            horizontal: widthAnimation.value == 80 ? 16 : 24,
+          ),
+          child: Row(
+            mainAxisAlignment: widthAnimation.value == 80 
+                ? MainAxisAlignment.center 
+                : MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                onPressed: onToggle,
+                icon: AnimatedRotation(
+                  duration: const Duration(milliseconds: 300),
+                  turns: isExpanded ? 0.5 : 0,
+                  child: const Icon(Icons.arrow_back_ios_new_rounded),
+                ),
+                iconSize: 18,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 32,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AnimatedNavItem extends StatelessWidget {
+  const _AnimatedNavItem({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.isExpanded,
+    required this.widthAnimation,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final bool isExpanded;
+  final Animation<double> widthAnimation;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return AnimatedBuilder(
+      animation: widthAnimation,
+      builder: (context, child) {
+        return Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: widthAnimation.value == 80 ? 8 : 12,
+            vertical: 4,
+          ),
+          child: Material(
+            color: isSelected ? colorScheme.primaryContainer : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: widthAnimation.value == 80 ? 12 : 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: isSelected
+                      ? Border.all(
+                          color: colorScheme.primary,
+                          width: 1.5,
+                        )
+                      : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: widthAnimation.value == 80 
+                      ? MainAxisAlignment.center 
+                      : MainAxisAlignment.start,
+                  children: [
+                    Icon(
+                      icon,
+                      color: isSelected 
+                          ? colorScheme.primary 
+                          : colorScheme.onSurfaceVariant,
+                      size: 22,
+                    ),
+                    if (widthAnimation.value > 80) ...[
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 200),
+                          opacity: isExpanded ? 1.0 : 0.0,
+                          child: Text(
+                            label,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                              color: isSelected 
+                                  ? colorScheme.primary 
+                                  : colorScheme.onSurface,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -268,75 +492,6 @@ class _BottomNavigation extends StatelessWidget {
                 onIndexChanged: onIndexChanged,
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Material(
-        color: isSelected ? colorScheme.primaryContainer : Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: isSelected
-                  ? Border.all(
-                      color: colorScheme.primary,
-                      width: 2,
-                    )
-                  : null,
-            ),
-            child: Row(
-              mainAxisAlignment: _HomePageState._isExpanded 
-                  ? MainAxisAlignment.start 
-                  : MainAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
-                  size: 24,
-                ),
-                if (_HomePageState._isExpanded) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                        color: isSelected ? colorScheme.primary : colorScheme.onSurface,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ],
-            ),
           ),
         ),
       ),
