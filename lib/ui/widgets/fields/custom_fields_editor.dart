@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-
-import '../../../generated/l10n.dart';
-import '../../../models/custom_field_model.dart';
-import 'custom_text_field.dart';
+import 'package:characterbook/models/custom_field_model.dart';
+import 'package:characterbook/generated/l10n.dart';
 
 class CustomFieldsEditor extends StatefulWidget {
   final List<CustomField> initialFields;
   final ValueChanged<List<CustomField>> onFieldsChanged;
+  final bool verticalLayout;
 
   const CustomFieldsEditor({
     super.key,
     required this.initialFields,
     required this.onFieldsChanged,
+    this.verticalLayout = false,
   });
 
   @override
@@ -29,86 +29,240 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
 
   void _addField() {
     setState(() {
-      final hasEmpty = _fields.any((f) => f.key.isEmpty && f.value.isEmpty);
-      if (!hasEmpty) {
-        _fields.add(CustomField('', ''));
-        _notifyParent();
-      }
+      _fields.add(CustomField('', ''));
     });
-  }
-
-  void _updateField(int index, String key, String value) {
-    setState(() {
-      if (key.trim().isEmpty && value.trim().isEmpty) {
-        _fields.removeAt(index);
-      } else {
-        _fields[index] = CustomField(key.trim(), value.trim());
-      }
-      _notifyParent();
-    });
+    widget.onFieldsChanged(_fields);
   }
 
   void _removeField(int index) {
     setState(() {
       _fields.removeAt(index);
-      _notifyParent();
     });
+    widget.onFieldsChanged(_fields);
   }
 
-  void _notifyParent() {
-    widget.onFieldsChanged(_fields.where((f) => f.key.isNotEmpty).toList());
+  void _updateField(int index, String key, String value) {
+    setState(() {
+      _fields[index] = CustomField(key, value);
+    });
+    widget.onFieldsChanged(_fields);
   }
 
   @override
   Widget build(BuildContext context) {
+    final s = S.of(context);
+    final theme = Theme.of(context);
+
+    if (widget.verticalLayout) {
+      return _buildVerticalLayout(s, theme);
+    } else {
+      return _buildHorizontalLayout(s, theme);
+    }
+  }
+
+  Widget _buildVerticalLayout(S s, ThemeData theme) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text(S.of(context).custom_fields, style: Theme.of(context).textTheme.titleMedium),
-            const Spacer(),
+            Text(
+              "Add information about the character",
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
             IconButton(
-              icon: const Icon(Icons.add),
+              icon: const Icon(Icons.add_circle_outline),
               onPressed: _addField,
-              tooltip: S.of(context).create,
+              tooltip: s.create,
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         ..._fields.asMap().entries.map((entry) {
           final index = entry.key;
           final field = entry.value;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: CustomTextField(
-                    initialValue: field.key,
-                    label: S.of(context).template_name_label,
-                    onChanged: (value) => _updateField(index, value, field.value),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 3,
-                  child: CustomTextField(
-                    initialValue: field.value,
-                    label: S.of(context).description,
-                    onChanged: (value) => _updateField(index, field.key, value),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () => _removeField(index),
-                  tooltip: S.of(context).delete,
-                ),
-              ],
+          return _buildVerticalFieldItem(index, field, s, theme);
+        }).toList(),
+        if (_fields.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Text(
+              s.nothing_found,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          );
-        }),
+          ),
       ],
+    );
+  }
+
+  Widget _buildVerticalFieldItem(int index, CustomField field, S s, ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    labelText: s.name,
+                    hintText: s.name,
+                    border: const OutlineInputBorder(),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 16,
+                    ),
+                  ),
+                  onChanged: (value) => _updateField(index, value, field.value),
+                  controller: TextEditingController(text: field.key),
+                ),
+              ),
+              const SizedBox(width: 12),
+              IconButton(
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: theme.colorScheme.error,
+                ),
+                onPressed: () => _removeField(index),
+                tooltip: s.delete,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            decoration: InputDecoration(
+              labelText: s.custom_fields,
+              hintText: s.custom_fields,
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 16,
+              ),
+            ),
+            onChanged: (value) => _updateField(index, field.key, value),
+            controller: TextEditingController(text: field.value),
+            maxLines: 3,
+            minLines: 1,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHorizontalLayout(S s, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              s.custom_fields,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: _addField,
+              tooltip: s.create,
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: _fields.asMap().entries.map((entry) {
+              final index = entry.key;
+              final field = entry.value;
+              return _buildHorizontalFieldItem(index, field, s, theme);
+            }).toList(),
+          ),
+        ),
+        if (_fields.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Text(
+              s.nothing_found,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildHorizontalFieldItem(int index, CustomField field, S s, ThemeData theme) {
+    return Container(
+      width: 200,
+      margin: const EdgeInsets.only(right: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant,
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          TextField(
+            decoration: InputDecoration(
+              labelText: s.name,
+              hintText: s.name,
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
+            ),
+            onChanged: (value) => _updateField(index, value, field.value),
+            controller: TextEditingController(text: field.key),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            decoration: InputDecoration(
+              labelText: s.custom_fields,
+              hintText: s.description,
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
+            ),
+            onChanged: (value) => _updateField(index, field.key, value),
+            controller: TextEditingController(text: field.value),
+            maxLines: 3,
+            minLines: 1,
+          ),
+          const SizedBox(height: 12),
+          IconButton(
+            icon: Icon(
+              Icons.delete_outline,
+              color: theme.colorScheme.error,
+            ),
+            onPressed: () => _removeField(index),
+            tooltip: s.delete,
+          ),
+        ],
+      ),
     );
   }
 }

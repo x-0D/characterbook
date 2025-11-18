@@ -293,6 +293,7 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
             const SizedBox(height: 24),
             _buildNameField(),
             const SizedBox(height: 16),
+
             if (_shouldShowField('age') || _shouldShowField('gender'))
               _buildAgeAndGenderRow(),
             if (_shouldShowField('race')) ...[
@@ -303,7 +304,6 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
                   hasUnsavedChanges = true;
                 },
               ),
-              const SizedBox(height: 16),
             ],
             if (_shouldShowField('referenceImage')) ...[
               ReferenceImagePicker(
@@ -313,6 +313,17 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
               ),
               const SizedBox(height: 16),
             ],
+            
+            CustomFieldsEditor(
+              initialFields: _customFields,
+              onFieldsChanged: (fields) {
+                _customFields = fields;
+                hasUnsavedChanges = true;
+              },
+              verticalLayout: true,
+            ),
+            const SizedBox(height: 16),
+            
             if (_shouldShowField('appearance'))
               CustomTextField(
                 label: S.of(context).appearance,
@@ -374,14 +385,6 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
                 maxLines: 5,
               ),
             if (_shouldShowField('other')) const SizedBox(height: 32),
-            CustomFieldsEditor(
-              initialFields: _customFields,
-              onFieldsChanged: (fields) {
-                _customFields = fields;
-                hasUnsavedChanges = true;
-              },
-            ),
-            const SizedBox(height: 16),
             SaveButton(
               onPressed: _saveCharacter,
               text: S.of(context).save,
