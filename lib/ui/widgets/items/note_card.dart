@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/models/note_model.dart';
@@ -11,8 +13,6 @@ class NoteCard extends StatelessWidget {
   final Note note;
   final bool isSelected;
   final VoidCallback onTap;
-  //final VoidCallback onLongPress;
-  //final VoidCallback onMenuPressed;
   final bool enableDrag;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -22,8 +22,6 @@ class NoteCard extends StatelessWidget {
     required this.note,
     this.isSelected = false,
     required this.onTap,
-    //required this.onLongPress,
-    //required this.onMenuPressed,
     this.enableDrag = false,
     required this.onEdit,
     required this.onDelete,
@@ -44,6 +42,10 @@ class NoteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final s = S.of(context);
+    final random = Random(note.title.hashCode + note.content.hashCode);
+    
     final characterBox = Hive.box<Character>('characters');
     final characters = note.characterIds
         .map((id) => characterBox.get(id))
@@ -53,10 +55,14 @@ class NoteCard extends StatelessWidget {
         ? FolderService(Hive.box<Folder>('folders')).getFolderById(note.folderId!)
         : null;
 
+    final borderRadius = 16.0 + random.nextInt(8);
+    final elevation = isSelected ? 3.0 : 1.0;
+    final colorVariation = random.nextDouble() * 0.1;
+
     final backgroundColor = folder?.color.withOpacity(0.1) ?? 
         (isSelected 
-            ? theme.colorScheme.secondaryContainer 
-            : theme.colorScheme.surfaceContainer);
+            ? colorScheme.secondaryContainer.withOpacity(0.8 + colorVariation)
+            : colorScheme.surfaceContainerHigh.withOpacity(0.9 + colorVariation));
 
     return Dismissible(
       key: Key(note.id),
@@ -65,86 +71,107 @@ class NoteCard extends StatelessWidget {
         context,
         alignment: Alignment.centerLeft,
         icon: Icons.edit_rounded,
-        color: theme.colorScheme.tertiaryContainer,
-        label: S.of(context).edit,
+        color: colorScheme.tertiaryContainer,
+        label: s.edit,
       ),
       secondaryBackground: _buildSwipeBackground(
         context,
         alignment: Alignment.centerRight,
         icon: Icons.delete_rounded,
-        color: theme.colorScheme.errorContainer,
-        label: S.of(context).delete,
+        color: colorScheme.errorContainer,
+        label: s.delete,
       ),
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
-          onEdit;
+          onEdit();
           return false;
         } else {
           return await _showDeleteConfirmation(context);
         }
       },
-      onDismissed: (direction) async {
-        onDelete;
-      },
+      onDismissed: (direction) => onDelete(),
       child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-        elevation: 0,
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+        elevation: elevation,
         color: backgroundColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide.none,
+        shape: ContinuousRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+          side: isSelected
+              ? BorderSide(
+                  color: colorScheme.primary,
+                  width: 2,
+                )
+              : BorderSide.none,
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(borderRadius),
           onTap: onTap,
           onLongPress: () => _showNoteContextMenu(context),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12 + random.nextInt(4).toDouble()),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
+                    Icon(
+                      Icons.note_rounded,
+                      size: 28,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 16),
                     Expanded(
-                      child: Text(
-                        note.title,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            note.title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.3,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (note.content.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              note.content,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.more_vert, 
-                        color: theme.colorScheme.onSurfaceVariant),
+                    IconButton.filledTonal(
+                      icon: const Icon(Icons.more_vert_rounded),
                       onPressed: () => _showNoteContextMenu(context),
+                      style: IconButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                if (note.content.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    note.content,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
                 if (folder != null || note.tags.isNotEmpty || characters.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    child: Row(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         if (folder != null)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: folder.color.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular((12 + random.nextInt(4)).toDouble()),
                               border: Border.all(
                                 color: folder.color.withOpacity(0.4),
                                 width: 1,
@@ -153,50 +180,54 @@ class NoteCard extends StatelessWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.folder, 
+                                Icon(Icons.folder_rounded, 
                                   size: 16, 
-                                  color: theme.colorScheme.onPrimaryContainer),
-                                const SizedBox(width: 4),
+                                  color: folder.color),
+                                const SizedBox(width: 6),
                                 Text(
                                   folder.name,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onPrimaryContainer,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: folder.color,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        if (folder != null && (note.tags.isNotEmpty || characters.isNotEmpty))
-                          const SizedBox(width: 8),
-                        ...characters.map((character) => Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              character.name,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onPrimaryContainer,
+                        ...characters.map((character) => Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular((12 + random.nextInt(4)).toDouble()),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.person_rounded,
+                                size: 16,
+                                color: colorScheme.onPrimaryContainer),
+                              const SizedBox(width: 6),
+                              Text(
+                                character.name,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         )),
-                        ...note.tags.map((tag) => Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              tag,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
+                        ...note.tags.map((tag) => Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular((12 + random.nextInt(4)).toDouble()),
+                          ),
+                          child: Text(
+                            tag,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         )),
@@ -250,6 +281,7 @@ class NoteCard extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(S.of(context).delete),
+        content: Text(S.of(context).delete),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),

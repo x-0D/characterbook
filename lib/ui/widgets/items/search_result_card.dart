@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:characterbook/models/characters/character_model.dart';
 import 'package:characterbook/models/note_model.dart';
@@ -19,32 +21,34 @@ class SearchResultItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
     final s = S.of(context);
+    final random = Random(item.hashCode);
 
     final isCharacter = item is Character;
     final isRace = item is Race;
     final isNote = item is Note;
     final isFolder = item is Folder;
 
+    final borderRadius = 16.0 + random.nextInt(8);
+    final padding = 12 + random.nextInt(4);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
       child: Card(
-        color: colorScheme.surfaceContainerLow,
-        elevation: 0,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
+        elevation: 1,
+        color: colorScheme.surfaceContainerHigh,
+        shape: ContinuousRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(12.0),
+          borderRadius: BorderRadius.circular(borderRadius),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: EdgeInsets.all(padding.toDouble()),
             child: Row(
               children: [
                 _buildLeadingIcon(context),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,9 +63,9 @@ class SearchResultItem extends StatelessWidget {
                                     : isFolder
                                         ? item.name
                                         : item.name,
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: colorScheme.onSurface,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.3,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -71,8 +75,8 @@ class SearchResultItem extends StatelessWidget {
                         isCharacter
                             ? item.race?.name ?? s.no_race
                             : isRace
-                                ? (item.description?.isNotEmpty ?? false)
-                                    ? item.description!
+                                ? (item.description.isNotEmpty)
+                                    ? item.description
                                     : s.no_description
                                 : isNote
                                     ? (item.content.isNotEmpty)
@@ -82,7 +86,7 @@ class SearchResultItem extends StatelessWidget {
                                         ? s.folder
                                         : s.fields_count(
                                             item.standardFields.length + item.customFields.length),
-                        style: textTheme.bodyMedium?.copyWith(
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
                         maxLines: 1,
@@ -92,7 +96,7 @@ class SearchResultItem extends StatelessWidget {
                   ),
                 ),
                 Icon(
-                  Icons.chevron_right,
+                  Icons.chevron_right_rounded,
                   color: colorScheme.outline,
                   size: 20,
                 ),
@@ -116,9 +120,9 @@ class SearchResultItem extends StatelessWidget {
             )
           : CircleAvatar(
               radius: 20,
-              backgroundColor: colorScheme.surfaceContainerHigh,
+              backgroundColor: colorScheme.surfaceContainerHighest,
               child: Icon(
-                Icons.person_outline,
+                Icons.person_rounded,
                 size: 20,
                 color: colorScheme.primary,
               ),
@@ -131,9 +135,9 @@ class SearchResultItem extends StatelessWidget {
             )
           : CircleAvatar(
               radius: 20,
-              backgroundColor: colorScheme.surfaceContainerHigh,
+              backgroundColor: colorScheme.surfaceContainerHighest,
               child: Icon(
-                Icons.emoji_people_outlined,
+                Icons.emoji_people_rounded,
                 size: 20,
                 color: colorScheme.primary,
               ),
@@ -141,9 +145,9 @@ class SearchResultItem extends StatelessWidget {
     } else if (item is Note) {
       return CircleAvatar(
         radius: 20,
-        backgroundColor: colorScheme.surfaceContainerHigh,
+        backgroundColor: colorScheme.surfaceContainerHighest,
         child: Icon(
-          Icons.note_outlined,
+          Icons.note_rounded,
           size: 20,
           color: colorScheme.primary,
         ),
@@ -151,9 +155,9 @@ class SearchResultItem extends StatelessWidget {
     } else if (item is Folder) {
       return CircleAvatar(
         radius: 20,
-        backgroundColor: colorScheme.surfaceContainerHigh,
+        backgroundColor: colorScheme.surfaceContainerHighest,
         child: Icon(
-          Icons.folder_outlined,
+          Icons.folder_rounded,
           size: 20,
           color: colorScheme.primary,
         ),
@@ -161,9 +165,9 @@ class SearchResultItem extends StatelessWidget {
     } else {
       return CircleAvatar(
         radius: 20,
-        backgroundColor: colorScheme.surfaceContainerHigh,
+        backgroundColor: colorScheme.surfaceContainerHighest,
         child: Icon(
-          Icons.library_books_outlined,
+          Icons.library_books_rounded,
           size: 20,
           color: colorScheme.primary,
         ),
