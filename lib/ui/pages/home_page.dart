@@ -37,13 +37,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   ];
 
   static const List<IconData> _selectedPageIcons = [
-    Icons.home,
-    Icons.people_alt,
-    Icons.emoji_people,
-    Icons.note_alt,
-    Icons.search,
-    Icons.settings,
-    Icons.casino,
+    Icons.home_rounded,
+    Icons.people_alt_rounded,
+    Icons.emoji_people_rounded,
+    Icons.note_alt_rounded,
+    Icons.search_rounded,
+    Icons.settings_rounded,
+    Icons.casino_rounded,
   ];
 
   int _currentIndex = 0;
@@ -74,13 +74,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   }
 
   List<String> _getPageTitles(BuildContext context) => [
-        'Home',
+        S.of(context).home,
         S.of(context).characters,
         S.of(context).races,
         S.of(context).posts,
         S.of(context).search,
         S.of(context).settings,
-        'D&D',
+        S.of(context).dnd_tools,
       ];
 
   void _toggleExpanded() {
@@ -202,22 +202,258 @@ class _MobileLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: pages[currentIndex],
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Scaffold(
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: pages[currentIndex],
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLow,
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.1),
+              blurRadius: 12,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: NavigationBar(
+            selectedIndex: currentIndex,
+            onDestinationSelected: onIndexChanged,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            height: 72,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            animationDuration: const Duration(milliseconds: 400),
+            destinations: [
+              _buildExpressiveDestination(
+                context,
+                icon: pageIcons[0],
+                selectedIcon: selectedPageIcons[0],
+                label: pageTitles[0],
+              ),
+              _buildExpressiveDestination(
+                context,
+                icon: pageIcons[1],
+                selectedIcon: selectedPageIcons[1],
+                label: pageTitles[1],
+              ),
+              _buildExpressiveDestination(
+                context,
+                icon: pageIcons[2],
+                selectedIcon: selectedPageIcons[2],
+                label: pageTitles[2],
+              ),
+              _buildExpressiveDestination(
+                context,
+                icon: pageIcons[3],
+                selectedIcon: selectedPageIcons[3],
+                label: pageTitles[3],
+              ),
+              _buildExpressiveDestination(
+                context,
+                icon: pageIcons[4],
+                selectedIcon: selectedPageIcons[4],
+                label: pageTitles[4],
+              ),
+            ],
           ),
         ),
-        _BottomNavigation(
-          currentIndex: currentIndex,
-          pageTitles: pageTitles,
-          pageIcons: pageIcons,
-          selectedPageIcons: selectedPageIcons,
-          onIndexChanged: onIndexChanged,
+      ),
+    );
+  }
+
+  Widget _buildExpressiveDestination(
+    BuildContext context, {
+    required IconData icon,
+    required IconData selectedIcon,
+    required String label,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return NavigationDestination(
+      icon: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: colorScheme.surfaceContainerHighest.withOpacity(0.6),
         ),
-      ],
+        child: Icon(
+          icon,
+          color: colorScheme.onSurfaceVariant,
+          size: 24,
+        ),
+      ),
+      selectedIcon: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              colorScheme.primaryContainer,
+              colorScheme.secondaryContainer,
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.primary.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          selectedIcon,
+          color: colorScheme.onPrimaryContainer,
+          size: 24,
+        ),
+      ),
+      label: label,
+    );
+  }
+
+  Widget _buildExpressiveFab(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 56),
+      child: FloatingActionButton(
+        onPressed: () => _showMoreMenu(context),
+        tooltip: S.of(context).more_options,
+        elevation: 4,
+        backgroundColor: colorScheme.primaryContainer,
+        foregroundColor: colorScheme.onPrimaryContainer,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: colorScheme.outline.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: const Icon(Icons.more_horiz_rounded),
+      ),
+    );
+  }
+
+  void _showMoreMenu(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHigh,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(28),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: colorScheme.onSurface.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+              child: Text(
+                S.of(context).more_options,
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ),
+            _buildMoreMenuItem(
+              context,
+              icon: Icons.settings_outlined,
+              selectedIcon: Icons.settings_rounded,
+              label: S.of(context).settings,
+              index: 5,
+            ),
+            _buildMoreMenuItem(
+              context,
+              icon: Icons.casino_outlined,
+              selectedIcon: Icons.casino_rounded,
+              label: S.of(context).dnd_tools,
+              index: 6,
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoreMenuItem(
+    BuildContext context, {
+    required IconData icon,
+    required IconData selectedIcon,
+    required String label,
+    required int index,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isSelected = currentIndex == index;
+
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colorScheme.primaryContainer
+              : colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          isSelected ? selectedIcon : icon,
+          color: isSelected
+              ? colorScheme.onPrimaryContainer
+              : colorScheme.onSurfaceVariant,
+          size: 22,
+        ),
+      ),
+      title: Text(
+        label,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          color: colorScheme.onSurface,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+      trailing: isSelected
+          ? Icon(
+              Icons.check_rounded,
+              color: colorScheme.primary,
+            )
+          : null,
+      onTap: () {
+        Navigator.pop(context);
+        onIndexChanged(index);
+      },
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
     );
   }
 }
@@ -439,246 +675,6 @@ class _AnimatedNavItem extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _BottomNavigation extends StatelessWidget {
-  const _BottomNavigation({
-    required this.currentIndex,
-    required this.pageTitles,
-    required this.pageIcons,
-    required this.selectedPageIcons,
-    required this.onIndexChanged,
-  });
-
-  final int currentIndex;
-  final List<String> pageTitles;
-  final List<IconData> pageIcons;
-  final List<IconData> selectedPageIcons;
-  final ValueChanged<int> onIndexChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 80,
-          child: Row(
-            children: [
-              _HomeNavItem(
-                isSelected: currentIndex == 0,
-                onTap: () => onIndexChanged(0),
-              ),
-              _OtherNavItems(
-                currentIndex: currentIndex,
-                pageTitles: pageTitles,
-                pageIcons: pageIcons,
-                selectedPageIcons: selectedPageIcons,
-                onIndexChanged: onIndexChanged,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HomeNavItem extends StatelessWidget {
-  const _HomeNavItem({
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            margin: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: isSelected
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        colorScheme.primaryContainer,
-                        colorScheme.secondaryContainer,
-                      ],
-                    )
-                  : null,
-              borderRadius: BorderRadius.circular(20),
-              border: isSelected
-                  ? Border.all(
-                      color: colorScheme.primary,
-                      width: 2,
-                    )
-                  : null,
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: colorScheme.primary.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isSelected ? Icons.home : Icons.home_outlined,
-                  color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
-                  size: 24,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Home',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _OtherNavItems extends StatelessWidget {
-  const _OtherNavItems({
-    required this.currentIndex,
-    required this.pageTitles,
-    required this.pageIcons,
-    required this.selectedPageIcons,
-    required this.onIndexChanged,
-  });
-
-  final int currentIndex;
-  final List<String> pageTitles;
-  final List<IconData> pageIcons;
-  final List<IconData> selectedPageIcons;
-  final ValueChanged<int> onIndexChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Row(
-        children: [
-          _NavButton(
-            index: 1,
-            currentIndex: currentIndex,
-            outlineIcon: Icons.people_alt_outlined,
-            filledIcon: Icons.people_alt,
-            label: pageTitles[1],
-            onIndexChanged: onIndexChanged,
-          ),
-          _NavButton(
-            index: 2,
-            currentIndex: currentIndex,
-            outlineIcon: Icons.emoji_people_outlined,
-            filledIcon: Icons.emoji_people,
-            label: pageTitles[2],
-            onIndexChanged: onIndexChanged,
-          ),
-          _NavButton(
-            index: 3,
-            currentIndex: currentIndex,
-            outlineIcon: Icons.note_alt_outlined,
-            filledIcon: Icons.note_alt,
-            label: pageTitles[3],
-            onIndexChanged: onIndexChanged,
-          ),
-          _NavButton(
-            index: 4,
-            currentIndex: currentIndex,
-            outlineIcon: Icons.search_outlined,
-            filledIcon: Icons.search,
-            label: pageTitles[4],
-            onIndexChanged: onIndexChanged,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavButton extends StatelessWidget {
-  const _NavButton({
-    required this.index,
-    required this.currentIndex,
-    required this.outlineIcon,
-    required this.filledIcon,
-    required this.label,
-    required this.onIndexChanged,
-  });
-
-  final int index;
-  final int currentIndex;
-  final IconData outlineIcon;
-  final IconData filledIcon;
-  final String label;
-  final ValueChanged<int> onIndexChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isSelected = currentIndex == index;
-
-    return Expanded(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => onIndexChanged(index),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isSelected ? filledIcon : outlineIcon,
-                color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
-                size: 22,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

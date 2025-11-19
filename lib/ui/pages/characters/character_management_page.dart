@@ -1,29 +1,29 @@
 import 'dart:typed_data';
-import 'package:characterbook/ui/handlers/unsaved_changes_handler.dart';
-import 'package:characterbook/ui/widgets/appbar/common_edit_app_bar.dart';
-import 'package:characterbook/ui/widgets/sections/image_gallery_section.dart';
-import 'package:characterbook/ui/widgets/sections/tags_and_folder_section.dart';
+
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:characterbook/models/folder_model.dart';
-import 'package:characterbook/services/folder_service.dart';
 
 import '../../../generated/l10n.dart';
 import '../../../models/characters/character_model.dart';
-import '../../../models/custom_field_model.dart';
-import '../../../models/race_model.dart';
 import '../../../models/characters/template_model.dart';
+import '../../../models/custom_field_model.dart';
+import '../../../models/folder_model.dart';
+import '../../../models/race_model.dart';
 import '../../../services/character_service.dart';
-
+import '../../../services/folder_service.dart';
+import '../../handlers/unsaved_changes_handler.dart';
+import '../../widgets/appbar/common_edit_app_bar.dart';
 import '../../widgets/avatar_picker_widget.dart';
+import '../../widgets/base_edit_page_scaffold.dart';
 import '../../widgets/fields/custom_fields_editor.dart';
 import '../../widgets/fields/custom_text_field.dart';
 import '../../widgets/fields/gender_selector_field.dart';
 import '../../widgets/fields/race_selector_field.dart';
-import '../../widgets/save_button_widget.dart';
-import '../../widgets/base_edit_page_scaffold.dart';
 import '../../widgets/reference_image_picker.dart';
+import '../../widgets/save_button_widget.dart';
+import '../../widgets/sections/image_gallery_section.dart';
+import '../../widgets/sections/tags_and_folder_section.dart';
 
 class CharacterEditPage extends StatefulWidget {
   final Character? character;
@@ -35,9 +35,14 @@ class CharacterEditPage extends StatefulWidget {
   State<CharacterEditPage> createState() => _CharacterEditPageState();
 }
 
-class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChangesHandler {
-  final _formKey = GlobalKey<FormState>();
-  final _picker = ImagePicker();
+class _CharacterEditPageState extends State<CharacterEditPage>
+    with UnsavedChangesHandler {
+  static const _sectionSpacing = 24.0;
+  static const _fieldSpacing = 16.0;
+
+  final GlobalKey<FormState> _formKey = GlobalKey();
+  final ImagePicker _picker = ImagePicker();
+
   late final CharacterService _characterService;
   late final FolderService _folderService;
 
@@ -61,15 +66,17 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
   }
 
   @override
-  Future<void> saveChanges() async => await _saveCharacter();
+  Future<void> saveChanges() async => _saveCharacter();
 
   Future<void> _loadFolders() async {
     final folders = _folderService.getFoldersByType(FolderType.character);
+    if (!mounted) return;
+    
     setState(() {
       _characterFolders = folders;
-      _selectedFolder = widget.character?.folderId != null 
-        ? _folderService.getFolderById(widget.character!.folderId!) 
-        : null;
+      _selectedFolder = widget.character?.folderId != null
+          ? _folderService.getFolderById(widget.character!.folderId!)
+          : null;
     });
   }
 
@@ -87,23 +94,21 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
 
   Future<void> _loadRaces() async {
     final raceBox = Hive.box<Race>('races');
+    if (!mounted) return;
+    
     setState(() {
       _races = raceBox.values.toList();
 
+      // Add current race if it's not in the list
       if (_character.race != null &&
           !_races.any((r) => r.name == _character.race?.name)) {
         _races.add(_character.race!);
       }
 
+      // Set default race if none selected
       if (_character.race == null && _races.isNotEmpty) {
         _character.race = _races.first;
       }
-    });
-  }
-
-  Future<void> _updateCharacter() async {
-    setState(() {
-      _character = _buildCharacter();
     });
   }
 
@@ -111,26 +116,27 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
     return _character.copyWith(
       customFields: _customFields.where((f) => f.key.isNotEmpty).toList(),
       additionalImages: _additionalImages,
+      tags: _tags,
+      folderId: _selectedFolder?.id,
     );
   }
 
-  Future<void> _pickReferenceImage() async => _pickAndSetImage(false);
-
-  Future<void> _pickAndSetImage(bool isMainImage) async {
+  Future<void> _pickImage(bool isMainImage) async {
     try {
       final image = await _picker.pickImage(source: ImageSource.gallery);
-      if (image != null) {
-        final bytes = await image.readAsBytes();
-        setState(() {
-          if (isMainImage) {
-            _character.imageBytes = bytes;
-          } else {
-            _character.referenceImageBytes = bytes;
-          }
-          hasUnsavedChanges = true;
-        });
-        await _updateCharacter();
-      }
+      if (image == null) return;
+
+      final bytes = await image.readAsBytes();
+      if (!mounted) return;
+
+      setState(() {
+        if (isMainImage) {
+          _character.imageBytes = bytes;
+        } else {
+          _character.referenceImageBytes = bytes;
+        }
+        hasUnsavedChanges = true;
+      });
     } catch (e) {
       _showError('${S.of(context).error}: ${e.toString()}');
     }
@@ -143,14 +149,15 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
         imageQuality: 85,
         maxWidth: 1200,
       );
-      if (image != null) {
-        final bytes = await image.readAsBytes();
-        setState(() {
-          _additionalImages.add(bytes);
-          hasUnsavedChanges = true;
-        });
-        await _updateCharacter();
-      }
+      if (image == null) return;
+
+      final bytes = await image.readAsBytes();
+      if (!mounted) return;
+
+      setState(() {
+        _additionalImages.add(bytes);
+        hasUnsavedChanges = true;
+      });
     } catch (e) {
       _showError('${S.of(context).error}: ${e.toString()}');
     }
@@ -161,91 +168,92 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
       _additionalImages.removeAt(index);
       hasUnsavedChanges = true;
     });
-    _updateCharacter();
   }
 
   void _showError(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: Theme.of(context).colorScheme.error,
       ),
     );
   }
 
   Future<void> _saveCharacter() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+    if (!_formKey.currentState!.validate()) return;
 
-      try {
-        final character = _buildCharacter();
-        character.folderId = _selectedFolder?.id;
-        character.tags = _tags;
+    _formKey.currentState!.save();
 
-        final characterKey = await _characterService.saveCharacter(
-          character,
-          key: widget.character?.key,
-        );
+    try {
+      final character = _buildCharacter();
+      final characterKey = await _characterService.saveCharacter(
+        character,
+        key: widget.character?.key,
+      );
 
-        final actualKey = characterKey ?? widget.character?.key;
+      await _updateFolderMembership(characterKey);
+      if (!mounted) return;
 
-        if (actualKey != null) {
-          if (_selectedFolder == null) {
-            for (final folder in _characterFolders) {
-              if (folder.contentIds.contains(actualKey.toString())) {
-                await _folderService.removeFromFolder(folder.id, actualKey.toString());
-              }
-            }
-          } 
-          else {
-            for (final folder in _characterFolders) {
-              if (folder.id != _selectedFolder!.id && 
-                  folder.contentIds.contains(actualKey.toString())) {
-                await _folderService.removeFromFolder(folder.id, actualKey.toString());
-              }
-            }
-            await _folderService.addToFolder(_selectedFolder!.id, actualKey.toString());
-          }
-        }
-
-        setState(() => hasUnsavedChanges = false);
-
-        if (mounted) Navigator.pop(context);
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${S.of(context).save_error}: ${e.toString()}')),
-          );
-        }
-      }
+      setState(() => hasUnsavedChanges = false);
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${S.of(context).save_error}: ${e.toString()}'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
     }
   }
 
+  Future<void> _updateFolderMembership(dynamic characterKey) async {
+    final actualKey = characterKey ?? widget.character?.key;
+    if (actualKey == null) return;
+
+    final keyString = actualKey.toString();
+
+    // Remove from all folders if no folder selected
+    if (_selectedFolder == null) {
+      for (final folder in _characterFolders) {
+        if (folder.contentIds.contains(keyString)) {
+          await _folderService.removeFromFolder(folder.id, keyString);
+        }
+      }
+      return;
+    }
+
+    // Ensure character is only in the selected folder
+    for (final folder in _characterFolders) {
+      if (folder.id != _selectedFolder!.id &&
+          folder.contentIds.contains(keyString)) {
+        await _folderService.removeFromFolder(folder.id, keyString);
+      }
+    }
+    await _folderService.addToFolder(_selectedFolder!.id, keyString);
+  }
+
   bool _shouldShowField(String fieldName) {
-    if (widget.template == null) return true;
-    return widget.template!.containsField(fieldName);
+    return widget.template?.containsField(fieldName) ?? true;
   }
 
   String _normalizeGender(String? gender, BuildContext context) {
     if (gender == null) return 'male';
 
     final s = S.of(context);
-    if (gender == s.male) return 'male';
-    if (gender == s.female) return 'female';
-    if (gender == s.another) return 'another';
-
-    return gender;
+    return switch (gender) {
+      'male' => s.male,
+      'female' => s.female,
+      'another' => s.another,
+      _ => gender,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
-    
-    final title = widget.character == null
-        ? widget.template == null
-            ? s.new_character
-            : '${s.new_character} (${s.from_template})'
-        : s.edit_character;
+    final title = _buildPageTitle(s);
 
     return BaseEditPageScaffold(
       onWillPop: () => handleUnsavedChanges(context),
@@ -259,155 +267,80 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            TagsAndFolderSection(
-              tags: _tags,
-              onTagsChanged: (tags) {
-                setState(() {
-                  _tags = tags;
-                  hasUnsavedChanges = true;
-                });
-              },
-              folderService: _folderService,
-              folderType: FolderType.character,
-              selectedFolder: _selectedFolder,
-              onFolderSelected: (folder) {
-                setState(() {
-                  _selectedFolder = folder;
-                  _character.folderId = folder?.id;
-                  hasUnsavedChanges = true;
-                });
-              },
-              folders: _characterFolders,
-            ),
+            _buildFolderAndTagsSection(),
             if (widget.template != null) _buildTemplateChip(),
-            AvatarPicker(
-              currentAvatar: _character.imageBytes,
-              onAvatarChanged: (bytes) {
-                setState(() {
-                  _character.imageBytes = bytes;
-                  hasUnsavedChanges = true;
-                });
-                _updateCharacter();
-              },
-            ),
-            const SizedBox(height: 24),
+            _buildAvatarSection(),
+            const SizedBox(height: _sectionSpacing),
             _buildNameField(),
-            const SizedBox(height: 16),
-
-            if (_shouldShowField('age') || _shouldShowField('gender'))
-              _buildAgeAndGenderRow(),
-            if (_shouldShowField('race')) ...[
-              RaceSelectorField(
-                initialRace: _character.race,
-                onChanged: (race) {
-                  _character.race = race;
-                  hasUnsavedChanges = true;
-                },
-              ),
-            ],
-            if (_shouldShowField('referenceImage')) ...[
-              ReferenceImagePicker(
-                imageBytes: _character.referenceImageBytes,
-                onPickImage: _pickReferenceImage,
-                title: S.of(context).reference_image,
-              ),
-              const SizedBox(height: 16),
-            ],
-            
-            CustomFieldsEditor(
-              initialFields: _customFields,
-              onFieldsChanged: (fields) {
-                _customFields = fields;
-                hasUnsavedChanges = true;
-              },
-              verticalLayout: true,
-            ),
-            const SizedBox(height: 16),
-            
-            if (_shouldShowField('appearance'))
-              CustomTextField(
-                label: S.of(context).appearance,
-                initialValue: _character.appearance,
-                alignLabel: true,
-                onSaved: (value) => _character.appearance = value!,
-                onChanged: (_) => hasUnsavedChanges = true,
-                maxLines: 5,
-              ),
-            if (_shouldShowField('appearance')) const SizedBox(height: 16),
-            if (_shouldShowField('additionalImages')) ...[
-              ImageGallerySection(
-                images: _additionalImages,
-                onAddImage: _pickAdditionalImage,
-                onRemoveImage: _removeAdditionalImage,
-                title: S.of(context).additional_images,
-                emptyText: S.of(context).no_additional_images,
-                addTooltip: S.of(context).add_picture,
-              ),
-              const SizedBox(height: 16),
-            ],
-            if (_shouldShowField('personality'))
-              CustomTextField(
-                label: S.of(context).personality,
-                initialValue: _character.personality,
-                alignLabel: true,
-                onSaved: (value) => _character.personality = value!,
-                onChanged: (_) => hasUnsavedChanges = true,
-                maxLines: 4,
-              ),
-            if (_shouldShowField('personality')) const SizedBox(height: 16),
-            if (_shouldShowField('biography'))
-              CustomTextField(
-                label: S.of(context).biography,
-                initialValue: _character.biography,
-                alignLabel: true,
-                onSaved: (value) => _character.biography = value!,
-                onChanged: (_) => hasUnsavedChanges = true,
-                maxLines: 7,
-              ),
-            if (_shouldShowField('biography')) const SizedBox(height: 16),
-            if (_shouldShowField('abilities'))
-              CustomTextField(
-                label: S.of(context).abilities,
-                initialValue: _character.abilities,
-                alignLabel: true,
-                onSaved: (value) => _character.abilities = value!,
-                onChanged: (_) => hasUnsavedChanges = true,
-                maxLines: 7,
-              ),
-            if (_shouldShowField('abilities')) const SizedBox(height: 16),
-            if (_shouldShowField('other'))
-              CustomTextField(
-                label: S.of(context).other,
-                initialValue: _character.other,
-                alignLabel: true,
-                onSaved: (value) => _character.other = value!,
-                onChanged: (_) => hasUnsavedChanges = true,
-                maxLines: 5,
-              ),
-            if (_shouldShowField('other')) const SizedBox(height: 32),
+            const SizedBox(height: _fieldSpacing),
+            ..._buildCharacterFields(s),
+            const SizedBox(height: _sectionSpacing),
             SaveButton(
               onPressed: _saveCharacter,
-              text: S.of(context).save,
+              text: s.save,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: _fieldSpacing),
           ],
         ),
       ),
     );
   }
 
+  String _buildPageTitle(S s) {
+    if (widget.character == null) {
+      return widget.template == null
+          ? s.new_character
+          : '${s.new_character} (${s.from_template})';
+    }
+    return s.edit_character;
+  }
+
+  Widget _buildFolderAndTagsSection() {
+    return TagsAndFolderSection(
+      tags: _tags,
+      onTagsChanged: (tags) {
+        setState(() {
+          _tags = tags;
+          hasUnsavedChanges = true;
+        });
+      },
+      folderService: _folderService,
+      folderType: FolderType.character,
+      selectedFolder: _selectedFolder,
+      onFolderSelected: (folder) {
+        setState(() {
+          _selectedFolder = folder;
+          hasUnsavedChanges = true;
+        });
+      },
+      folders: _characterFolders,
+    );
+  }
+
   Widget _buildTemplateChip() {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: _fieldSpacing),
       child: Chip(
         label: Text(
           '${S.of(context).template}: ${widget.template!.name}',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
-          ),
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
         ),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       ),
+    );
+  }
+
+  Widget _buildAvatarSection() {
+    return AvatarPicker(
+      currentAvatar: _character.imageBytes,
+      onAvatarChanged: (bytes) {
+        setState(() {
+          _character.imageBytes = bytes;
+          hasUnsavedChanges = true;
+        });
+      },
     );
   }
 
@@ -419,7 +352,7 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
       onSaved: (value) => _character.name = value!,
       onChanged: (_) => hasUnsavedChanges = true,
       validator: (value) {
-        if (value == null || value.isEmpty) {
+        if (value?.isEmpty ?? true) {
           return S.of(context).name;
         }
         return null;
@@ -427,20 +360,127 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
     );
   }
 
-  Widget _buildAgeAndGenderRow() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            if (_shouldShowField('age'))
-              Expanded(child: _buildAgeField()),
-            if (_shouldShowField('age') && _shouldShowField('gender'))
-              const SizedBox(width: 16),
-            if (_shouldShowField('gender'))
-              Expanded(child: _buildGenderField()),
-          ],
+  List<Widget> _buildCharacterFields(S s) {
+    final fields = <Widget>[];
+
+    if (_shouldShowField('age') || _shouldShowField('gender')) {
+      fields.addAll([
+        _buildAgeAndGenderRow(),
+        const SizedBox(height: _fieldSpacing),
+      ]);
+    }
+
+    if (_shouldShowField('race')) {
+      fields.addAll([
+        RaceSelectorField(
+          initialRace: _character.race,
+          onChanged: (race) {
+            _character.race = race;
+            hasUnsavedChanges = true;
+          },
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: _fieldSpacing),
+      ]);
+    }
+
+    if (_shouldShowField('referenceImage')) {
+      fields.addAll([
+        ReferenceImagePicker(
+          imageBytes: _character.referenceImageBytes,
+          onPickImage: () => _pickImage(false),
+          title: s.reference_image,
+        ),
+        const SizedBox(height: _fieldSpacing),
+      ]);
+    }
+
+    fields.addAll([
+      CustomFieldsEditor(
+        initialFields: _customFields,
+        onFieldsChanged: (fields) {
+          _customFields = fields;
+          hasUnsavedChanges = true;
+        },
+        verticalLayout: true,
+      ),
+    ]);
+
+    if (_shouldShowField('additionalImages')) {
+      fields.addAll([
+        const SizedBox(height: _fieldSpacing),
+        ImageGallerySection(
+          images: _additionalImages,
+          onAddImage: _pickAdditionalImage,
+          onRemoveImage: _removeAdditionalImage,
+          title: s.additional_images,
+          emptyText: s.no_additional_images,
+          addTooltip: s.add_picture,
+        ),
+      ]);
+    }
+
+    // Text description fields
+    final textFields = [
+      ('appearance', s.appearance, 5),
+      ('personality', s.personality, 4),
+      ('biography', s.biography, 7),
+      ('abilities', s.abilities, 7),
+      ('other', s.other, 5),
+    ];
+
+    for (final (fieldName, label, maxLines) in textFields) {
+      if (_shouldShowField(fieldName)) {
+        fields.addAll([
+          const SizedBox(height: _fieldSpacing),
+          CustomTextField(
+            label: label,
+            initialValue: _getFieldValue(fieldName),
+            alignLabel: true,
+            onSaved: (value) => _setFieldValue(fieldName, value!),
+            onChanged: (_) => hasUnsavedChanges = true,
+            maxLines: maxLines,
+          ),
+        ]);
+      }
+    }
+
+    return fields;
+  }
+
+  String _getFieldValue(String fieldName) {
+    return switch (fieldName) {
+      'appearance' => _character.appearance,
+      'personality' => _character.personality,
+      'biography' => _character.biography,
+      'abilities' => _character.abilities,
+      'other' => _character.other,
+      _ => '',
+    };
+  }
+
+  void _setFieldValue(String fieldName, String value) {
+    switch (fieldName) {
+      case 'appearance':
+        _character.appearance = value;
+      case 'personality':
+        _character.personality = value;
+      case 'biography':
+        _character.biography = value;
+      case 'abilities':
+        _character.abilities = value;
+      case 'other':
+        _character.other = value;
+    }
+  }
+
+  Widget _buildAgeAndGenderRow() {
+    return Row(
+      children: [
+        if (_shouldShowField('age')) ...[
+          Expanded(child: _buildAgeField()),
+          if (_shouldShowField('gender')) const SizedBox(width: _fieldSpacing),
+        ],
+        if (_shouldShowField('gender')) Expanded(child: _buildGenderField()),
       ],
     );
   }
@@ -451,12 +491,14 @@ class _CharacterEditPageState extends State<CharacterEditPage> with UnsavedChang
       initialValue: _character.age.toString(),
       isRequired: _shouldShowField('age'),
       keyboardType: TextInputType.number,
-      validator: _shouldShowField('age') ? (value) {
-        if (value?.isEmpty ?? true) return S.of(context).enter_age;
-        final age = int.tryParse(value!);
-        if (age == null || age <= 0) return S.of(context).invalid_age;
-        return null;
-      } : null,
+      validator: _shouldShowField('age')
+          ? (value) {
+              if (value?.isEmpty ?? true) return S.of(context).enter_age;
+              final age = int.tryParse(value!);
+              if (age == null || age <= 0) return S.of(context).invalid_age;
+              return null;
+            }
+          : null,
       onSaved: _shouldShowField('age')
           ? (value) => _character.age = int.tryParse(value ?? '0') ?? 0
           : null,

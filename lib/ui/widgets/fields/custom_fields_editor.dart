@@ -271,6 +271,8 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
         ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextField(
             decoration: InputDecoration(
@@ -289,7 +291,8 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
             controller: TextEditingController(text: field.key),
           ),
           const SizedBox(height: 16),
-          Expanded(
+          SizedBox(
+            height: 120,
             child: TextField(
               decoration: InputDecoration(
                 labelText: s.field_value,
@@ -302,29 +305,31 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
                   vertical: 16,
                 ),
                 floatingLabelBehavior: FloatingLabelBehavior.always,
+                alignLabelWithHint: true,
               ),
               onChanged: (value) => _updateField(index, field.key, value),
               controller: TextEditingController(text: field.value),
               maxLines: null,
               expands: true,
+              textAlignVertical: TextAlignVertical.top,
             ),
           ),
           const SizedBox(height: 16),
           FilledButton.tonal(
             onPressed: () => _removeField(index),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.errorContainer,
+              foregroundColor: theme.colorScheme.error,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.delete_rounded,
                   size: 18,
-                  color: theme.colorScheme.error,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  s.delete,
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
+                Text(s.delete),
               ],
             ),
           ),

@@ -432,126 +432,148 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
                 child: const Icon(Icons.edit_rounded),
               ),
             ),
-            body: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(32),
-                topRight: Radius.circular(32),
-              ),
-              child: CustomScrollView(
-                controller: scrollController,
-                slivers: [
-                  SliverAppBar(
-                    expandedHeight: 120,
-                    collapsedHeight: 80,
-                    pinned: true,
-                    floating: false,
-                    snap: false,
-                    surfaceTintColor: Colors.transparent,
-                    shadowColor: colorScheme.shadow,
-                    backgroundColor: colorScheme.surfaceContainerLowest,
-                    shape: const ContinuousRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(32),
-                        bottomRight: Radius.circular(32),
-                      ),
-                    ),
-                    leading: IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () => Navigator.pop(context),
-                      tooltip: "Close",
-                    ),
-                    flexibleSpace: FlexibleSpaceBar(
-                      centerTitle: true,
-                      titlePadding: const EdgeInsets.only(bottom: 16),
-                      title: Text(
-                        widget.character.name,
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          height: 1.2,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      background: Container(
+            body: Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 4,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              colorScheme.surfaceContainerLowest,
-                              colorScheme.surfaceContainerLowest.withOpacity(0.3),
-                            ],
-                          ),
+                          color: colorScheme.onSurface.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(2),
                         ),
-                      ),
-                    ),
-                    actions: [
-                      IconButton.filledTonal(
-                        onPressed: _showShareMenu,
-                        icon: const Icon(Icons.share_outlined),
-                        tooltip: S.of(context).share_character,
-                        style: IconButton.styleFrom(
-                          shape: const CircleBorder(),
-                          padding: const EdgeInsets.all(16),
-                        ),
-                      ),
-                      PopupMenuButton<String>(
-                        icon: Icon(Icons.more_vert_rounded, color: colorScheme.onSurface),
-                        position: PopupMenuPosition.under,
-                        surfaceTintColor: colorScheme.surfaceContainerHighest,
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'copy',
-                            child: ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: Icon(Icons.copy_rounded, color: colorScheme.onSurfaceVariant),
-                              title: Text(S.of(context).copy_character),
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'edit',
-                            child: ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: Icon(Icons.edit_rounded, color: colorScheme.onSurfaceVariant),
-                              title: Text(S.of(context).edit_character),
-                            ),
-                          ),
-                          const PopupMenuDivider(),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: Icon(Icons.delete_rounded, color: colorScheme.error),
-                              title: Text(
-                                S.of(context).delete_character,
-                                style: TextStyle(color: colorScheme.error),
-                              ),
-                            ),
-                          ),
-                        ],
-                        onSelected: (value) => switch (value) {
-                          'copy' => _copyToClipboard(),
-                          'edit' => _navigateToEdit(),
-                          'delete' => _handleDelete(),
-                          _ => null,
-                        },
                       ),
                     ],
                   ),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        _buildHeroSection(context),
-                        const SizedBox(height: 24),
-                        _buildMetadataSection(context),
-                        const SizedBox(height: 24),
-                        _buildContentSections(context),
-                        const SizedBox(height: 32), // Добавляем отступ снизу для FAB
-                      ]),
+                ),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(32),
+                      topRight: Radius.circular(32),
+                    ),
+                    child: CustomScrollView(
+                      controller: scrollController,
+                      slivers: [
+                        SliverAppBar(
+                          expandedHeight: 120,
+                          collapsedHeight: 80,
+                          pinned: true,
+                          floating: false,
+                          snap: false,
+                          surfaceTintColor: Colors.transparent,
+                          shadowColor: colorScheme.shadow,
+                          backgroundColor: colorScheme.surfaceContainerLowest,
+                          shape: const ContinuousRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(32),
+                              bottomRight: Radius.circular(32),
+                            ),
+                          ),
+                          leading: IconButton(
+                            icon: const Icon(Icons.close_rounded),
+                            onPressed: () => Navigator.pop(context),
+                            tooltip: "Close",
+                          ),
+                          flexibleSpace: FlexibleSpaceBar(
+                            centerTitle: true,
+                            titlePadding: const EdgeInsets.only(bottom: 16),
+                            title: Text(
+                              widget.character.name,
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                height: 1.2,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            background: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    colorScheme.surfaceContainerLowest,
+                                    colorScheme.surfaceContainerLowest.withOpacity(0.3),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          actions: [
+                            IconButton.filledTonal(
+                              onPressed: _showShareMenu,
+                              icon: const Icon(Icons.share_outlined),
+                              tooltip: S.of(context).share_character,
+                              style: IconButton.styleFrom(
+                                shape: const CircleBorder(),
+                                padding: const EdgeInsets.all(16),
+                              ),
+                            ),
+                            PopupMenuButton<String>(
+                              icon: Icon(Icons.more_vert_rounded, color: colorScheme.onSurface),
+                              position: PopupMenuPosition.under,
+                              surfaceTintColor: colorScheme.surfaceContainerHighest,
+                              itemBuilder: (context) => [
+                                PopupMenuItem(
+                                  value: 'copy',
+                                  child: ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: Icon(Icons.copy_rounded, color: colorScheme.onSurfaceVariant),
+                                    title: Text(S.of(context).copy_character),
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'edit',
+                                  child: ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: Icon(Icons.edit_rounded, color: colorScheme.onSurfaceVariant),
+                                    title: Text(S.of(context).edit_character),
+                                  ),
+                                ),
+                                const PopupMenuDivider(),
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: Icon(Icons.delete_rounded, color: colorScheme.error),
+                                    title: Text(
+                                      S.of(context).delete_character,
+                                      style: TextStyle(color: colorScheme.error),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              onSelected: (value) => switch (value) {
+                                'copy' => _copyToClipboard(),
+                                'edit' => _navigateToEdit(),
+                                'delete' => _handleDelete(),
+                                _ => null,
+                              },
+                            ),
+                          ],
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                          sliver: SliverList(
+                            delegate: SliverChildListDelegate([
+                              _buildHeroSection(context),
+                              const SizedBox(height: 24),
+                              _buildMetadataSection(context),
+                              const SizedBox(height: 24),
+                              _buildContentSections(context),
+                              const SizedBox(height: 32),
+                            ]),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
