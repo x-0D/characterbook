@@ -15,7 +15,7 @@ import 'package:characterbook/models/characters/character_model.dart';
 import 'package:characterbook/models/race_model.dart';
 import 'package:characterbook/models/note_model.dart';
 import 'package:characterbook/ui/widgets/appbar/custom_app_bar.dart';
-import 'package:characterbook/ui/widgets/custom_floating_buttons.dart';
+import 'package:characterbook/ui/buttons/custom_floating_buttons.dart';
 import 'package:characterbook/ui/widgets/context_menu.dart';
 import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';

@@ -822,7 +822,7 @@ packages:
     source: hosted
     version: "1.0.6"
   msix:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: msix
       sha256: f88033fcb9e0dd8de5b18897cbebbd28ea30596810f4a7c86b12b0c03ace87e5
@@ -1411,7 +1411,7 @@ packages:
     source: hosted
     version: "5.15.0"
   window_manager:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: window_manager
       sha256: "7eb6d6c4164ec08e1bf978d6e733f3cebe792e2a23fb07cbca25c2872bfdbdcd"

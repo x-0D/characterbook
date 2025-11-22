@@ -4,7 +4,7 @@ import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
 import 'package:characterbook/ui/widgets/items/template_card.dart';
 import 'package:characterbook/ui/widgets/context_menu.dart';
 import 'package:characterbook/ui/widgets/appbar/custom_app_bar.dart';
-import 'package:characterbook/ui/widgets/custom_floating_buttons.dart';
+import 'package:characterbook/ui/buttons/custom_floating_buttons.dart';
 import 'package:characterbook/ui/pages/templates/template_edit_page.dart';
 import 'package:characterbook/ui/pages/characters/character_management_page.dart';
 import 'package:characterbook/ui/widgets/tags/tag_filter.dart';

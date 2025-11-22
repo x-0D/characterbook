@@ -15,7 +15,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../../../generated/l10n.dart';
 import '../../../models/note_model.dart';
 import '../../widgets/appbar/custom_app_bar.dart';
-import '../../widgets/custom_floating_buttons.dart';
+import '../../buttons/custom_floating_buttons.dart';
 import 'note_management_page.dart';
 
 class NotesListPage extends StatefulWidget {

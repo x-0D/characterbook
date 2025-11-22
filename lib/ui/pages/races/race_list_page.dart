@@ -5,7 +5,7 @@ import 'package:characterbook/services/file_picker_service.dart';
 import 'package:characterbook/ui/pages/folders/folder_list_page.dart';
 import 'package:characterbook/ui/widgets/context_menu.dart';
 import 'package:characterbook/ui/widgets/appbar/custom_app_bar.dart';
-import 'package:characterbook/ui/widgets/custom_floating_buttons.dart';
+import 'package:characterbook/ui/buttons/custom_floating_buttons.dart';
 import 'package:characterbook/ui/widgets/items/race_card.dart';
 import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
 import 'package:characterbook/ui/widgets/list/optimized_list_view.dart';

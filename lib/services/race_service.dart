@@ -261,7 +261,7 @@ class RaceService {
       'racesWithLogo': races.where((race) => race.logo != null).length,
       'racesWithFolder': races.where((race) => race.folderId != null && race.folderId!.isNotEmpty).length,
       'racesWithTags': races.where((race) => race.tags.isNotEmpty).length,
-      'averageTagsPerRace': races.isEmpty ? 0 : races.fold(0, (sum, race) => sum + race.tags.length) / races.length,
+      'averageTagsPerRace': races.isEmpty ? 0 : races.fold(0, (sum, race) => int.parse(sum.toString()) + race.tags.length) / races.length,
       'mostCommonTag': _getMostCommonTag(races),
     };
   }

@@ -4,7 +4,7 @@ version: 1.7.0+34
 publish_to: 'MaxGog'
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ">=3.0.0 <4.0.0"
   flutter: '>=3.0.0'
 
 flutter:
@@ -40,7 +40,7 @@ dependencies:
   pdf: ^3.10.0
   printing: ^5.9.1
 
-  file_selector: ^1.0.3
+  file_selector: ^1.1.0
   image_picker: ^1.1.2
   open_filex: ^4.7.0
   cross_file: ^0.3.3
@@ -57,9 +57,7 @@ dependencies:
   flutter_markdown: ^0.6.15
 
   universal_html: ^2.2.1
-
-  window_manager: ^0.5.1
-  msix: ^3.16.10
+  
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +74,10 @@ dev_dependencies:
   flutter_launcher_icons: ^0.13.1
 
   analyzer: ^6.4.1
+
+  msix: ^3.16.10
+
+  window_manager: ^0.5.1
 
 flutter_intl:
   enabled: true
