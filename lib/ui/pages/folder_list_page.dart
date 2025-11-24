@@ -19,7 +19,7 @@ import 'package:characterbook/ui/buttons/custom_floating_buttons.dart';
 import 'package:characterbook/ui/widgets/context_menu.dart';
 import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../../../generated/l10n.dart';
+import '../../generated/l10n.dart';
 
 class FoldersScreen extends StatefulWidget {
   final FolderType folderType;

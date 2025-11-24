@@ -1,7 +1,7 @@
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/services/file_picker_service.dart';
 import 'package:characterbook/ui/cards/character_modal_card.dart';
-import 'package:characterbook/ui/pages/folders/folder_list_page.dart';
+import 'package:characterbook/ui/pages/folder_list_page.dart';
 import 'package:characterbook/ui/widgets/list/base_list_page.dart';
 import 'package:characterbook/ui/widgets/list/optimized_list_view.dart';
 import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
