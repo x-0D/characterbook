@@ -20,23 +20,75 @@ class CustomFieldsEditor extends StatefulWidget {
 
 class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
   late List<CustomField> _fields;
+  late List<TextEditingController> _keyControllers;
+  late List<TextEditingController> _valueControllers;
 
   @override
   void initState() {
     super.initState();
     _fields = widget.initialFields.map((f) => f.copyWith()).toList();
+    _initializeControllers();
+  }
+
+  void _initializeControllers() {
+    _keyControllers = _fields.map((field) {
+      final controller = TextEditingController(text: field.key);
+      controller.addListener(() {
+        final index = _keyControllers.indexOf(controller);
+        if (index != -1) {
+          _updateField(index, controller.text, _valueControllers[index].text);
+        }
+      });
+      return controller;
+    }).toList();
+
+    _valueControllers = _fields.map((field) {
+      final controller = TextEditingController(text: field.value);
+      controller.addListener(() {
+        final index = _valueControllers.indexOf(controller);
+        if (index != -1) {
+          _updateField(index, _keyControllers[index].text, controller.text);
+        }
+      });
+      return controller;
+    }).toList();
   }
 
   void _addField() {
     setState(() {
-      _fields.add(CustomField('', ''));
+      final newField = CustomField('', '');
+      _fields.add(newField);
+
+      final keyController = TextEditingController();
+      keyController.addListener(() {
+        final index = _keyControllers.indexOf(keyController);
+        if (index != -1) {
+          _updateField(
+              index, keyController.text, _valueControllers[index].text);
+        }
+      });
+      _keyControllers.add(keyController);
+
+      final valueController = TextEditingController();
+      valueController.addListener(() {
+        final index = _valueControllers.indexOf(valueController);
+        if (index != -1) {
+          _updateField(
+              index, _keyControllers[index].text, valueController.text);
+        }
+      });
+      _valueControllers.add(valueController);
     });
     widget.onFieldsChanged(_fields);
   }
 
   void _removeField(int index) {
     setState(() {
+      _keyControllers[index].dispose();
+      _valueControllers[index].dispose();
       _fields.removeAt(index);
+      _keyControllers.removeAt(index);
+      _valueControllers.removeAt(index);
     });
     widget.onFieldsChanged(_fields);
   }
@@ -46,6 +98,17 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
       _fields[index] = CustomField(key, value);
     });
     widget.onFieldsChanged(_fields);
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _keyControllers) {
+      controller.dispose();
+    }
+    for (final controller in _valueControllers) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   @override
@@ -86,8 +149,7 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
         const SizedBox(height: 24),
         ..._fields.asMap().entries.map((entry) {
           final index = entry.key;
-          final field = entry.value;
-          return _buildVerticalFieldItem(index, field, s, theme);
+          return _buildVerticalFieldItem(index, s, theme);
         }).toList(),
         if (_fields.isEmpty)
           Container(
@@ -119,7 +181,7 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
     );
   }
 
-  Widget _buildVerticalFieldItem(int index, CustomField field, S s, ThemeData theme) {
+  Widget _buildVerticalFieldItem(int index, S s, ThemeData theme) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -138,6 +200,7 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
             children: [
               Expanded(
                 child: TextField(
+                  controller: _keyControllers[index],
                   decoration: InputDecoration(
                     labelText: s.field_name,
                     hintText: s.field_name_hint,
@@ -150,8 +213,6 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
                     ),
                     floatingLabelBehavior: FloatingLabelBehavior.always,
                   ),
-                  onChanged: (value) => _updateField(index, value, field.value),
-                  controller: TextEditingController(text: field.key),
                 ),
               ),
               const SizedBox(width: 12),
@@ -169,23 +230,30 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
             ],
           ),
           const SizedBox(height: 16),
-          TextField(
-            decoration: InputDecoration(
-              labelText: s.field_value,
-              hintText: s.field_value_hint,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
-              floatingLabelBehavior: FloatingLabelBehavior.always,
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: 60,
+              maxHeight: 200,
             ),
-            onChanged: (value) => _updateField(index, field.key, value),
-            controller: TextEditingController(text: field.value),
-            maxLines: 3,
-            minLines: 1,
+            child: TextField(
+              controller: _valueControllers[index],
+              decoration: InputDecoration(
+                labelText: s.field_value,
+                hintText: s.field_value_hint,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                alignLabelWithHint: true,
+              ),
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
+            ),
           ),
         ],
       ),
@@ -222,8 +290,7 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: _fields.asMap().entries.map((entry) {
               final index = entry.key;
-              final field = entry.value;
-              return _buildHorizontalFieldItem(index, field, s, theme);
+              return _buildHorizontalFieldItem(index, s, theme);
             }).toList(),
           ),
         ),
@@ -257,9 +324,9 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
     );
   }
 
-  Widget _buildHorizontalFieldItem(int index, CustomField field, S s, ThemeData theme) {
+  Widget _buildHorizontalFieldItem(int index, S s, ThemeData theme) {
     return Container(
-      width: 280,
+      width: 320,
       margin: const EdgeInsets.only(right: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -275,6 +342,7 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextField(
+            controller: _keyControllers[index],
             decoration: InputDecoration(
               labelText: s.field_name,
               hintText: s.field_name_hint,
@@ -287,13 +355,15 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
               ),
               floatingLabelBehavior: FloatingLabelBehavior.always,
             ),
-            onChanged: (value) => _updateField(index, value, field.value),
-            controller: TextEditingController(text: field.key),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 120,
+          ConstrainedBox(
+            constraints: const BoxConstraints(
+              minHeight: 120,
+              maxHeight: 200,
+            ),
             child: TextField(
+              controller: _valueControllers[index],
               decoration: InputDecoration(
                 labelText: s.field_value,
                 hintText: s.field_value_hint,
@@ -307,8 +377,6 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
                 floatingLabelBehavior: FloatingLabelBehavior.always,
                 alignLabelWithHint: true,
               ),
-              onChanged: (value) => _updateField(index, field.key, value),
-              controller: TextEditingController(text: field.value),
               maxLines: null,
               expands: true,
               textAlignVertical: TextAlignVertical.top,
