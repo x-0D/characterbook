@@ -113,10 +113,15 @@ class _FolderSelectorDialog extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Text(
-                  S.of(context).folder,
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 48),
+                  child: Text(
+                    S.of(context).folder,
+                    style: textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Positioned(
