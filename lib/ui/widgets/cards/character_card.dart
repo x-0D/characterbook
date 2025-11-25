@@ -2,7 +2,7 @@ import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/characters/character_model.dart';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/services/folder_service.dart';
-import 'package:characterbook/ui/pages/characters/character_management_page.dart';
+import 'package:characterbook/ui/pages/character_management_page.dart';
 import 'package:characterbook/ui/widgets/avatar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';

@@ -5,15 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
-import '../../../generated/l10n.dart';
-import '../../../models/characters/character_model.dart';
-import '../../../models/folder_model.dart';
-import '../../../models/note_model.dart';
-import '../../../services/clipboard_service.dart';
-import '../../../services/folder_service.dart';
-import '../../widgets/fields/custom_text_field.dart';
-import '../../widgets/markdown_context_menu.dart';
-import '../../widgets/buttons/save_button_widget.dart';
+import '../../generated/l10n.dart';
+import '../../models/characters/character_model.dart';
+import '../../models/folder_model.dart';
+import '../../models/note_model.dart';
+import '../../services/clipboard_service.dart';
+import '../../services/folder_service.dart';
+import '../widgets/fields/custom_text_field.dart';
+import '../widgets/markdown_context_menu.dart';
+import '../widgets/buttons/save_button_widget.dart';
 
 class NoteEditPage extends StatefulWidget {
   final Note? note;

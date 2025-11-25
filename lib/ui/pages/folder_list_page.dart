@@ -1,7 +1,7 @@
 import 'package:characterbook/ui/dialogs/folder_dialog.dart';
-import 'package:characterbook/ui/pages/characters/character_management_page.dart';
-import 'package:characterbook/ui/pages/notes/note_management_page.dart';
-import 'package:characterbook/ui/pages/races/race_management_page.dart';
+import 'package:characterbook/ui/pages/character_management_page.dart';
+import 'package:characterbook/ui/pages/note_management_page.dart';
+import 'package:characterbook/ui/pages/race_management_page.dart';
 import 'package:characterbook/ui/widgets/states/empty_folders_state.dart';
 import 'package:characterbook/ui/widgets/cards/character_card.dart';
 import 'package:characterbook/ui/widgets/cards/folder_card.dart';

@@ -50,9 +50,7 @@ class _ExportPdfSettingsPageState extends State<ExportPdfSettingsPage> {
           ),
         ],
       ),
-      body: _settings == null
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
+      body: ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 _buildSectionHeader('Включаемые разделы'),

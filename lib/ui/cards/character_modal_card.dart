@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/services/folder_service.dart';
-import 'package:characterbook/ui/pages/characters/character_management_page.dart';
-import 'package:characterbook/ui/pages/notes/note_management_page.dart';
+import 'package:characterbook/ui/pages/character_management_page.dart';
+import 'package:characterbook/ui/pages/note_management_page.dart';
 import 'package:characterbook/ui/widgets/avatar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';

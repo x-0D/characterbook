@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:characterbook/models/characters/template_model.dart';
 import 'package:characterbook/services/template_service.dart';
-import '../../../generated/l10n.dart';
-import '../../../models/custom_field_model.dart';
-import '../../widgets/fields/custom_fields_editor.dart';
-import '../../widgets/fields/custom_text_field.dart';
-import '../../dialogs/unsaved_changes_dialog.dart';
+import '../../generated/l10n.dart';
+import '../../models/custom_field_model.dart';
+import '../widgets/fields/custom_fields_editor.dart';
+import '../widgets/fields/custom_text_field.dart';
+import '../dialogs/unsaved_changes_dialog.dart';
 
 class TemplateEditPage extends StatefulWidget {
   final QuestionnaireTemplate? template;

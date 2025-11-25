@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../generated/l10n.dart';
-import 'characters/character_list_page.dart';
-import 'notes/note_list_page.dart';
-import 'races/race_list_page.dart';
+import 'character_list_page.dart';
+import 'note_list_page.dart';
+import 'race_list_page.dart';
 import 'search_page.dart';
 import 'home_page.dart';
 

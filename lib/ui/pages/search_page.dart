@@ -12,10 +12,10 @@ import 'package:characterbook/models/characters/template_model.dart';
 import 'package:characterbook/models/folder_model.dart';
 
 import '../../generated/l10n.dart';
-import 'characters/character_management_page.dart';
-import 'notes/note_management_page.dart';
-import 'races/race_management_page.dart';
-import 'templates/template_edit_page.dart';
+import 'character_management_page.dart';
+import 'note_management_page.dart';
+import 'race_management_page.dart';
+import 'template_edit_page.dart';
 import 'settings_page.dart';
 
 class SearchPage extends StatefulWidget {

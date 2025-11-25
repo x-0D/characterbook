@@ -12,10 +12,10 @@ import 'package:characterbook/ui/widgets/buttons/custom_floating_buttons.dart';
 import 'package:characterbook/ui/widgets/tags/tag_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../../../generated/l10n.dart';
-import '../../../models/characters/character_model.dart';
-import '../../../models/characters/template_model.dart';
-import '../templates/templates_page.dart';
+import '../../generated/l10n.dart';
+import '../../models/characters/character_model.dart';
+import '../../models/characters/template_model.dart';
+import 'templates_page.dart';
 import 'character_management_page.dart';
 
 class CharacterListPage extends BaseListPage<Character> {

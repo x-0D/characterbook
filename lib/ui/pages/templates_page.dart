@@ -5,14 +5,14 @@ import 'package:characterbook/ui/widgets/cards/template_card.dart';
 import 'package:characterbook/ui/widgets/tools_context_menu.dart';
 import 'package:characterbook/ui/widgets/appbar/custom_app_bar.dart';
 import 'package:characterbook/ui/widgets/buttons/custom_floating_buttons.dart';
-import 'package:characterbook/ui/pages/templates/template_edit_page.dart';
-import 'package:characterbook/ui/pages/characters/character_management_page.dart';
+import 'package:characterbook/ui/pages/template_edit_page.dart';
+import 'package:characterbook/ui/pages/character_management_page.dart';
 import 'package:characterbook/ui/widgets/tags/tag_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../../../generated/l10n.dart';
-import '../../../models/characters/template_model.dart';
-import '../../../services/template_service.dart';
+import '../../generated/l10n.dart';
+import '../../models/characters/template_model.dart';
+import '../../services/template_service.dart';
 
 class TemplatesPage extends BaseListPage<QuestionnaireTemplate> {
   const TemplatesPage({super.key})

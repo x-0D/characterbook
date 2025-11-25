@@ -1,4 +1,4 @@
-import 'package:characterbook/ui/pages/notes/note_management_page.dart';
+import 'package:characterbook/ui/pages/note_management_page.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../generated/l10n.dart';

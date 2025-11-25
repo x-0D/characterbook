@@ -9,8 +9,8 @@ import 'package:characterbook/models/race_model.dart';
 import 'package:characterbook/services/character_service.dart';
 import 'package:characterbook/services/race_service.dart';
 import 'package:characterbook/generated/l10n.dart';
-import 'package:characterbook/ui/pages/characters/character_management_page.dart';
-import 'package:characterbook/ui/pages/races/race_management_page.dart';
+import 'package:characterbook/ui/pages/character_management_page.dart';
+import 'package:characterbook/ui/pages/race_management_page.dart';
 import 'package:characterbook/ui/cards/character_modal_card.dart';
 
 class HomePage extends StatefulWidget {

@@ -4,14 +4,14 @@ import 'package:characterbook/ui/widgets/appbar/common_edit_app_bar.dart';
 import 'package:characterbook/ui/widgets/sections/tags_and_folder_section.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import '../../../generated/l10n.dart';
-import '../../../models/race_model.dart';
-import '../../../models/folder_model.dart';
-import '../../../services/folder_service.dart';
-import '../../widgets/avatar_picker_widget.dart';
-import '../../widgets/fields/custom_text_field.dart';
-import '../../widgets/buttons/save_button_widget.dart';
-import '../../widgets/base_edit_page_scaffold.dart';
+import '../../generated/l10n.dart';
+import '../../models/race_model.dart';
+import '../../models/folder_model.dart';
+import '../../services/folder_service.dart';
+import '../widgets/avatar_picker_widget.dart';
+import '../widgets/fields/custom_text_field.dart';
+import '../widgets/buttons/save_button_widget.dart';
+import '../widgets/base_edit_page_scaffold.dart';
 
 class RaceManagementPage extends StatefulWidget {
   final Race? race;
