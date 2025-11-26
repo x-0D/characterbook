@@ -25,13 +25,14 @@ class RaceAdapter extends TypeAdapter<Race> {
       logo: fields[5] as Uint8List?,
       folderId: fields[6] as String?,
       tags: fields[7] == null ? [] : (fields[7] as List).cast<String>(),
+      lastEdited: fields[8] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Race obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +48,9 @@ class RaceAdapter extends TypeAdapter<Race> {
       ..writeByte(6)
       ..write(obj.folderId)
       ..writeByte(7)
-      ..write(obj.tags);
+      ..write(obj.tags)
+      ..writeByte(8)
+      ..write(obj.lastEdited);
   }
 
   @override

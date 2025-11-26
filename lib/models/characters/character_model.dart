@@ -1,12 +1,13 @@
 import 'package:characterbook/models/custom_field_model.dart';
 import 'package:characterbook/models/race_model.dart';
+import 'package:characterbook/models/settings/exportable_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
 part 'character_model.g.dart';
 
 @HiveType(typeId: 0)
-class Character extends HiveObject {
+class Character extends HiveObject implements ExportableModel {
   @HiveField(0)
   String id;
 
@@ -231,4 +232,40 @@ class Character extends HiveObject {
       lastEdited: DateTime.now(),
     );
   }
+
+  @override
+  Map<String, dynamic> toExportMap() {
+    return {
+      'type': 'character',
+      'id': id,
+      'name': name,
+      'description': biography,
+      'mainImage': imageBytes,
+      'additionalImages': additionalImages,
+      'tags': tags,
+      'lastEdited': lastEdited,
+      'details': {
+        'age': age,
+        'gender': gender,
+        'biography': biography,
+        'personality': personality,
+        'appearance': appearance,
+        'abilities': abilities,
+        'other': other,
+        'race': race?.name,
+        'customFields':
+            customFields.map((f) => {'key': f.key, 'value': f.value}).toList(),
+        'referenceImage': referenceImageBytes,
+      }
+    };
+  }
+
+  @override
+  String get modelType => 'character';
+  
+  @override
+  String get description => biography;
+  
+  @override
+  Uint8List? get mainImage => referenceImageBytes;
 }

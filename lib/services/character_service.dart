@@ -9,7 +9,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:hive/hive.dart';
 import '../models/characters/character_model.dart';
-import '../services/export_pdf_settings_service.dart';
 import 'pdf_export_serivce.dart';
 
 class CharacterService {
@@ -67,7 +66,7 @@ class CharacterService {
       final settings = await settingsService.getSettings();
 
       final pdfService = PdfExportService(
-        character: character!,
+        model: character!,
         settings: settings,
       );
 

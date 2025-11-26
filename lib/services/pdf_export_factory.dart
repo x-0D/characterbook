@@ -1,27 +1,20 @@
-import 'package:characterbook/models/characters/character_model.dart';
 import 'package:characterbook/models/settings/export_pdf_settings_model.dart';
-import 'package:characterbook/services/export_pdf_settings_service.dart';
-import 'package:characterbook/services/pdf_export_serivce.dart';
+import 'package:hive/hive.dart';
 
-class PdfExportFactory {
-  static Future<PdfExportService> createForCharacter(
-      Character character) async {
-    final settingsService = ExportPdfSettingsService();
-    final settings = await settingsService.getSettings();
+class ExportPdfSettingsService {
+  static const String _boxName = 'export_pdf_settings';
+  static const String _settingsKey = 'settings';
 
-    return PdfExportService(
-      character: character,
-      settings: settings,
-    );
+  Future<Box<ExportPdfSettings>> get _box =>
+      Hive.openBox<ExportPdfSettings>(_boxName);
+
+  Future<ExportPdfSettings> getSettings() async {
+    final box = await _box;
+    return box.get(_settingsKey) ?? ExportPdfSettings();
   }
 
-  static Future<PdfExportService> createWithCustomSettings(
-    Character character,
-    ExportPdfSettings settings,
-  ) async {
-    return PdfExportService(
-      character: character,
-      settings: settings,
-    );
+  Future<void> saveSettings(ExportPdfSettings settings) async {
+    final box = await _box;
+    await box.put(_settingsKey, settings);
   }
 }

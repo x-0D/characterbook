@@ -1,33 +1,44 @@
-import 'package:characterbook/services/hive_service.dart';
+import 'package:characterbook/models/characters/character_model.dart';
+import 'package:characterbook/models/race_model.dart';
+import 'package:characterbook/models/settings/export_pdf_settings_model.dart';
+import 'package:characterbook/models/settings/exportable_model.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
 import 'package:pdf/pdf.dart' as pw;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter/services.dart';
-import 'package:characterbook/models/characters/character_model.dart';
-import 'package:characterbook/models/settings/export_pdf_settings_model.dart';
 
 class PdfExportService {
   static const String _regularFontPath = 'assets/fonts/NotoSans-Regular.ttf';
   static const String _boldFontPath = 'assets/fonts/NotoSans-Bold.ttf';
-
-  final Character character;
-  final ExportPdfSettings settings;
-
   static const String _settingsKey = 'export_pdf_settings';
 
+  final ExportableModel model;
+  final ExportPdfSettings settings;
+
   PdfExportService({
-    required this.character,
+    required this.model,
     required this.settings,
   });
 
-  Future<ExportPdfSettings> getSettings() async {
-    final box = await HiveService.getBox<ExportPdfSettings>('pdf_settings');
-    return box.get(_settingsKey) ?? ExportPdfSettings();
+  static Future<PdfExportService> createForCharacter(
+      Character character) async {
+    final settingsService = ExportPdfSettingsService();
+    final settings = await settingsService.getSettings();
+    return PdfExportService(model: character, settings: settings);
   }
 
-  Future<void> saveSettings(ExportPdfSettings settings) async {
-    final box = await HiveService.getBox<ExportPdfSettings>('pdf_settings');
-    await box.put(_settingsKey, settings);
+  static Future<PdfExportService> createForRace(Race race) async {
+    final settingsService = ExportPdfSettingsService();
+    final settings = await settingsService.getSettings();
+    return PdfExportService(model: race, settings: settings);
+  }
+
+  static Future<PdfExportService> createWithCustomSettings(
+    ExportableModel model,
+    ExportPdfSettings settings,
+  ) async {
+    return PdfExportService(model: model, settings: settings);
   }
 
   Future<Uint8List> generatePdf() async {
@@ -36,15 +47,20 @@ class PdfExportService {
     final theme = pw.ThemeData.withFont(base: font, bold: boldFont);
 
     final pdf = pw.Document();
+    final exportData = model.toExportMap();
 
-    _addMainPage(pdf, theme);
-    _addOptionalSections(pdf, theme);
+    _addMainPage(pdf, theme, exportData);
+    _addOptionalSections(pdf, theme, exportData);
 
     return await pdf.save();
   }
 
-  void _addMainPage(pw.Document pdf, pw.ThemeData theme) {
+  void _addMainPage(
+      pw.Document pdf, pw.ThemeData theme, Map<String, dynamic> data) {
     if (!settings.includeBasicInfo) return;
+
+    final isCharacter = data['type'] == 'character';
+    final title = isCharacter ? 'Характеристика персонажа' : 'Описание расы';
 
     pdf.addPage(
       pw.MultiPage(
@@ -54,7 +70,7 @@ class PdfExportService {
           pw.Header(
             level: 0,
             child: pw.Text(
-              'Характеристика персонажа',
+              title,
               style: pw.TextStyle(
                 fontSize: settings.titleFontSize,
                 fontWeight: pw.FontWeight.bold,
@@ -63,31 +79,71 @@ class PdfExportService {
             ),
           ),
           pw.SizedBox(height: 20),
-          if (character.imageBytes != null &&
-              settings.includeCharacterImage) ...[
-            _buildImage(character.imageBytes!),
+          if (data['mainImage'] != null && settings.includeCharacterImage) ...[
+            _buildImage(data['mainImage']!),
             pw.SizedBox(height: 20),
           ],
-          _buildSection('Основная информация', [
-            _buildInfoRow('Имя:', character.name),
-            _buildInfoRow('Возраст:', character.age.toString()),
-            if (character.gender.isNotEmpty)
-              _buildInfoRow('Пол:', character.gender),
-            if (character.race != null)
-              _buildInfoRow('Раса:', character.race!.name),
-          ]),
+          _buildBasicInfoSection(data, isCharacter),
         ],
       ),
     );
   }
 
-  void _addOptionalSections(pw.Document pdf, pw.ThemeData theme) {
+  pw.Widget _buildBasicInfoSection(
+      Map<String, dynamic> data, bool isCharacter) {
+    final details = data['details'] as Map<String, dynamic>;
+    final infoRows = <pw.Widget>[
+      _buildInfoRow('Название:', data['name']),
+    ];
+
+    if (isCharacter) {
+      infoRows.addAll([
+        if (details['age'] != null && details['age'].toString().isNotEmpty)
+          _buildInfoRow('Возраст:', details['age'].toString()),
+        if (details['gender'] != null &&
+            details['gender'].toString().isNotEmpty)
+          _buildInfoRow('Пол:', details['gender']),
+        if (details['race'] != null && details['race'].toString().isNotEmpty)
+          _buildInfoRow('Раса:', details['race']),
+      ]);
+    }
+
+    if (data['description'] != null &&
+        data['description'].toString().isNotEmpty) {
+      infoRows.add(_buildInfoRow('Описание:', data['description']));
+    }
+
+    return _buildSection('Основная информация', infoRows);
+  }
+
+  void _addOptionalSections(
+      pw.Document pdf, pw.ThemeData theme, Map<String, dynamic> data) {
+    final isCharacter = data['type'] == 'character';
+    final details = data['details'] as Map<String, dynamic>;
+
+    if (isCharacter) {
+      _addCharacterSections(pdf, theme, details);
+    } else {
+      _addRaceSections(pdf, theme, details);
+    }
+
+    if (settings.includeCustomFields && details['customFields'] != null) {
+      _addCustomFieldsSection(pdf, theme, details['customFields']);
+    }
+
+    if (settings.includeAdditionalImages && data['additionalImages'] != null) {
+      _addAdditionalImagesSection(pdf, theme, data['additionalImages']);
+    }
+  }
+
+  void _addCharacterSections(
+      pw.Document pdf, pw.ThemeData theme, Map<String, dynamic> details) {
     final sections = [
-      _Section('Биография', character.biography, settings.includeBiography),
-      _Section('Характер', character.personality, settings.includePersonality),
-      _Section('Внешность', character.appearance, settings.includeAppearance),
-      _Section('Способности', character.abilities, settings.includeAbilities),
-      _Section('Другое', character.other, settings.includeOther),
+      _Section('Биография', details['biography'], settings.includeBiography),
+      _Section('Характер', details['personality'], settings.includePersonality),
+      _Section('Внешность', details['appearance'], settings.includeAppearance),
+      _Section('Способности', details['abilities'], settings.includeAbilities),
+      _Section('Другое', details['other'], settings.includeOther),
     ];
 
     for (final section in sections) {
@@ -96,19 +152,24 @@ class PdfExportService {
       }
     }
 
-    if (settings.includeReferenceImage &&
-        character.referenceImageBytes != null) {
+    if (settings.includeReferenceImage && details['referenceImage'] != null) {
       _addImageSection(
-          pdf, theme, 'Референс изображение', character.referenceImageBytes!);
+          pdf, theme, 'Референс изображение', details['referenceImage']!);
     }
+  }
 
-    if (settings.includeCustomFields && character.customFields.isNotEmpty) {
-      _addCustomFieldsSection(pdf, theme);
-    }
+  void _addRaceSections(
+      pw.Document pdf, pw.ThemeData theme, Map<String, dynamic> details) {
+    final sections = [
+      _Section('Биология', details['biology'], settings.includeBiography),
+      _Section('История', details['backstory'], settings.includePersonality),
+      _Section('Описание', details['description'], settings.includeAppearance),
+    ];
 
-    if (settings.includeAdditionalImages &&
-        character.additionalImages.isNotEmpty) {
-      _addAdditionalImagesSection(pdf, theme);
+    for (final section in sections) {
+      if (section.include && section.content.isNotEmpty) {
+        _addTextSection(pdf, theme, section.title, section.content);
+      }
     }
   }
 
@@ -167,7 +228,8 @@ class PdfExportService {
     );
   }
 
-  void _addCustomFieldsSection(pw.Document pdf, pw.ThemeData theme) {
+  void _addCustomFieldsSection(
+      pw.Document pdf, pw.ThemeData theme, List<dynamic> customFields) {
     pdf.addPage(
       pw.MultiPage(
         margin: const pw.EdgeInsets.all(20),
@@ -184,14 +246,15 @@ class PdfExportService {
             ),
           ),
           pw.SizedBox(height: 20),
-          ...character.customFields
-              .map((field) => _buildInfoRow('${field.key}:', field.value)),
+          ...customFields.map(
+              (field) => _buildInfoRow('${field['key']}:', field['value'])),
         ],
       ),
     );
   }
 
-  void _addAdditionalImagesSection(pw.Document pdf, pw.ThemeData theme) {
+  void _addAdditionalImagesSection(
+      pw.Document pdf, pw.ThemeData theme, List<Uint8List> images) {
     pdf.addPage(
       pw.MultiPage(
         margin: const pw.EdgeInsets.all(20),
@@ -208,7 +271,7 @@ class PdfExportService {
             ),
           ),
           pw.SizedBox(height: 20),
-          ...character.additionalImages.map((imageBytes) => pw.Column(
+          ...images.map((imageBytes) => pw.Column(
               children: [_buildImage(imageBytes), pw.SizedBox(height: 20)])),
         ],
       ),
@@ -307,4 +370,31 @@ class _Section {
   final bool include;
 
   _Section(this.title, this.content, this.include);
+}
+
+class ExportPdfSettingsService {
+  static const String _boxName = 'export_pdf_settings';
+  static const String _settingsKey = 'settings';
+
+  Future<Box<ExportPdfSettings>> get _box =>
+      Hive.openBox<ExportPdfSettings>(_boxName);
+
+  Future<ExportPdfSettings> getSettings() async {
+    final box = await _box;
+    return box.get(_settingsKey) ?? ExportPdfSettings();
+  }
+
+  Future<void> saveSettings(ExportPdfSettings settings) async {
+    final box = await _box;
+    await box.put(_settingsKey, settings);
+  }
+
+  Future<ExportPdfSettings> getSettingsForRace() async {
+    final settings = await getSettings();
+    return settings;
+  }
+
+  Future<void> saveSettingsForRace(ExportPdfSettings settings) async {
+    await saveSettings(settings);
+  }
 }
