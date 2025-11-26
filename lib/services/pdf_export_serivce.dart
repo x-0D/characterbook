@@ -3,7 +3,7 @@ import 'package:pdf/pdf.dart' as pw;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter/services.dart';
 import 'package:characterbook/models/characters/character_model.dart';
-import 'package:characterbook/models/export_pdf_settings_model.dart';
+import 'package:characterbook/models/settings/export_pdf_settings_model.dart';
 
 class PdfExportService {
   static const String _regularFontPath = 'assets/fonts/NotoSans-Regular.ttf';

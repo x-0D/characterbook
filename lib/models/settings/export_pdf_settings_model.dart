@@ -2,7 +2,7 @@ import 'package:hive/hive.dart';
 
 part 'export_pdf_settings_model.g.dart';
 
-@HiveType(typeId: 6)
+@HiveType(typeId: 11)
 class ExportPdfSettings {
   @HiveField(0)
   bool includeBasicInfo;

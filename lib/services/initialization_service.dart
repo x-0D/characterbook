@@ -7,7 +7,7 @@ import '../models/characters/template_model.dart';
 import '../models/folder_model.dart';
 import '../models/note_model.dart';
 import '../models/race_model.dart';
-import '../models/export_pdf_settings_model.dart';
+import '../models/settings/export_pdf_settings_model.dart';
 import 'hive_service.dart';
 
 class InitializationService {

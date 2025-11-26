@@ -1,5 +1,5 @@
 import 'package:characterbook/models/characters/character_model.dart';
-import 'package:characterbook/models/export_pdf_settings_model.dart';
+import 'package:characterbook/models/settings/export_pdf_settings_model.dart';
 import 'package:characterbook/services/export_pdf_settings_service.dart';
 import 'package:characterbook/services/pdf_export_serivce.dart';
 
