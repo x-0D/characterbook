@@ -144,6 +144,7 @@
   "usedLibraries": "Используемые библиотеки",
   "flutterLicense": "Лицензия Flutter",
   "characterbookLicense": "Лицензия CharacterBook (GNU GPL v3.0)",
+  "export_pdf_settings": "Настройки PDF экспорта",
 
   "backup": "Резервное копирование",
   "createBackup": "Создать резервную копию",

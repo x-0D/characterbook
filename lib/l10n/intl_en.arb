@@ -145,6 +145,7 @@
   "usedLibraries": "Used Libraries",
   "flutterLicense": "Flutter License",
   "characterbookLicense": "CharacterBook License (GNU GPL v3.0)",
+  "export_pdf_settings": "Export PDF settings",
 
   "backup": "Backup",
   "createBackup": "Create Backup",

@@ -1,6 +1,7 @@
 import 'package:characterbook/ui/widgets/sections/about_section.dart';
 import 'package:characterbook/ui/widgets/sections/acknowledgements_section.dart';
 import 'package:characterbook/ui/widgets/sections/backup_section.dart';
+import 'package:characterbook/ui/widgets/sections/export_pdf_settings_section.dart';
 import 'package:characterbook/ui/widgets/sections/import_section.dart';
 import 'package:characterbook/ui/widgets/sections/language_section.dart';
 import 'package:characterbook/ui/widgets/sections/licenses_section.dart';
@@ -60,6 +61,8 @@ class _SettingsBody extends StatelessWidget {
         ImportSection(),
         SizedBox(height: 8),
         BackupSection(),
+        SizedBox(height: 8),
+        ExportPdfSettingsSection(),
         SizedBox(height: 8),
         AboutSection(),
         SizedBox(height: 8),

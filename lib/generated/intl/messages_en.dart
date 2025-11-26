@@ -207,6 +207,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Error loading related posts"),
         "export": MessageLookupByLibrary.simpleMessage("Export"),
         "export_error": MessageLookupByLibrary.simpleMessage("Export Error"),
+        "export_pdf_settings":
+            MessageLookupByLibrary.simpleMessage("Export PDF settings"),
         "female": MessageLookupByLibrary.simpleMessage("Female"),
         "field_name": MessageLookupByLibrary.simpleMessage("Field Name"),
         "field_name_hint":

@@ -1360,6 +1360,16 @@ class S {
     );
   }
 
+  /// `Настройки PDF экспорта`
+  String get export_pdf_settings {
+    return Intl.message(
+      'Настройки PDF экспорта',
+      name: 'export_pdf_settings',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Резервное копирование`
   String get backup {
     return Intl.message(

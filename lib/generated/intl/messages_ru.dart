@@ -217,6 +217,8 @@ class MessageLookup extends MessageLookupByLibrary {
             "Ошибка загрузки связанных заметок"),
         "export": MessageLookupByLibrary.simpleMessage("Экспорт"),
         "export_error": MessageLookupByLibrary.simpleMessage("Ошибка экспорта"),
+        "export_pdf_settings":
+            MessageLookupByLibrary.simpleMessage("Настройки PDF экспорта"),
         "female": MessageLookupByLibrary.simpleMessage("Женский"),
         "field_name": MessageLookupByLibrary.simpleMessage("Название поля"),
         "field_name_hint":
