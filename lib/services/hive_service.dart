@@ -1,12 +1,10 @@
-import 'package:characterbook/models/characters/character_model.dart';
-import 'package:characterbook/models/characters/character_universal_model.dart';
+import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/custom_field_model.dart';
-import 'package:characterbook/models/settings/export_pdf_settings_model.dart';
+import 'package:characterbook/models/export_pdf_settings_model.dart';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/models/note_model.dart';
 import 'package:characterbook/models/race_model.dart';
-import 'package:characterbook/models/characters/template_model.dart';
-import 'package:characterbook/services/migration_service.dart';
+import 'package:characterbook/models/template_model.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 class HiveService {
@@ -46,42 +44,24 @@ class HiveService {
     if (!Hive.isAdapterRegistered(ExportPdfSettingsAdapter().typeId)) {
       Hive.registerAdapter(ExportPdfSettingsAdapter());
     }
-    if (!Hive.isAdapterRegistered(CharacterUniversalAdapter().typeId)) {
-      Hive.registerAdapter(CharacterUniversalAdapter());
-    }
     
-  }
-
-  static Future<Box<T>> getCharacterBox<T>() async {
-    final useUniversal = await MigrationService.shouldUseUniversal();
-    
-    if (useUniversal) {
-      return await getBox<T>('characters_universal');
-    } else {
-      return await getBox<T>('characters');
-    }
-  }
-
-  static Future<List<dynamic>> getAllCharacters() async {
-    final useUniversal = await MigrationService.shouldUseUniversal();
-    
-    if (useUniversal) {
-      final box = await getBox<CharacterUniversal>('characters_universal');
-      return box.values.toList();
-    } else {
-      final box = await getBox<Character>('characters');
-      return box.values.toList();
-    }
   }
 
   static Future<Box<T>> getBox<T>(String name) async {
-    if (_openBoxes.containsKey(name)) {
-      return _openBoxes[name]! as Box<T>;
+    try {
+      if (_openBoxes.containsKey(name)) {
+        return _openBoxes[name]! as Box<T>;
+      }
+
+      final box = await Hive.openBox<T>(name);
+      _openBoxes[name] = box;
+      return box;
+    } catch (e) {
+      await Hive.deleteBoxFromDisk(name);
+      final box = await Hive.openBox<T>(name);
+      _openBoxes[name] = box;
+      return box;
     }
-    
-    final box = await Hive.openBox<T>(name);
-    _openBoxes[name] = box;
-    return box;
   }
 
   static Box<T>? getOpenBox<T>(String name) {
@@ -98,5 +78,23 @@ class HiveService {
   static Future<void> closeBoxes() async {
     await Future.wait(_openBoxes.values.map((box) => box.close()));
     _openBoxes.clear();
+  }
+
+  static Future<void> clearCorruptedData() async {
+    try {
+      await Hive.deleteBoxFromDisk('characters');
+      await Hive.deleteBoxFromDisk('races');
+      await Hive.deleteBoxFromDisk('notes');
+      await Hive.deleteBoxFromDisk('templates');
+    } catch (e) { 
+      
+     }
+  }
+
+  static Future<void> resetAndReinitialize() async {
+    await closeBoxes();
+    await clearCorruptedData();
+    _isInitialized = false;
+    await initHive();
   }
 }

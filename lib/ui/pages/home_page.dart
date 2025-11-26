@@ -7,7 +7,7 @@ import 'package:characterbook/ui/widgets/cards/character_keep_card.dart';
 import 'package:characterbook/ui/widgets/cards/race_keep_card.dart';
 import 'package:characterbook/ui/widgets/tools_context_menu.dart';
 import 'package:flutter/material.dart';
-import 'package:characterbook/models/characters/character_model.dart';
+import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/race_model.dart';
 import 'package:characterbook/services/character_service.dart';
 import 'package:characterbook/services/race_service.dart';
@@ -150,12 +150,20 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (confirmed == true) {
-      await _characterService.deleteCharacter(int.parse(character.id));
-      if (mounted) {
-        _loadData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).character_deleted)),
-        );
+      try {
+        await _characterService.deleteCharacter(character);
+        if (mounted) {
+          _loadData();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(S.of(context).character_deleted)),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Ошибка удаления: ${e.toString()}')),
+          );
+        }
       }
     }
   }
@@ -183,12 +191,20 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (confirmed == true) {
-      await _raceService.deleteRace(int.parse(race.id));
-      if (mounted) {
-        _loadData();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(S.of(context).race_deleted)),
-        );
+      try {
+        await _raceService.deleteRace(race.key);
+        if (mounted) {
+          _loadData();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(S.of(context).race_deleted)),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Ошибка удаления: ${e.toString()}')),
+          );
+        }
       }
     }
   }

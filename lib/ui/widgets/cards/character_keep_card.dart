@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:characterbook/models/characters/character_model.dart';
+import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/generated/l10n.dart';
 
 class CharacterKeepCard extends StatelessWidget {

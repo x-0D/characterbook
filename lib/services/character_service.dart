@@ -1,15 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/ui/dialogs/loading_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:hive/hive.dart';
-import '../models/characters/character_model.dart';
+import '../models/character_model.dart';
 import 'pdf_export_serivce.dart';
+import 'file_share_service.dart';
 
 class CharacterService {
   static const String _boxName = 'characters';
@@ -32,43 +30,60 @@ class CharacterService {
     }
   }
 
+  Future<void> deleteCharacter(Character character) async {
+    final box = await _box;
+
+    final key = box.keys.firstWhere(
+      (k) => box.get(k)?.id == character.id,
+      orElse: () => null,
+    );
+
+    if (key != null) {
+      await box.delete(key);
+    }
+  }
+
   Future<List<Character>> getAllCharacters() async {
     final box = await _box;
     return box.values.toList();
   }
 
-  Future<void> deleteCharacter(int key) async {
-    final box = await _box;
-    await box.delete(key);
-  }
-
   Future<void> exportToPdf(BuildContext context) async {
+    bool isLoadingVisible = false;
+
     if (character == null) {
-      hideLoadingDialog(context);
       throw Exception("Character is not set for export");
     }
 
-    showLoadingDialog(context: context, message: S.of(context).creating_pdf);
-
     try {
+      isLoadingVisible = true;
+      showLoadingDialog(context: context, message: S.of(context).creating_pdf);
+
       final bytes = await _generatePdfWithTimeout();
-      hideLoadingDialog(context);
-      await _sharePdf(bytes);
+
+      if (context.mounted) {
+        hideLoadingDialog(context);
+        isLoadingVisible = false;
+      }
+
+      await Future.delayed(const Duration(milliseconds: 200));
+      await FileShareService.shareFile(
+        bytes,
+        '${character!.name}.pdf',
+        text: 'Характеристика персонажа ${character!.name}',
+        subject: 'PDF с характеристикой персонажа',
+      );
     } catch (e) {
-      hideLoadingDialog(context);
+      if (isLoadingVisible && context.mounted) {
+        hideLoadingDialog(context);
+      }
       _showErrorDialog(context, 'Ошибка экспорта в PDF: ${e.toString()}');
     }
   }
 
   Future<Uint8List> _generatePdfWithTimeout() async {
     try {
-      final settingsService = ExportPdfSettingsService();
-      final settings = await settingsService.getSettings();
-
-      final pdfService = PdfExportService(
-        model: character!,
-        settings: settings,
-      );
+      final pdfService = await PdfExportService.createForCharacter(character!);
 
       return await pdfService.generatePdf().timeout(
         const Duration(seconds: 30),
@@ -83,64 +98,54 @@ class CharacterService {
 
   void _showErrorDialog(BuildContext context, String message) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Ошибка'),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK'),
-            ),
-          ],
-        ),
-      );
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Ошибка'),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     });
   }
 
   Future<void> exportToJson(BuildContext context) async {
     if (character == null) throw Exception("Character is not set for export");
 
-    showLoadingDialog(context: context, message: S.of(context).creating_file);
-    await Future.delayed(const Duration(milliseconds: 50));
+    bool isLoadingVisible = false;
 
     try {
+      isLoadingVisible = true;
+      showLoadingDialog(context: context, message: S.of(context).creating_file);
+      await Future.delayed(const Duration(milliseconds: 50));
+
       final jsonStr = jsonEncode(character!.toJson());
       final fileName =
           '${character!.name}_${DateTime.now().millisecondsSinceEpoch}.character';
 
-      hideLoadingDialog(context);
+      if (context.mounted) {
+        hideLoadingDialog(context);
+        isLoadingVisible = false;
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
 
-      await _shareFile(
+      await FileShareService.shareFile(
         Uint8List.fromList(jsonStr.codeUnits),
         fileName,
         text: 'Персонаж: ${character!.name}',
       );
     } catch (e) {
-      hideLoadingDialog(context);
+      if (isLoadingVisible && context.mounted) {
+        hideLoadingDialog(context);
+      }
       throw Exception('Ошибка экспорта в JSON: ${e.toString()}');
     }
-  }
-
-  Future<void> _sharePdf(Uint8List bytes) async {
-    await _shareFile(
-      bytes,
-      '${character!.name}.pdf',
-      text: 'Характеристика персонажа ${character!.name}',
-      subject: 'PDF с характеристикой персонажа',
-    );
-  }
-
-  Future<void> _shareFile(Uint8List bytes, String fileName,
-      {String? text, String? subject}) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/$fileName');
-    await file.writeAsBytes(bytes);
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      text: text,
-      subject: subject,
-    );
   }
 }

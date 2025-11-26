@@ -1,6 +1,6 @@
+import 'package:characterbook/services/pdf_export_factory.dart';
 import 'package:flutter/material.dart';
-import 'package:characterbook/models/settings/export_pdf_settings_model.dart';
-import 'package:characterbook/services/export_pdf_settings_service.dart';
+import 'package:characterbook/models/export_pdf_settings_model.dart';
 
 import '../widgets/appbar/common_edit_app_bar.dart';
 import '../widgets/buttons/save_button_widget.dart';

@@ -1,13 +1,12 @@
 import 'package:characterbook/models/custom_field_model.dart';
 import 'package:characterbook/models/race_model.dart';
-import 'package:characterbook/models/settings/exportable_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
 part 'character_model.g.dart';
 
 @HiveType(typeId: 0)
-class Character extends HiveObject implements ExportableModel {
+class Character extends HiveObject {
   @HiveField(0)
   String id;
 
@@ -78,10 +77,10 @@ class Character extends HiveObject implements ExportableModel {
     DateTime? lastEdited,
     this.folderId,
   })  : id = id ?? '',
-    customFields = customFields ?? [],
-    additionalImages = additionalImages ?? [],
-    lastEdited = lastEdited ?? DateTime.now(),
-    tags = List.from(tags);
+        customFields = customFields ?? [],
+        additionalImages = additionalImages ?? [],
+        lastEdited = lastEdited ?? DateTime.now(),
+        tags = List.from(tags);
 
   @override
   bool operator ==(Object other) =>
@@ -130,7 +129,8 @@ class Character extends HiveObject implements ExportableModel {
       'other': other,
       'imageBytes': imageBytes?.toList(),
       'referenceImageBytes': referenceImageBytes?.toList(),
-      'customFields': customFields.map((f) => {'key': f.key, 'value': f.value}).toList(),
+      'customFields':
+          customFields.map((f) => {'key': f.key, 'value': f.value}).toList(),
       'additionalImages': additionalImages.map((img) => img.toList()).toList(),
       'lastEdited': lastEdited.toIso8601String(),
       'race': race?.name,
@@ -157,14 +157,20 @@ class Character extends HiveObject implements ExportableModel {
       referenceImageBytes: json['referenceImageBytes'] != null
           ? Uint8List.fromList(List<int>.from(json['referenceImageBytes']))
           : null,
-      customFields: (json['customFields'] as List?)?.map((e) =>
-          CustomField(e['key'] ?? '', e['value'] ?? '')).toList() ?? [],
-      additionalImages: (json['additionalImages'] as List?)?.map((e) =>
-          Uint8List.fromList(List<int>.from(e))).toList() ?? [],
+      customFields: (json['customFields'] as List?)
+              ?.map((e) => CustomField(e['key'] ?? '', e['value'] ?? ''))
+              .toList() ??
+          [],
+      additionalImages: (json['additionalImages'] as List?)
+              ?.map((e) => Uint8List.fromList(List<int>.from(e)))
+              .toList() ??
+          [],
       lastEdited: json['lastEdited'] != null
           ? DateTime.parse(json['lastEdited'])
           : DateTime.now(),
-      race: json['race'] != null ? Race(id: json['raceId'], name: json['race']) : null,
+      race: json['race'] != null
+          ? Race(id: json['raceId'], name: json['race'])
+          : null,
       folderId: json['folderId'],
       tags: (json['tags'] as List?)?.cast<String>() ?? [],
     );
@@ -233,7 +239,7 @@ class Character extends HiveObject implements ExportableModel {
     );
   }
 
-  @override
+
   Map<String, dynamic> toExportMap() {
     return {
       'type': 'character',
@@ -260,12 +266,9 @@ class Character extends HiveObject implements ExportableModel {
     };
   }
 
-  @override
   String get modelType => 'character';
-  
-  @override
+
   String get description => biography;
-  
-  @override
+
   Uint8List? get mainImage => referenceImageBytes;
 }

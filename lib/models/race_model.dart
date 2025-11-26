@@ -1,12 +1,10 @@
-// race_model.dart
-import 'package:characterbook/models/settings/exportable_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
 part 'race_model.g.dart';
 
 @HiveType(typeId: 3)
-class Race extends HiveObject implements ExportableModel {
+class Race extends HiveObject {
   @HiveField(0)
   String id;
 
@@ -39,18 +37,22 @@ class Race extends HiveObject implements ExportableModel {
 
   Race({
     String? id,
-    required this.name,
-    this.description = '',
-    this.biology = '',
-    this.backstory = '',
+    String? name,
+    String? description,
+    String? biology,
+    String? backstory,
     this.logo,
     this.folderId,
-    List<String> tags = const [],
-    List<Uint8List> additionalImages = const [],
+    List<String>? tags,
+    List<Uint8List>? additionalImages,
     DateTime? lastEdited,
   })  : id = id ?? '',
-        tags = List.from(tags),
-        additionalImages = List.from(additionalImages),
+        name = name ?? '',
+        description = description ?? '',
+        biology = biology ?? '',
+        backstory = backstory ?? '',
+        tags = tags ?? [],
+        additionalImages = additionalImages ?? [],
         lastEdited = lastEdited ?? DateTime.now();
 
   factory Race.empty() => Race(id: '', name: '');
@@ -100,23 +102,23 @@ class Race extends HiveObject implements ExportableModel {
 
   factory Race.fromJson(Map<String, dynamic> json) {
     return Race(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      biology: json['biology'] ?? '',
-      backstory: json['backstory'] ?? '',
+      id: json['id'] as String?,
+      name: json['name'] as String?,
+      description: json['description'] as String?,
+      biology: json['biology'] as String?,
+      backstory: json['backstory'] as String?,
       logo: json['logo'] != null
-          ? Uint8List.fromList(List<int>.from(json['logo']))
+          ? Uint8List.fromList(List<int>.from(json['logo'] as List))
           : null,
-      folderId: json['folderId'],
+      folderId: json['folderId'] as String?,
       tags: (json['tags'] as List?)?.cast<String>() ?? [],
       additionalImages: (json['additionalImages'] as List?)
-              ?.map((e) => Uint8List.fromList(List<int>.from(e)))
+              ?.map((e) => Uint8List.fromList(List<int>.from(e as List)))
               .toList() ??
           [],
       lastEdited: json['lastEdited'] != null
-          ? DateTime.parse(json['lastEdited'])
-          : DateTime.now(),
+          ? DateTime.parse(json['lastEdited'] as String)
+          : null,
     );
   }
 
@@ -146,10 +148,8 @@ class Race extends HiveObject implements ExportableModel {
     );
   }
 
-  @override
   Uint8List? get mainImage => logo;
 
-  @override
   Map<String, dynamic> toExportMap() {
     return {
       'type': 'race',
@@ -168,6 +168,5 @@ class Race extends HiveObject implements ExportableModel {
     };
   }
 
-  @override
   String get modelType => 'race';
 }

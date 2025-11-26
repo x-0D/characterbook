@@ -11,7 +11,7 @@ import 'package:characterbook/ui/widgets/tags/tag_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../generated/l10n.dart';
-import '../../models/characters/template_model.dart';
+import '../../models/template_model.dart';
 import '../../services/template_service.dart';
 
 class TemplatesPage extends BaseListPage<QuestionnaireTemplate> {

@@ -46,5 +46,7 @@ void showLoadingDialog({
 }
 
 void hideLoadingDialog(BuildContext context) {
-  Navigator.of(context, rootNavigator: true).pop();
+  if (Navigator.of(context, rootNavigator: true).canPop()) {
+    Navigator.of(context, rootNavigator: true).pop();
+  }
 }

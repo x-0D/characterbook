@@ -1,16 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:characterbook/services/race_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../generated/l10n.dart';
-import '../../models/characters/character_model.dart';
+import '../../models/character_model.dart';
 import '../../models/note_model.dart';
 import '../../models/race_model.dart';
-import '../../models/characters/template_model.dart';
+import '../../models/template_model.dart';
 import '../../services/character_service.dart';
 import '../../services/clipboard_service.dart';
 
@@ -58,6 +59,7 @@ class ContextMenu extends StatelessWidget {
       item: race,
       onEdit: onEdit,
       onDelete: onDelete,
+      showExportPdf: true
     );
   }
 
@@ -129,11 +131,18 @@ class ContextMenu extends StatelessWidget {
 
   Future<void> _exportToPdf(BuildContext context) async {
     final s = S.of(context);
-    if (item is! Character) return;
 
     try {
-      final exportService = CharacterService.forExport(item as Character);
-      await exportService.exportToPdf(context);
+      if (item is Character) {
+        final exportService = CharacterService.forExport(item as Character);
+        await exportService.exportToPdf(context);
+      } else if (item is Race) {
+        final exportService = RaceService.forExport(item as Race);
+        await exportService.exportToPdf(context);
+      } else {
+        return;
+      }
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

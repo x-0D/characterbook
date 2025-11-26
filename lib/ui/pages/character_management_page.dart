@@ -5,8 +5,8 @@ import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../generated/l10n.dart';
-import '../../models/characters/character_model.dart';
-import '../../models/characters/template_model.dart';
+import '../../models/character_model.dart';
+import '../../models/template_model.dart';
 import '../../models/custom_field_model.dart';
 import '../../models/folder_model.dart';
 import '../../models/race_model.dart';
@@ -430,7 +430,7 @@ class _CharacterEditPageState extends State<CharacterEditPage>
     return fields;
   }
 
-  String _getFieldValue(String fieldName) {
+  String? _getFieldValue(String fieldName) {
     return switch (fieldName) {
       'appearance' => _character.appearance,
       'personality' => _character.personality,

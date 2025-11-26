@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'generated/l10n.dart';
-import 'models/characters/character_model.dart';
+import 'models/character_model.dart';
 import 'providers/locale_provider.dart';
 import 'providers/theme_provider.dart';
 import 'ui/pages/app_navigation_bar.dart';
@@ -18,14 +18,19 @@ import 'ui/widgets/desktop/desktop_app_frame.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Future.wait([
-    InitializationService.initializeWindowManager(),
-    InitializationService.initializeHive(),
-  ]);
+  try {
+    await Future.wait([
+      InitializationService.initializeWindowManager(),
+      InitializationService.initializeHive().then((success) {
+      }),
+    ]);
+  } catch (error) {
+    debugPrint('Critical initialization error: $error');
+  }
 
   FileHandler.initialize();
 
-  runApp(const CharacterBookApp());
+  runApp(CharacterBookApp());
 }
 
 class CharacterBookApp extends StatelessWidget {
@@ -56,6 +61,9 @@ class _AppContent extends StatefulWidget {
 
 class _AppContentState extends State<_AppContent>
     with WidgetsBindingObserver, WindowListener {
+  final bool _hiveInitializedSuccessfully = true;
+  bool _showErrorDialog = false;
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +71,33 @@ class _AppContentState extends State<_AppContent>
 
     if (InitializationService.isDesktopPlatform) {
       windowManager.addListener(this);
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkInitializationStatus();
+    });
+  }
+
+  void _checkInitializationStatus() {
+    if (!_hiveInitializedSuccessfully && !_showErrorDialog) {
+      setState(() {
+        _showErrorDialog = true;
+      });
+
+      ErrorDialogService.showInitializationErrorDialog(
+        context,
+        error: InitializationError(
+          title: 'Проблемы с инициализацией данных',
+          message:
+              'При запуске приложения возникли проблемы с загрузкой данных. '
+              'Для восстановления работоспособности приложение сбросило поврежденные данные.',
+          requiresReset: true,
+        ),
+      ).then((_) {
+        setState(() {
+          _showErrorDialog = false;
+        });
+      });
     }
   }
 

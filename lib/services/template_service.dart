@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:characterbook/services/default_templates.dart';
 import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
-import '../models/characters/character_model.dart';
-import '../models/characters/template_model.dart';
+import '../models/character_model.dart';
+import '../models/template_model.dart';
 import 'file_picker_service.dart';
 
 class TemplateService {
@@ -74,7 +74,7 @@ class TemplateService {
     return QuestionnaireTemplate(
       name: name,
       standardFields: includedStandardFields,
-      customFields: character.customFields.map((f) => f.copyWith()).toList(),
+      customFields: character.customFields!.map((f) => f.copyWith()).toList(),
     );
   }
 

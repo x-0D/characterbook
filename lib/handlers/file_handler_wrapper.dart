@@ -4,9 +4,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import '../models/characters/character_model.dart';
+import '../models/character_model.dart';
 import '../models/race_model.dart';
-import '../models/characters/template_model.dart';
+import '../models/template_model.dart';
 import '../ui/pages/character_management_page.dart';
 import '../ui/pages/race_management_page.dart';
 import '../ui/pages/template_edit_page.dart';
