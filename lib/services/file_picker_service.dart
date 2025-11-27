@@ -2,16 +2,32 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:universal_html/html.dart' as html;
 import '../models/character_model.dart';
 import '../models/race_model.dart';
 import '../models/template_model.dart';
+import '../ui/dialogs/error_dialog.dart';
 
 class FilePickerService {
   static const _channel = MethodChannel('file_picker');
 
-  Future<Map<String, dynamic>?> pickRestoreFile() async {
+  static void _showErrorDialog(BuildContext? context, String message) {
+    if (context == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        showErrorDialog(
+          context: context,
+          title: 'Ошибка файла',
+          message: message,
+        );
+      }
+    });
+  }
+
+  Future<Map<String, dynamic>?> pickRestoreFile({BuildContext? context}) async {
     try {
       if (kIsWeb) {
         return await _pickRestoreFileWeb();
@@ -20,33 +36,68 @@ class FilePickerService {
       }
     } catch (e) {
       debugPrint('Restore file picker error: $e');
+      final errorMessage =
+          'Не удалось выбрать файл для восстановления: ${e.toString()}';
+      if (context != null) {
+        _showErrorDialog(context, errorMessage);
+      }
       return null;
     }
   }
 
   Future<Map<String, dynamic>?> _pickRestoreFileWeb() async {
-    final uploadInput = html.FileUploadInputElement();
-    uploadInput.accept = '.json,.characterbook';
-    uploadInput.click();
+    try {
+      final uploadInput = html.FileUploadInputElement();
+      uploadInput.accept = '.json,.characterbook';
+      uploadInput.click();
 
-    await uploadInput.onChange.first;
-    final files = uploadInput.files;
-    if (files == null || files.isEmpty) return null;
+      final completer = Completer<html.FileUploadInputElement?>();
+      uploadInput.onChange.listen((event) {
+        completer.complete(uploadInput);
+      });
 
-    final file = files[0];
-    final reader = html.FileReader();
-    reader.readAsText(file);
-    await reader.onLoadEnd.first;
-    final jsonStr = reader.result as String;
+      await completer.future.timeout(
+        const Duration(seconds: 30),
+        onTimeout: () =>
+            throw TimeoutException('Выбор файла занял слишком много времени'),
+      );
 
-    if (jsonStr.isEmpty) return null;
-    return jsonDecode(jsonStr) as Map<String, dynamic>;
+      final files = uploadInput.files;
+      if (files == null || files.isEmpty) return null;
+
+      final file = files[0];
+      final reader = html.FileReader();
+
+      final readCompleter = Completer<void>();
+      reader.onLoadEnd.listen((event) {
+        readCompleter.complete();
+      });
+
+      reader.readAsText(file);
+      await readCompleter.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () =>
+            throw TimeoutException('Чтение файла заняло слишком много времени'),
+      );
+
+      final jsonStr = reader.result as String;
+      if (jsonStr.isEmpty) return null;
+
+      return jsonDecode(jsonStr) as Map<String, dynamic>;
+    } catch (e) {
+      throw Exception('Ошибка выбора файла в веб-версии: ${e.toString()}');
+    }
   }
 
   Future<Map<String, dynamic>?> _pickRestoreFileNative() async {
     try {
       final filePath =
-          await _pickFileNative(fileExtension: '.json,.characterbook');
+          await _pickFileNative(fileExtension: '.json,.characterbook').timeout(
+        const Duration(seconds: 30),
+        onTimeout: () =>
+            throw TimeoutException('Выбор файла занял слишком много времени'),
+      );
+
       if (filePath == null || filePath.isEmpty) {
         debugPrint('No file selected or empty file path');
         return null;
@@ -54,14 +105,17 @@ class FilePickerService {
 
       final file = File(filePath);
       if (!await file.exists()) {
-        debugPrint('File does not exist: $filePath');
-        return null;
+        throw Exception('Файл не существует: $filePath');
       }
 
-      final jsonStr = await file.readAsString();
+      final jsonStr = await file.readAsString().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException(
+                'Чтение файла заняло слишком много времени'),
+          );
+
       if (jsonStr.isEmpty) {
-        debugPrint('File is empty');
-        return null;
+        throw Exception('Файл пуст');
       }
 
       try {
@@ -69,16 +123,13 @@ class FilePickerService {
         if (decoded is Map<String, dynamic>) {
           return decoded;
         } else {
-          debugPrint('Decoded JSON is not a Map: ${decoded.runtimeType}');
-          return null;
+          throw Exception('Неверный формат файла: ожидался JSON объект');
         }
       } catch (e) {
-        debugPrint('JSON decode error: $e');
-        return null;
+        throw Exception('Ошибка формата JSON: ${e.toString()}');
       }
     } catch (e) {
-      debugPrint('Native restore file picker error: $e');
-      return null;
+      throw Exception('Ошибка выбора файла в нативной версии: ${e.toString()}');
     }
   }
 
@@ -88,107 +139,74 @@ class FilePickerService {
 
       final result = await _channel.invokeMethod<String>('pickFile', {
         'fileExtension': fileExtension,
-      });
+      }).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException(
+            'Выбор файла через нативный канал занял слишком много времени'),
+      );
 
       debugPrint('File picker result: $result');
       return result;
     } catch (e) {
-      debugPrint('File picker channel error: $e');
-      return null;
+      throw Exception('Ошибка нативного выбора файла: ${e.toString()}');
     }
   }
 
-  Future<Character?> importCharacter() async {
+  Future<Character?> importCharacter({BuildContext? context}) async {
     try {
       String? jsonStr;
 
       if (kIsWeb) {
-        final uploadInput = html.FileUploadInputElement();
-        uploadInput.accept = '.character';
-        uploadInput.click();
-
-        await uploadInput.onChange.first;
-        final files = uploadInput.files;
-        if (files == null || files.isEmpty) return null;
-
-        final file = files[0];
-        final reader = html.FileReader();
-        reader.readAsText(file);
-        await reader.onLoadEnd.first;
-        jsonStr = reader.result as String;
+        jsonStr = await _importFileWeb('.character', 'character');
       } else {
-        final filePath = await _pickFileNative(fileExtension: '.character');
-        if (filePath == null) return null;
-        final file = File(filePath);
-        jsonStr = await file.readAsString();
+        jsonStr = await _importFileNative('.character');
       }
 
-      if (jsonStr.isEmpty) return null;
+      if (jsonStr == null || jsonStr.isEmpty) return null;
 
       final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
       return Character.fromJson(jsonMap);
     } catch (e) {
-      throw Exception('Failed to import character: $e');
+      final errorMessage =
+          'Не удалось импортировать персонажа: ${e.toString()}';
+      if (context != null) {
+        _showErrorDialog(context, errorMessage);
+      }
+      rethrow;
     }
   }
 
-  Future<Race?> importRace() async {
+  Future<Race?> importRace({BuildContext? context}) async {
     try {
       String? jsonStr;
 
       if (kIsWeb) {
-        final uploadInput = html.FileUploadInputElement();
-        uploadInput.accept = '.race';
-        uploadInput.click();
-
-        await uploadInput.onChange.first;
-        final files = uploadInput.files;
-        if (files == null || files.isEmpty) return null;
-
-        final file = files[0];
-        final reader = html.FileReader();
-        reader.readAsText(file);
-        await reader.onLoadEnd.first;
-        jsonStr = reader.result as String;
+        jsonStr = await _importFileWeb('.race', 'race');
       } else {
-        final filePath = await _pickFileNative(fileExtension: '.race');
-        if (filePath == null) return null;
-        final file = File(filePath);
-        jsonStr = await file.readAsString();
+        jsonStr = await _importFileNative('.race');
       }
 
-      if (jsonStr.isEmpty) return null;
+      if (jsonStr == null || jsonStr.isEmpty) return null;
 
       final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
       return Race.fromJson(jsonMap);
     } catch (e) {
-      throw Exception('Failed to import race: $e');
+      final errorMessage = 'Не удалось импортировать расу: ${e.toString()}';
+      if (context != null) {
+        _showErrorDialog(context, errorMessage);
+      }
+      rethrow;
     }
   }
 
-  Future<QuestionnaireTemplate?> importTemplate() async {
+  Future<QuestionnaireTemplate?> importTemplate({BuildContext? context}) async {
     try {
       String? jsonStr;
 
       if (kIsWeb) {
-        final uploadInput = html.FileUploadInputElement();
-        uploadInput.accept = '.chax';
-        uploadInput.click();
-
-        await uploadInput.onChange.first;
-        final files = uploadInput.files;
-        if (files == null || files.isEmpty) return null;
-
-        final file = files[0];
-        final reader = html.FileReader();
-        reader.readAsText(file);
-        await reader.onLoadEnd.first;
-        jsonStr = reader.result as String?;
+        jsonStr = await _importFileWeb('.chax', 'template');
       } else {
-        final filePath = await _pickFileNative(fileExtension: '.chax');
-        if (filePath == null) return null;
-        final file = File(filePath);
-        jsonStr = await file.readAsString();
+        jsonStr = await _importFileNative('.chax');
       }
 
       if (jsonStr == null || jsonStr.isEmpty) {
@@ -198,7 +216,79 @@ class FilePickerService {
       final jsonMap = jsonDecode(jsonStr) as Map<String, dynamic>;
       return QuestionnaireTemplate.fromJson(jsonMap);
     } catch (e) {
-      throw Exception('Failed to import template: $e');
+      final errorMessage = 'Не удалось импортировать шаблон: ${e.toString()}';
+      if (context != null) {
+        _showErrorDialog(context, errorMessage);
+      }
+      rethrow;
+    }
+  }
+
+  Future<String?> _importFileWeb(String accept, String fileType) async {
+    try {
+      final uploadInput = html.FileUploadInputElement();
+      uploadInput.accept = accept;
+      uploadInput.click();
+
+      final completer = Completer<html.FileUploadInputElement?>();
+      uploadInput.onChange.listen((event) {
+        completer.complete(uploadInput);
+      });
+
+      await completer.future.timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw TimeoutException(
+            'Выбор файла $fileType занял слишком много времени'),
+      );
+
+      final files = uploadInput.files;
+      if (files == null || files.isEmpty) return null;
+
+      final file = files[0];
+      final reader = html.FileReader();
+
+      final readCompleter = Completer<void>();
+      reader.onLoadEnd.listen((event) {
+        readCompleter.complete();
+      });
+
+      reader.readAsText(file);
+      await readCompleter.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw TimeoutException(
+            'Чтение файла $fileType заняло слишком много времени'),
+      );
+
+      return reader.result as String?;
+    } catch (e) {
+      throw Exception('Ошибка импорта $fileType в веб-версии: ${e.toString()}');
+    }
+  }
+
+  Future<String?> _importFileNative(String fileExtension) async {
+    try {
+      final filePath =
+          await _pickFileNative(fileExtension: fileExtension).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () =>
+            throw TimeoutException('Выбор файла занял слишком много времени'),
+      );
+
+      if (filePath == null) return null;
+
+      final file = File(filePath);
+      if (!await file.exists()) {
+        throw Exception('Файл не существует: $filePath');
+      }
+
+      return await file.readAsString().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException(
+                'Чтение файла заняло слишком много времени'),
+          );
+    } catch (e) {
+      throw Exception(
+          'Ошибка импорта файла в нативной версии: ${e.toString()}');
     }
   }
 }

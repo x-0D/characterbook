@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/race_model.dart';
@@ -14,6 +15,7 @@ class PdfExportService {
 
   final Object model;
   final ExportPdfSettings settings;
+  final Completer<Uint8List> _completer = Completer<Uint8List>();
 
   PdfExportService({
     required this.model,
@@ -22,15 +24,23 @@ class PdfExportService {
 
   static Future<PdfExportService> createForCharacter(
       Character character) async {
-    final settingsService = ExportPdfSettingsService();
-    final settings = await settingsService.getSettings();
-    return PdfExportService(model: character, settings: settings);
+    try {
+      final settingsService = ExportPdfSettingsService();
+      final settings = await settingsService.getSettings();
+      return PdfExportService(model: character, settings: settings);
+    } catch (e) {
+      throw Exception('Ошибка создания сервиса для персонажа: ${e.toString()}');
+    }
   }
 
   static Future<PdfExportService> createForRace(Race race) async {
-    final settingsService = ExportPdfSettingsService();
-    final settings = await settingsService.getSettings();
-    return PdfExportService(model: race, settings: settings);
+    try {
+      final settingsService = ExportPdfSettingsService();
+      final settings = await settingsService.getSettings();
+      return PdfExportService(model: race, settings: settings);
+    } catch (e) {
+      throw Exception('Ошибка создания сервиса для расы: ${e.toString()}');
+    }
   }
 
   static Future<PdfExportService> createWithCustomSettings(
@@ -54,7 +64,7 @@ class PdfExportService {
       } else if (model is Race) {
         exportData = _raceToExportMap(model as Race);
       } else {
-        throw Exception('Unsupported model type for PDF export');
+        throw Exception('Неподдерживаемый тип модели для экспорта PDF');
       }
 
       _addMainPage(pdf, theme, exportData);
@@ -63,12 +73,20 @@ class PdfExportService {
 
       final result = await pdf.save();
 
+      if (!_completer.isCompleted) {
+        _completer.complete(result);
+      }
+
       return result;
     } catch (e) {
+      if (!_completer.isCompleted) {
+        _completer.completeError(e);
+      }
       throw Exception('Ошибка генерации PDF: ${e.toString()}');
     }
   }
 
+  // Остальные методы остаются без изменений...
   Map<String, dynamic> _characterToExportMap(Character character) {
     return {
       'type': 'character',
@@ -414,12 +432,6 @@ class PdfExportService {
   }
 
   pw.Widget _buildImage(Uint8List bytes) {
-    print('Обработка изображения размером: ${bytes.length} bytes');
-
-    if (bytes.length > 1000000) {
-      print('Большое изображение: ${bytes.length} bytes');
-    }
-
     return pw.Center(
       child: pw.Image(
         pw.MemoryImage(bytes),
@@ -440,7 +452,6 @@ class PdfExportService {
       );
       return pw.Font.ttf(fontData);
     } catch (e) {
-      print('Используем fallback шрифт для $path, ошибка: $e');
       return pw.Font.courier();
     }
   }
@@ -474,12 +485,20 @@ class ExportPdfSettingsService {
       Hive.openBox<ExportPdfSettings>(_boxName);
 
   Future<ExportPdfSettings> getSettings() async {
-    final box = await _box;
-    return box.get(_settingsKey) ?? ExportPdfSettings();
+    try {
+      final box = await _box;
+      return box.get(_settingsKey) ?? ExportPdfSettings();
+    } catch (e) {
+      throw Exception('Ошибка загрузки настроек PDF: ${e.toString()}');
+    }
   }
 
   Future<void> saveSettings(ExportPdfSettings settings) async {
-    final box = await _box;
-    await box.put(_settingsKey, settings);
+    try {
+      final box = await _box;
+      await box.put(_settingsKey, settings);
+    } catch (e) {
+      throw Exception('Ошибка сохранения настроек PDF: ${e.toString()}');
+    }
   }
 }

@@ -2,9 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:characterbook/models/folder_model.dart';
-import 'package:characterbook/models/template_model.dart';
-import 'package:characterbook/services/hive_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
@@ -15,9 +12,12 @@ import 'package:share_plus/share_plus.dart';
 import 'package:universal_html/html.dart' as html;
 import '../generated/l10n.dart';
 import '../models/character_model.dart';
+import '../models/folder_model.dart';
 import '../models/note_model.dart';
 import '../models/race_model.dart';
+import '../models/template_model.dart';
 import 'file_picker_service.dart';
+import 'hive_service.dart';
 import 'notification_service.dart';
 
 abstract class BackupService {
