@@ -40,10 +40,8 @@
 │   │   ├── intl_en.arb
 │   │   └── intl_ru.arb
 │   ├── models/           # Модели данных
-│   │   ├── characters/   # Модели персонажей
-│   │   │   ├── character_model.dart
-│   │   │   ├── character_universal_model.dart
-│   │   │   └── template_model.dart
+│   │   ├── character_model.dart
+│   │   ├── template_model.dart
 │   │   ├── custom_field_model.dart
 │   │   ├── folder_model.dart
 │   │   ├── note_model.dart
@@ -62,6 +60,9 @@
 │   │   ├── folder_service.dart
 │   │   ├── hive_service.dart
 │   │   ├── initialization_service.dart  # НОВЫЙ: сервис инициализации приложения
+│   │   ├── race_service.dart
+│   │   ├── pdf_export_manager.dart
+│   │   ├── pdf_export_service.dart
 │   │   ├── migration_service.dart
 │   │   ├── notification_service.dart
 │   │   ├── race_service.dart
@@ -73,20 +74,15 @@
 │       ├── handlers/    # Обработчики UI событий
 │       │   └── unsaved_changes_handler.dart
 │       ├── pages/       # Страницы приложения
-│       │   ├── characters/    # Управление персонажами
-│       │   │   ├── character_list_page.dart
-│       │   │   └── character_management_page.dart
-│       │   ├── folders/       # Управление папками
-│       │   │   └── folder_list_page.dart
-│       │   ├── notes/         # Управление заметками
-│       │   │   ├── note_list_page.dart
-│       │   │   └── note_management_page.dart
-│       │   ├── races/         # Управление расами
-│       │   │   ├── race_list_page.dart
-│       │   │   └── race_management_page.dart
-│       │   ├── templates/     # Управление шаблонами
-│       │   │   ├── template_edit_page.dart
-│       │   │   └── templates_page.dart
+│       │   ├── character_list_page.dart
+│       │   ├── character_management_page.dart
+│       │   ├── folder_list_page.dart     
+│       │   ├── note_list_page.dart
+│       │   ├── note_management_page.dart
+│       │   ├── race_list_page.dart
+│       │   ├── race_management_page.dart
+│       │   ├── template_edit_page.dart
+│       │   ├── templates_page.dart
 │       │   ├── home_page.dart
 │       │   ├── home_screen.dart
 │       │   ├── random_number_page.dart
