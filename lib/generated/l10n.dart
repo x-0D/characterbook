@@ -300,6 +300,16 @@ class S {
     );
   }
 
+  /// `Поделиться`
+  String get share {
+    return Intl.message(
+      'Поделиться',
+      name: 'share',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Персонаж`
   String get character {
     return Intl.message(

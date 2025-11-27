@@ -410,6 +410,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "select_template_file":
             MessageLookupByLibrary.simpleMessage("Выберите файл шаблона"),
         "settings": MessageLookupByLibrary.simpleMessage("Настройки"),
+        "share": MessageLookupByLibrary.simpleMessage("Поделиться"),
         "share_backup_file": MessageLookupByLibrary.simpleMessage(
             "Вот моя резервная копия CharacterBook"),
         "share_character": MessageLookupByLibrary.simpleMessage("Поделиться"),

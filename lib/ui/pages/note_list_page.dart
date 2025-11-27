@@ -1,6 +1,6 @@
 import 'dart:async';
-
 import 'package:characterbook/models/folder_model.dart';
+import 'package:characterbook/services/note_service.dart';
 import 'package:characterbook/ui/pages/folder_list_page.dart';
 import 'package:characterbook/ui/widgets/cards/note_card.dart';
 import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
@@ -29,11 +29,12 @@ class _NotesListPageState extends State<NotesListPage> {
   final List<Note> _filteredNotes = [];
   String? _selectedTag;
   Timer? _debounceTimer;
+  final NoteService _noteService = NoteService.forDatabase();
   final Box<Note> _notesBox = Hive.box<Note>('notes');
 
   final TextEditingController searchController = TextEditingController();
   final ScrollController scrollController = ScrollController();
-  
+
   bool isSearching = false;
   bool isImporting = false;
   bool isFabVisible = true;
@@ -79,14 +80,16 @@ class _NotesListPageState extends State<NotesListPage> {
     );
 
     if (confirmed) {
-      await _notesBox.delete(note.key);
+      await _noteService.deleteNote(note);
       if (!mounted) return;
 
       _showSnackBar(
         '${S.of(context).posts} "${note.title}" ${S.of(context).template_deleted}',
         action: SnackBarAction(
           label: S.of(context).cancel,
-          onPressed: () => _notesBox.add(note),
+          onPressed: () async {
+            await _notesBox.add(note);
+          },
         ),
       );
     }
@@ -98,7 +101,8 @@ class _NotesListPageState extends State<NotesListPage> {
       MaterialPageRoute(builder: (context) => NoteEditPage(note: note)),
     );
     if (result == true && mounted) {
-      _filterNotes(searchController.text, _notesBox.values.cast<Note>().toList());
+      _filterNotes(
+          searchController.text, _notesBox.values.cast<Note>().toList());
     }
   }
 
@@ -185,32 +189,32 @@ class _NotesListPageState extends State<NotesListPage> {
   }
 
   List<Note> _getNotesToShow(List<Note> allNotes) {
-    return isSearching || _selectedTag != null
-        ? _filteredNotes
-        : allNotes;
+    return isSearching || _selectedTag != null ? _filteredNotes : allNotes;
   }
 
-  Future<bool> _showDeleteConfirmationDialog(String title, String content) async {
+  Future<bool> _showDeleteConfirmationDialog(
+      String title, String content) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(S.of(context).cancel),
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(title),
+            content: Text(content),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(S.of(context).cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  S.of(context).delete,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              S.of(context).delete,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 
   void _showSnackBar(String message, {SnackBarAction? action}) {
@@ -226,7 +230,7 @@ class _NotesListPageState extends State<NotesListPage> {
   void initState() {
     super.initState();
     scrollController.addListener(() {
-      final isScrollingDown = scrollController.position.userScrollDirection == 
+      final isScrollingDown = scrollController.position.userScrollDirection ==
           ScrollDirection.reverse;
       if (isScrollingDown && isFabVisible) {
         setState(() => isFabVisible = false);
@@ -282,21 +286,22 @@ class _NotesListPageState extends State<NotesListPage> {
                   children: [
                     if (tags.isNotEmpty)
                       TagFilter(
-                        tags: tags,
-                        selectedTag: _selectedTag,
-                        onTagSelected: _handleTagSelected,
-                        context: context
-                      ),
+                          tags: tags,
+                          selectedTag: _selectedTag,
+                          onTagSelected: _handleTagSelected,
+                          context: context),
                     Expanded(
                       child: notesToShow.isEmpty
                           ? NotesEmptyState(
-                              isSearching: isSearching && searchController.text.isNotEmpty)
+                              isSearching: isSearching &&
+                                  searchController.text.isNotEmpty)
                           : OptimizedListView<Note>(
                               items: notesToShow,
                               itemBuilder: _buildNoteCard,
                               onReorder: _reorderNotes,
                               scrollController: scrollController,
-                              enableReorder: !isSearching && _selectedTag == null,
+                              enableReorder:
+                                  !isSearching && _selectedTag == null,
                             ),
                     ),
                   ],
@@ -306,7 +311,7 @@ class _NotesListPageState extends State<NotesListPage> {
           ),
         ],
       ),
-      floatingActionButton: isFabVisible 
+      floatingActionButton: isFabVisible
           ? CustomFloatingButtons(
               showImportButton: false,
               onAdd: _openNoteCreation,
