@@ -10,6 +10,7 @@ class CustomFloatingButtons extends StatefulWidget {
   final VoidCallback? onTemplate;
   final String? templateTooltip;
   final String? createFromScratchTooltip;
+  final String heroTag;
 
   const CustomFloatingButtons({
     super.key,
@@ -21,6 +22,7 @@ class CustomFloatingButtons extends StatefulWidget {
     this.onTemplate,
     this.templateTooltip,
     this.createFromScratchTooltip,
+    required this.heroTag,
   });
 
   @override
@@ -90,6 +92,7 @@ class _CustomFloatingButtonsState extends State<CustomFloatingButtons>
     }
 
     return FloatingActionButton(
+      heroTag: '${widget.heroTag}_single',
       onPressed: onPressed,
       tooltip: tooltip,
       shape: RoundedRectangleBorder(
@@ -197,6 +200,7 @@ class _CustomFloatingButtonsState extends State<CustomFloatingButtons>
               ),
               const SizedBox(width: 12),
               FloatingActionButton.small(
+                heroTag: '${widget.heroTag}_action_$index',
                 onPressed: onTap,
                 tooltip: tooltip,
                 shape: RoundedRectangleBorder(
@@ -219,6 +223,7 @@ class _CustomFloatingButtonsState extends State<CustomFloatingButtons>
     final colorScheme = theme.colorScheme;
 
     return FloatingActionButton(
+      heroTag: '${widget.heroTag}_main',
       onPressed: _toggleExpanded,
       tooltip: widget.addTooltip ?? S.of(context).create,
       shape: RoundedRectangleBorder(

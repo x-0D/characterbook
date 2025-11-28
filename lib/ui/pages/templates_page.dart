@@ -510,6 +510,7 @@ class _TemplatesPageState extends BaseListPageState<QuestionnaireTemplate, Templ
               onAdd: navigateToCreate,
               importTooltip: S.of(context).import_template_tooltip,
               addTooltip: S.of(context).create_template_tooltip,
+              heroTag: "templates_list",
             )
           : null,
     );

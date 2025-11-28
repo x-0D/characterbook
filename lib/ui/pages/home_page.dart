@@ -306,6 +306,7 @@ class _HomePageState extends State<HomePage> {
                   _selectedContentType == HomeContentType.characters
                       ? s.new_character
                       : s.new_race,
+              heroTag: "home_list",
             )
           : null,
       body: Column(

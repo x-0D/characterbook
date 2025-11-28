@@ -310,6 +310,7 @@ class _CharacterListPageState extends BaseListPageState<Character, CharacterList
               onImport: importItem,
               onAdd: navigateToCreate,
               onTemplate: createFromTemplate,
+              heroTag: "character_list",
             )
           : null,
     );

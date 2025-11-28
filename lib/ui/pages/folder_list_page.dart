@@ -520,6 +520,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
           ? CustomFloatingButtons(
               onAdd: _createNewFolder,
               addTooltip: s.create,
+              heroTag: "folder_list",
             )
           : null,
     );

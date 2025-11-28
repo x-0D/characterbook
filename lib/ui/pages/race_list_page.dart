@@ -344,6 +344,7 @@ class _RaceListPageState extends State<RaceListPage> {
         ? CustomFloatingButtons(
             onImport: _importRaceFromFile,
             onAdd: _handleCreateRace,
+            heroTag: "race_list",
           ) 
         : null,
     );

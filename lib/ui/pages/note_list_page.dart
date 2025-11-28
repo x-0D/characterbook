@@ -315,6 +315,7 @@ class _NotesListPageState extends State<NotesListPage> {
           ? CustomFloatingButtons(
               showImportButton: false,
               onAdd: _openNoteCreation,
+              heroTag: "note_list",
             )
           : null,
     );
