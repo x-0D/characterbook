@@ -13,6 +13,7 @@ import 'models/character_model.dart';
 import 'providers/locale_provider.dart';
 import 'providers/theme_provider.dart';
 import 'ui/pages/app_navigation_bar.dart';
+import 'ui/pages/settings_page.dart';
 import 'ui/widgets/desktop/desktop_app_frame.dart';
 
 void main() async {
@@ -124,6 +125,10 @@ class _AppContentState extends State<_AppContent>
       debugPrint('Error flushing Hive boxes: $error');
     }
   }
+
+  void _openSettingsPage() => Navigator.of(context).push(MaterialPageRoute(
+    builder: (context) => const SettingsPage(),
+  ));
 
   @override
   Widget build(BuildContext context) {
