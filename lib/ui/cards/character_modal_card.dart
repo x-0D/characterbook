@@ -1,17 +1,18 @@
 import 'dart:typed_data';
-import 'package:characterbook/models/folder_model.dart';
-import 'package:characterbook/services/folder_service.dart';
-import 'package:characterbook/ui/pages/character_management_page.dart';
-import 'package:characterbook/ui/pages/note_management_page.dart';
-import 'package:characterbook/ui/widgets/avatar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
-import '../../../generated/l10n.dart';
+
 import '../../models/character_model.dart';
 import '../../../models/note_model.dart';
-import '../../../services/character_service.dart';
-import '../../../services/clipboard_service.dart';
+import '../../models/folder_model.dart';
+import '../../services/folder_service.dart';
+import '../../services/character_service.dart';
+import '../../services/clipboard_service.dart';
+import '../pages/character_management_page.dart';
+import '../pages/note_management_page.dart';
+import '../widgets/avatar_widget.dart';
+import '../../generated/l10n.dart';
 
 class CharacterModalCard extends StatefulWidget {
   final Character character;
@@ -113,6 +114,7 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
     required String confirmText,
     bool isDestructive = false,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -127,7 +129,7 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               confirmText,
-              style: TextStyle(color: isDestructive ? Colors.red : null),
+              style: TextStyle(color: isDestructive ? colorScheme.error : null),
             ),
           ),
         ],
@@ -215,32 +217,38 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
     );
   }
 
-  void _showFullImage(Uint8List imageBytes, String title) => showDialog(
-    context: context,
-    builder: (context) => Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(10),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppBar(
-            backgroundColor: Colors.black,
-            title: Text(title),
+  void _showFullImage(Uint8List imageBytes, String title) {
+    final colorScheme = Theme.of(context).colorScheme;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white),
+              icon: Icon(Icons.close_rounded, color: colorScheme.onSurface),
               onPressed: () => Navigator.pop(context),
             ),
+            title: Text(
+              title,
+              style: TextStyle(color: colorScheme.onSurface),
+            ),
           ),
-          InteractiveViewer(
-            panEnabled: true,
-            minScale: 0.1,
-            maxScale: 4.0,
-            child: Image.memory(imageBytes),
+          body: Center(
+            child: InteractiveViewer(
+              panEnabled: true,
+              minScale: 0.1,
+              maxScale: 4.0,
+              child: Image.memory(imageBytes),
+            ),
           ),
-        ],
+        ),
+        fullscreenDialog: true,
       ),
-    ),
-  );
+    );
+  }
 
   Future<void> _deleteNote(Note note) async {
     final confirmed = await _showConfirmationDialog(
@@ -562,8 +570,6 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
                             delegate: SliverChildListDelegate([
                               _buildHeroSection(context),
                               const SizedBox(height: 24),
-                              _buildMetadataSection(context),
-                              const SizedBox(height: 24),
                               _buildContentSections(context),
                               const SizedBox(height: 32),
                             ]),
@@ -623,7 +629,7 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
             ),
           ),
           const SizedBox(height: 24),
-          Text(
+          SelectableText(
             widget.character.name,
             style: textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w800,
@@ -653,6 +659,38 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
                   label: widget.character.race!.name,
                   color: colorScheme.surfaceContainerHigh,
                 ),
+              _buildExpressiveChip(
+                icon: Icons.update_rounded,
+                label: DateFormat('dd.MM.yyyy').format(widget.character.lastEdited),
+                color: colorScheme.surfaceContainerHigh,
+              ),
+              if (_currentFolder != null)
+                Chip(
+                  avatar: Icon(
+                    Icons.folder_rounded,
+                    size: 18,
+                    color: _currentFolder!.color,
+                  ),
+                  label: SelectableText(_currentFolder!.name),
+                  backgroundColor: _currentFolder!.color.withOpacity(0.2),
+                  side: BorderSide(
+                    color: _currentFolder!.color.withOpacity(0.4),
+                    width: 1,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  labelStyle: textTheme.labelLarge?.copyWith(
+                    color: _currentFolder!.color,
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ...widget.character.tags.map((tag) => _buildExpressiveChip(
+                icon: Icons.label_outline_rounded,
+                label: tag,
+                color: colorScheme.surfaceContainerHighest,
+              )),
             ],
           ),
         ],
@@ -680,93 +718,15 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
     );
   }
 
-  Widget _buildMetadataSection(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-
-    return Wrap(
-      spacing: 12,
-      runSpacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.update_rounded,
-                size: 16,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                DateFormat('dd.MM.yyyy').format(widget.character.lastEdited),
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (_currentFolder != null)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: _currentFolder!.color.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _currentFolder!.color.withOpacity(0.4),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.folder_rounded,
-                  size: 16,
-                  color: _currentFolder!.color,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  _currentFolder!.name,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: _currentFolder!.color,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ...widget.character.tags.map((tag) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            tag,
-            style: textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        )),
-      ],
-    );
-  }
 
   Widget _buildContentSections(BuildContext context) {
+    final s = S.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.character.referenceImageBytes != null) ...[
           _buildExpressiveSectionHeader(
-            title: S.of(context).character_reference,
+            title: s.character_reference,
             icon: Icons.image_search_rounded,
             isExpanded: _expandedSections['reference']!,
             onTap: () => setState(() => _expandedSections['reference'] = !_expandedSections['reference']!),
@@ -776,10 +736,7 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
             Center(
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
-                onTap: () => _showFullImage(
-                  widget.character.referenceImageBytes!, 
-                  S.of(context).character_reference
-                ),
+                onTap: () => _showFullImage(widget.character.referenceImageBytes!, s.character_reference),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: Image.memory(
@@ -795,98 +752,9 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
           ],
         ],
 
-        if (widget.character.appearance.isNotEmpty) ...[
-          _buildExpressiveContentSection(
-            title: S.of(context).appearance,
-            content: widget.character.appearance,
-            icon: Icons.face_retouching_natural_rounded,
-            isExpanded: _expandedSections['appearance']!,
-            onToggle: () => setState(() => _expandedSections['appearance'] = !_expandedSections['appearance']!),
-          ),
-        ],
-
-        if (widget.character.personality.isNotEmpty) ...[
-          _buildExpressiveContentSection(
-            title: S.of(context).personality,
-            content: widget.character.personality,
-            icon: Icons.psychology_rounded,
-            isExpanded: _expandedSections['personality']!,
-            onToggle: () => setState(() => _expandedSections['personality'] = !_expandedSections['personality']!),
-          ),
-        ],
-        
-        if (widget.character.biography.isNotEmpty) ...[
-          _buildExpressiveContentSection(
-            title: S.of(context).biography,
-            content: widget.character.biography,
-            icon: Icons.history_edu_rounded,
-            isExpanded: _expandedSections['biography']!,
-            onToggle: () => setState(() => _expandedSections['biography'] = !_expandedSections['biography']!),
-          ),
-        ],
-        
-        if (widget.character.abilities.isNotEmpty) ...[
-          _buildExpressiveContentSection(
-            title: S.of(context).abilities,
-            content: widget.character.abilities,
-            icon: Icons.auto_awesome_rounded,
-            isExpanded: _expandedSections['abilities']!,
-            onToggle: () => setState(() => _expandedSections['abilities'] = !_expandedSections['abilities']!),
-          ),
-        ],
-        
-        if (widget.character.other.isNotEmpty) ...[
-          _buildExpressiveContentSection(
-            title: S.of(context).other,
-            content: widget.character.other,
-            icon: Icons.more_horiz_rounded,
-            isExpanded: _expandedSections['other']!,
-            onToggle: () => setState(() => _expandedSections['other'] = !_expandedSections['other']!),
-          ),
-        ],
-
-        if (widget.character.additionalImages.isNotEmpty) ...[
-          _buildExpressiveSectionHeader(
-            title: S.of(context).character_gallery,
-            icon: Icons.photo_library_rounded,
-            isExpanded: _expandedSections['additionalImages']!,
-            onTap: () => setState(() => _expandedSections['additionalImages'] = !_expandedSections['additionalImages']!),
-          ),
-          if (_expandedSections['additionalImages']!) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 120,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: widget.character.additionalImages.length,
-                itemBuilder: (context, index) => Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () => _showFullImage(
-                      widget.character.additionalImages[index],
-                      '${S.of(context).character_gallery} ${index + 1}',
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.memory(
-                        widget.character.additionalImages[index],
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-        ],
-
         if (widget.character.customFields.isNotEmpty) ...[
           _buildExpressiveSectionHeader(
-            title: S.of(context).custom_fields,
+            title: s.custom_fields,
             icon: Icons.list_alt_rounded,
             isExpanded: _expandedSections['customFields']!,
             onTap: () => setState(() => _expandedSections['customFields'] = !_expandedSections['customFields']!),
@@ -906,14 +774,14 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    SelectableText(
                       field.key,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    SelectableText(
                       field.value,
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
@@ -925,9 +793,93 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
           ],
         ],
 
+        if (widget.character.appearance.isNotEmpty)
+          _buildExpressiveContentSection(
+            title: s.appearance,
+            content: widget.character.appearance,
+            icon: Icons.face_retouching_natural_rounded,
+            isExpanded: _expandedSections['appearance']!,
+            onToggle: () => setState(() => _expandedSections['appearance'] = !_expandedSections['appearance']!),
+          ),
+
+        if (widget.character.personality.isNotEmpty)
+          _buildExpressiveContentSection(
+            title: s.personality,
+            content: widget.character.personality,
+            icon: Icons.psychology_rounded,
+            isExpanded: _expandedSections['personality']!,
+            onToggle: () => setState(() => _expandedSections['personality'] = !_expandedSections['personality']!),
+          ),
+        
+        if (widget.character.biography.isNotEmpty)
+          _buildExpressiveContentSection(
+            title: s.biography,
+            content: widget.character.biography,
+            icon: Icons.history_edu_rounded,
+            isExpanded: _expandedSections['biography']!,
+            onToggle: () => setState(() => _expandedSections['biography'] = !_expandedSections['biography']!),
+          ),
+        
+        if (widget.character.abilities.isNotEmpty)
+          _buildExpressiveContentSection(
+            title: s.abilities,
+            content: widget.character.abilities,
+            icon: Icons.auto_awesome_rounded,
+            isExpanded: _expandedSections['abilities']!,
+            onToggle: () => setState(() => _expandedSections['abilities'] = !_expandedSections['abilities']!),
+          ),
+        
+        if (widget.character.other.isNotEmpty)
+          _buildExpressiveContentSection(
+            title: s.other,
+            content: widget.character.other,
+            icon: Icons.more_horiz_rounded,
+            isExpanded: _expandedSections['other']!,
+            onToggle: () => setState(() => _expandedSections['other'] = !_expandedSections['other']!),
+          ),
+
+        if (widget.character.additionalImages.isNotEmpty) ...[
+          _buildExpressiveSectionHeader(
+            title: s.character_gallery,
+            icon: Icons.photo_library_rounded,
+            isExpanded: _expandedSections['additionalImages']!,
+            onTap: () => setState(() => _expandedSections['additionalImages'] = !_expandedSections['additionalImages']!),
+          ),
+          if (_expandedSections['additionalImages']!) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 120,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: widget.character.additionalImages.length,
+                itemBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => _showFullImage(
+                      widget.character.additionalImages[index],
+                      '${s.character_gallery} ${index + 1}',
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.memory(
+                        widget.character.additionalImages[index],
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ],
+
         if (_relatedNotes.isNotEmpty) ...[
           _buildExpressiveSectionHeader(
-            title: S.of(context).related_notes,
+            title: s.related_notes,
             icon: Icons.note_rounded,
             isExpanded: _expandedSections['notes']!,
             onTap: () => setState(() => _expandedSections['notes'] = !_expandedSections['notes']!),
@@ -967,7 +919,7 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
             const SizedBox(width: 8),
             Icon(icon, color: colorScheme.primary, size: 24),
             const SizedBox(width: 12),
-            Text(
+            SelectableText(
               title,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
@@ -1028,7 +980,7 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
                       child: child,
                     ),
                   ),
-                  child: Text(
+                  child: SelectableText(
                     key: ValueKey(content.hashCode),
                     content,
                     style: theme.textTheme.bodyLarge,
@@ -1070,13 +1022,11 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
               Row(
                 children: [
                   Expanded(
-                    child: Text(
+                    child: SelectableText(
                       note.title,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   IconButton(
@@ -1106,7 +1056,7 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
                         color: folder.color,
                       ),
                       const SizedBox(width: 6),
-                      Text(
+                      SelectableText(
                         folder.name,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: folder.color,
@@ -1118,11 +1068,10 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
               ],
               
               const SizedBox(height: 12),
-              Text(
+              SelectableText(
                 note.content,
                 style: theme.textTheme.bodyLarge,
                 maxLines: 3,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
