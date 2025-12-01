@@ -1,13 +1,15 @@
-import 'package:characterbook/ui/widgets/sections/about_section.dart';
-import 'package:characterbook/ui/widgets/sections/acknowledgements_section.dart';
-import 'package:characterbook/ui/widgets/sections/backup_section.dart';
-import 'package:characterbook/ui/widgets/sections/export_pdf_settings_section.dart';
-import 'package:characterbook/ui/widgets/sections/import_section.dart';
-import 'package:characterbook/ui/widgets/sections/language_section.dart';
-import 'package:characterbook/ui/widgets/sections/licenses_section.dart';
-import 'package:characterbook/ui/widgets/sections/theme_section.dart';
 import 'package:flutter/material.dart';
 import 'package:characterbook/generated/l10n.dart';
+
+import '../widgets/sections/about_section.dart';
+import '../widgets/sections/acknowledgements_section.dart';
+import '../widgets/sections/backup_section.dart';
+import '../widgets/sections/calendar_section.dart';
+import '../widgets/sections/export_pdf_settings_section.dart';
+import '../widgets/sections/import_section.dart';
+import '../widgets/sections/language_section.dart';
+import '../widgets/sections/licenses_section.dart';
+import '../widgets/sections/theme_section.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -61,6 +63,8 @@ class _SettingsBody extends StatelessWidget {
         ImportSection(),
         SizedBox(height: 8),
         BackupSection(),
+        SizedBox(height: 8),
+        CalendarSection(),
         SizedBox(height: 8),
         ExportPdfSettingsSection(),
         SizedBox(height: 8),
