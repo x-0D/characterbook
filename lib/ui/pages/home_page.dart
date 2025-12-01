@@ -6,6 +6,7 @@ import '../../models/race_model.dart';
 import '../../services/character_service.dart';
 import '../../services/race_service.dart';
 import '../cards/character_modal_card.dart';
+import '../cards/race_modal_card.dart';
 import '../widgets/appbar/common_main_app_bar.dart';
 import '../widgets/buttons/common_list_floating_buttons.dart';
 import '../widgets/cards/character_keep_card.dart';
@@ -172,6 +173,15 @@ class _HomePageState extends State<HomePage> {
         builder: (context) => CharacterEditPage(character: character),
       ),
     ).then((_) => _loadData());
+  }
+
+  void _showRaceDetail(Race race) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => RaceModalCard(race: race),
+    );
   }
 
   void _editRace(Race race) {
@@ -564,7 +574,7 @@ class _HomePageState extends State<HomePage> {
         return RaceKeepCard(
           race: race,
           characterCount: _getCharacterCountForRace(race),
-          onTap: () => _editRace(race),
+          onTap: () => _showRaceDetail(race),
           onContextMenuTap: () => _showRaceContextMenu(race),
         );
       },
