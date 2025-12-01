@@ -18,6 +18,7 @@ import '../widgets/avatar_picker_widget.dart';
 import '../widgets/base_edit_page_scaffold.dart';
 import '../widgets/fields/custom_fields_editor.dart';
 import '../widgets/fields/custom_text_field.dart';
+import '../widgets/fields/fullscreen_text_editor.dart';
 import '../widgets/fields/gender_selector_field.dart';
 import '../widgets/fields/race_selector_field.dart';
 import '../widgets/reference_image_picker.dart';
@@ -403,25 +404,49 @@ class _CharacterEditPageState extends State<CharacterEditPage>
       ]);
     }
 
-    final textFields = [
-      ('appearance', s.appearance, 5),
-      ('personality', s.personality, 4),
-      ('biography', s.biography, 7),
-      ('abilities', s.abilities, 7),
-      ('other', s.other, 5),
+    final fullscreenFields = [
+      ('appearance', s.appearance),
+      ('personality', s.personality),
+      ('biography', s.biography),
+      ('abilities', s.abilities),
+      ('other', s.other),
     ];
 
-    for (final (fieldName, label, maxLines) in textFields) {
+    for (final (fieldName, label) in fullscreenFields) {
       if (_shouldShowField(fieldName)) {
         fields.addAll([
           const SizedBox(height: _fieldSpacing),
-          CustomTextField(
+          _FullscreenTextField(
             label: label,
-            initialValue: _getFieldValue(fieldName),
-            alignLabel: true,
-            onSaved: (value) => _setFieldValue(fieldName, value!),
-            onChanged: (_) => hasUnsavedChanges = true,
-            maxLines: maxLines,
+            value: _getFieldValue(fieldName) ?? '',
+            onChanged: (value) {
+              _setFieldValue(fieldName, value);
+              hasUnsavedChanges = true;
+            },
+            onTap: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FullscreenTextEditor(
+                    title: label,
+                    initialValue: _getFieldValue(fieldName) ?? '',
+                    onChanged: (value) {
+                      setState(() {
+                        _setFieldValue(fieldName, value);
+                        hasUnsavedChanges = true;
+                      });
+                    },
+                  ),
+                ),
+              );
+              if (result != null) {
+                setState(() {
+                  _setFieldValue(fieldName, result);
+                  hasUnsavedChanges = true;
+                });
+              }
+            },
+            maxLines: 3,
           ),
         ]);
       }
@@ -429,6 +454,7 @@ class _CharacterEditPageState extends State<CharacterEditPage>
 
     return fields;
   }
+
 
   String? _getFieldValue(String fieldName) {
     return switch (fieldName) {
@@ -498,6 +524,71 @@ class _CharacterEditPageState extends State<CharacterEditPage>
           hasUnsavedChanges = true;
         });
       },
+    );
+  }
+}
+
+class _FullscreenTextField extends StatelessWidget {
+  final String label;
+  final String value;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onTap;
+  final int? maxLines;
+
+  const _FullscreenTextField({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    required this.onTap,
+    this.maxLines = 1,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.open_in_full,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              value.isEmpty ? '${S.of(context).edit}...' : value,
+              maxLines: maxLines,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: value.isEmpty
+                        ? Theme.of(context).colorScheme.onSurfaceVariant
+                        : null,
+                    fontStyle: value.isEmpty ? FontStyle.italic : null,
+                  ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,17 +1,19 @@
 import 'dart:typed_data';
-import 'package:characterbook/ui/handlers/unsaved_changes_handler.dart';
-import 'package:characterbook/ui/widgets/appbar/common_edit_app_bar.dart';
-import 'package:characterbook/ui/widgets/sections/tags_and_folder_section.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import '../../generated/l10n.dart';
 import '../../models/race_model.dart';
 import '../../models/folder_model.dart';
 import '../../services/folder_service.dart';
+import '../handlers/unsaved_changes_handler.dart';
+import '../widgets/appbar/common_edit_app_bar.dart';
 import '../widgets/avatar_picker_widget.dart';
 import '../widgets/fields/custom_text_field.dart';
 import '../widgets/buttons/save_button_widget.dart';
 import '../widgets/base_edit_page_scaffold.dart';
+import '../widgets/fields/fullscreen_field_preview.dart';
+import '../widgets/sections/tags_and_folder_section.dart';
+import '..//widgets/fields/fullscreen_text_editor.dart';
 
 class RaceManagementPage extends StatefulWidget {
   final Race? race;
@@ -149,6 +151,35 @@ class _RaceManagementPageState extends State<RaceManagementPage> with UnsavedCha
     );
   }
 
+  Future<void> _openFullscreenEditor({
+    required String title,
+    required TextEditingController controller,
+    required String fieldName,
+  }) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FullscreenTextEditor(
+          title: title,
+          initialValue: controller.text,
+          onChanged: (value) {
+            setState(() {
+              controller.text = value;
+              hasUnsavedChanges = true;
+            });
+          },
+        ),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        controller.text = result;
+        hasUnsavedChanges = true;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
@@ -204,25 +235,37 @@ class _RaceManagementPageState extends State<RaceManagementPage> with UnsavedCha
               isRequired: true,
             ),
             const SizedBox(height: 16),
-            CustomTextField(
-              controller: _descriptionController,
+            FullscreenFieldPreview(
               label: s.description,
-              maxLines: 3,
-              alignLabel: true,
+              value: _descriptionController.text,
+              onTap: () => _openFullscreenEditor(
+                title: s.description,
+                controller: _descriptionController,
+                fieldName: 'description',
+              ),
+              maxPreviewLines: 3,
             ),
             const SizedBox(height: 16),
-            CustomTextField(
-              controller: _biologyController,
+            FullscreenFieldPreview(
               label: s.biology,
-              maxLines: 5,
-              alignLabel: true,
+              value: _biologyController.text,
+              onTap: () => _openFullscreenEditor(
+                title: s.biology,
+                controller: _biologyController,
+                fieldName: 'biology',
+              ),
+              maxPreviewLines: 5,
             ),
             const SizedBox(height: 16),
-            CustomTextField(
-              controller: _backstoryController,
+            FullscreenFieldPreview(
               label: s.backstory,
-              maxLines: 7,
-              alignLabel: true,
+              value: _backstoryController.text,
+              onTap: () => _openFullscreenEditor(
+                title: s.backstory,
+                controller: _backstoryController,
+                fieldName: 'backstory',
+              ),
+              maxPreviewLines: 7,
             ),
             const SizedBox(height: 32),
             SaveButton(
