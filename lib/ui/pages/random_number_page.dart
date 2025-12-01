@@ -95,23 +95,93 @@ class _RandomNumberPageState extends State<RandomNumberPage> {
                   Row(
                     children: [
                       Expanded(
-                        child: _NumberWheel(
+                        child: _NumberSelector(
                           title: l10n.from,
                           value: _minValue,
-                          min: _minValue,
-                          max: _maxValue - 1,
+                          min: -999,
+                          max: 999,
                           onChanged: _updateMinValue,
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: _NumberWheel(
+                        child: _NumberSelector(
                           title: l10n.to,
                           value: _maxValue,
-                          min: _minValue + 1,
-                          max: _maxValue,
+                          min: -999,
+                          max: 999,
                           onChanged: _updateMaxValue,
                         ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove),
+                        onPressed: () {
+                          if (_minValue > -999) {
+                            _updateMinValue(_minValue - 1);
+                          }
+                        },
+                      ),
+                      SizedBox(
+                        width: 80,
+                        child: TextField(
+                          controller:
+                              TextEditingController(text: _minValue.toString()),
+                          textAlign: TextAlign.center,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.all(8),
+                          ),
+                          onChanged: (value) {
+                            final intValue = int.tryParse(value);
+                            if (intValue != null &&
+                                intValue >= -999 &&
+                                intValue < _maxValue) {
+                              _updateMinValue(intValue);
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        '-',
+                        style: textTheme.headlineSmall,
+                      ),
+                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: 80,
+                        child: TextField(
+                          controller:
+                              TextEditingController(text: _maxValue.toString()),
+                          textAlign: TextAlign.center,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.all(8),
+                          ),
+                          onChanged: (value) {
+                            final intValue = int.tryParse(value);
+                            if (intValue != null &&
+                                intValue <= 999 &&
+                                intValue > _minValue) {
+                              _updateMaxValue(intValue);
+                            }
+                          },
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: () {
+                          if (_maxValue < 999) {
+                            _updateMaxValue(_maxValue + 1);
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -124,14 +194,21 @@ class _RandomNumberPageState extends State<RandomNumberPage> {
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: colorScheme.primary.withOpacity(0.3),
+                  width: 2,
+                ),
               ),
               child: Center(
                 child: _isGenerating
-                    ? Text(
-                        '...',
-                        style: textTheme.displayLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onPrimaryContainer,
+                    ? SizedBox(
+                        width: 60,
+                        height: 60,
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            colorScheme.onPrimaryContainer,
+                          ),
+                          strokeWidth: 4,
                         ),
                       )
                     : _generatedNumber != null
@@ -140,14 +217,15 @@ class _RandomNumberPageState extends State<RandomNumberPage> {
                             style: textTheme.displayLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: colorScheme.onPrimaryContainer,
+                              fontSize: 64,
                             ),
                           )
                         : Text(
                             '?',
                             style: textTheme.displayLarge?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: colorScheme.onPrimaryContainer
-                                  .withOpacity(0.3),
+                              color: colorScheme.onPrimaryContainer.withOpacity(0.3),
+                              fontSize: 64,
                             ),
                           ),
               ),
@@ -156,7 +234,8 @@ class _RandomNumberPageState extends State<RandomNumberPage> {
             FilledButton(
               onPressed: _generateRandomNumber,
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -166,9 +245,20 @@ class _RandomNumberPageState extends State<RandomNumberPage> {
                 children: [
                   const Icon(Icons.casino),
                   const SizedBox(width: 12),
-                  Text(_isGenerating ? l10n.generating : l10n.generateNumber),
+                  Text(_isGenerating ? l10n.generating : l10n.generateNumber,),
                 ],
               ),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _minValue = 0;
+                  _maxValue = 100;
+                  _generatedNumber = null;
+                });
+              },
+              child: Text(l10n.default_settings),
             ),
           ],
         ),
@@ -177,14 +267,14 @@ class _RandomNumberPageState extends State<RandomNumberPage> {
   }
 }
 
-class _NumberWheel extends StatelessWidget {
+class _NumberSelector extends StatefulWidget {
   final String title;
   final int value;
   final int min;
   final int max;
   final ValueChanged<int> onChanged;
 
-  const _NumberWheel({
+  const _NumberSelector({
     required this.title,
     required this.value,
     required this.min,
@@ -193,16 +283,59 @@ class _NumberWheel extends StatelessWidget {
   });
 
   @override
+  State<_NumberSelector> createState() => __NumberSelectorState();
+}
+
+class __NumberSelectorState extends State<_NumberSelector> {
+  late FixedExtentScrollController _controller;
+  late List<int> _items;
+
+  @override
+  void initState() {
+    super.initState();
+    _items = List.generate(
+      widget.max - widget.min + 1,
+      (index) => widget.min + index,
+    );
+    final initialIndex =
+        _items.indexOf(widget.value).clamp(0, _items.length - 1);
+    _controller = FixedExtentScrollController(initialItem: initialIndex);
+  }
+
+  @override
+  void didUpdateWidget(_NumberSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      final index = _items.indexOf(widget.value);
+      if (index >= 0 && index < _items.length) {
+        _controller.animateToItem(
+          index,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final items = List.generate(max - min + 1, (index) => min + index);
+    final textTheme = Theme.of(context).textTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium,
+          widget.title,
+          style: textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 8),
         Container(
@@ -210,29 +343,89 @@ class _NumberWheel extends StatelessWidget {
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: colorScheme.outlineVariant,
+              width: 1,
+            ),
           ),
-          child: ListWheelScrollView(
+          child: ListWheelScrollView.useDelegate(
+            controller: _controller,
             itemExtent: 40,
             diameterRatio: 1.8,
             physics: const FixedExtentScrollPhysics(),
-            onSelectedItemChanged: (index) => onChanged(items[index]),
-            children: items.map((number) {
-              final isSelected = number == value;
-              return Center(
-                child: Text(
-                  number.toString(),
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: isSelected
-                            ? colorScheme.onSurface
-                            : colorScheme.onSurface.withOpacity(0.6),
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                        fontSize: isSelected ? 22 : 18,
-                      ),
-                ),
-              );
-            }).toList(),
+            onSelectedItemChanged: (index) {
+              if (index >= 0 && index < _items.length) {
+                widget.onChanged(_items[index]);
+              }
+            },
+            childDelegate: ListWheelChildBuilderDelegate(
+              builder: (context, index) {
+                if (index < 0 || index >= _items.length) return null;
+                final number = _items[index];
+                final isSelected = number == widget.value;
+
+                return Center(
+                  child: Text(
+                    number.toString(),
+                    style: textTheme.titleLarge?.copyWith(
+                      color: isSelected
+                          ? colorScheme.onSurface
+                          : colorScheme.onSurface.withOpacity(0.6),
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontSize: isSelected ? 24 : 20,
+                    ),
+                  ),
+                );
+              },
+              childCount: _items.length,
+            ),
           ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: Icon(
+                Icons.remove_circle_outline,
+                color: colorScheme.primary,
+              ),
+              onPressed: () {
+                final currentIndex = _items.indexOf(widget.value);
+                if (currentIndex > 0) {
+                  widget.onChanged(_items[currentIndex - 1]);
+                }
+              },
+            ),
+            const SizedBox(width: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                widget.value.toString(),
+                style: textTheme.headlineSmall?.copyWith(
+                  color: colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            IconButton(
+              icon: Icon(
+                Icons.add_circle_outline,
+                color: colorScheme.primary,
+              ),
+              onPressed: () {
+                final currentIndex = _items.indexOf(widget.value);
+                if (currentIndex < _items.length - 1) {
+                  widget.onChanged(_items[currentIndex + 1]);
+                }
+              },
+            ),
+          ],
         ),
       ],
     );
