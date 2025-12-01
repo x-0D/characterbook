@@ -24,7 +24,10 @@ class AboutSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         ListTile(
-          leading: const Icon(Icons.developer_mode),
+          leading: CircleAvatar(
+            radius: 20,
+            backgroundImage: AssetImage('assets/avatardeveloper.jpg'),
+          ),
           title: Text(s.developer),
           trailing: Text(
             'Максим Гоглов',
@@ -42,7 +45,8 @@ class AboutSection extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         FilledButton.tonal(
-          onPressed: () => _launchUrl('https://github.com/MaxGog/CharacterBook'),
+          onPressed: () =>
+              _launchUrl('https://github.com/MaxGog/CharacterBook'),
           style: FilledButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
