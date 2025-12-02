@@ -36,10 +36,7 @@ jobs:
       run: flutter pub get
 
     - name: Generate localization
-      run: flutter gen-l10n
-
-    - name: Generate launcher icons
-      run: flutter pub run flutter_launcher_icons:main
+      run: flutter pub run intl_utils:generate
 
     - name: Build Windows app
       run: flutter build windows --release --verbose
