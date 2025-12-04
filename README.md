@@ -1,4 +1,4 @@
-# 🎭 CharacterBook – Your Ultimate RPG Character Companion
+# 🎭 CharacterBook
 
 <div align="center">
 
