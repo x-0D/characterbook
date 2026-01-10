@@ -45,10 +45,12 @@ class _HomePageState extends State<HomePage> {
     _loadData();
 
     _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text;
-        _filterData();
-      });
+      if (mounted) {
+        setState(() {
+          _searchQuery = _searchController.text;
+          _filterData();
+        });
+      }
     });
   }
 
@@ -59,20 +61,37 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadData() async {
-    final characters = await _characterService.getAllCharacters();
-    final races = await _raceService.getAllRaces();
+    try {
+      final characters = await _characterService.getAllCharacters();
+      final races = await _raceService.getAllRaces();
 
-    setState(() {
-      _characters = characters;
-      _races = races;
-      _filteredCharacters = characters;
-      _filteredRaces = races;
-    });
+      if (mounted) {
+        setState(() {
+          _characters = characters;
+          _races = races;
+          _filteredCharacters = characters;
+          _filteredRaces = races;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${S.of(context).error}: ${e.toString()}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   void _changeContentType(HomeContentType type) {
     setState(() {
       _selectedContentType = type;
+      if (_isSearching) {
+        _isSearching = false;
+        _searchController.clear();
+      }
     });
   }
 
@@ -108,10 +127,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onSearchChanged(String value) {
-    setState(() {
-      _searchQuery = value;
-      _filterData();
-    });
+    if (mounted) {
+      setState(() {
+        _searchQuery = value;
+        _filterData();
+      });
+    }
   }
 
   int _getCharacterCountForRace(Race race) {
@@ -136,12 +157,11 @@ class _HomePageState extends State<HomePage> {
       builder: (context) => ContextMenu.character(
         character: character,
         onEdit: () {
-          Navigator.pop(context);
+          Navigator.of(context).pop();
           _editCharacter(character);
         },
-        onDelete: () {
-          Navigator.pop(context);
-          _deleteCharacter(character);
+        onDelete: () async {
+          await _showDeleteCharacterDialog(character);
         },
       ),
     );
@@ -154,24 +174,27 @@ class _HomePageState extends State<HomePage> {
       builder: (context) => ContextMenu.race(
         race: race,
         onEdit: () {
-          Navigator.pop(context);
+          Navigator.of(context).pop();
           _editRace(race);
         },
-        onDelete: () {
-          Navigator.pop(context);
-          _deleteRace(race);
+        onDelete: () async {
+          await _showDeleteRaceDialog(race);
         },
       ),
     );
   }
 
-  void _editCharacter(Character character) {
-    Navigator.push(
+  Future<void> _editCharacter(Character character) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CharacterEditPage(character: character),
       ),
-    ).then((_) => _loadData());
+    );
+
+    if (result == true && mounted) {
+      await _loadData();
+    }
   }
 
   void _showRaceDetail(Race race) {
@@ -183,28 +206,35 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _editRace(Race race) {
-    Navigator.push(
+  Future<void> _editRace(Race race) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => RaceManagementPage(race: race),
       ),
-    ).then((_) => _loadData());
+    );
+
+    if (result == true && mounted) {
+      await _loadData();
+    }
   }
 
-  Future<void> _deleteCharacter(Character character) async {
+  Future<void> _showDeleteCharacterDialog(Character character) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+
     final confirmed = await showDialog<bool>(
       context: context,
+      barrierDismissible: true,
       builder: (context) => AlertDialog(
         title: Text(S.of(context).character_delete_title),
         content: Text(S.of(context).character_delete_confirm),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.of(context).pop(false),
             child: Text(S.of(context).cancel),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.of(context).pop(true),
             child: Text(
               S.of(context).delete,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -214,40 +244,61 @@ class _HomePageState extends State<HomePage> {
       ),
     );
 
-    if (confirmed == true) {
-      try {
-        await _characterService.deleteCharacter(character);
-        if (mounted) {
-          _loadData();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(S.of(context).character_deleted)),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content:
-                    Text('${S.of(context).delete_error}: ${e.toString()}')),
-          );
-        }
+    if (confirmed == true && mounted) {
+      await _performDeleteCharacter(character);
+    }
+  }
+
+  Future<void> _performDeleteCharacter(Character character) async {
+    final originalCharacters = List<Character>.from(_characters);
+    final originalFiltered = List<Character>.from(_filteredCharacters);
+    try {
+      setState(() {
+        _characters.removeWhere((c) => c.key == character.key);
+        _filteredCharacters.removeWhere((c) => c.key == character.key);
+      });
+
+      await _characterService.deleteCharacter(character);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).character_deleted),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _characters = originalCharacters;
+          _filteredCharacters = originalFiltered;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${S.of(context).delete_error}: ${e.toString()}'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
 
-  Future<void> _deleteRace(Race race) async {
+  Future<void> _showDeleteRaceDialog(Race race) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+
     final confirmed = await showDialog<bool>(
       context: context,
+      barrierDismissible: true,
       builder: (context) => AlertDialog(
         title: Text(S.of(context).race_delete_title),
         content: Text(S.of(context).race_delete_confirm),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.of(context).pop(false),
             child: Text(S.of(context).cancel),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.of(context).pop(true),
             child: Text(
               S.of(context).delete,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -257,52 +308,81 @@ class _HomePageState extends State<HomePage> {
       ),
     );
 
-    if (confirmed == true) {
-      try {
-        await _raceService.deleteRace(race.key);
-        if (mounted) {
-          _loadData();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(S.of(context).race_deleted)),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content:
-                    Text('${S.of(context).delete_error}: ${e.toString()}')),
-          );
-        }
+    if (confirmed == true && mounted) {
+      await _performDeleteRace(race);
+    }
+  }
+
+  Future<void> _performDeleteRace(Race race) async {
+    final originalRaces = List<Race>.from(_races);
+    final originalFiltered = List<Race>.from(_filteredRaces);
+    try {
+      setState(() {
+        _races.removeWhere((r) => r.key == race.key);
+        _filteredRaces.removeWhere((r) => r.key == race.key);
+      });
+
+      await _raceService.deleteRace(race.key);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.of(context).race_deleted),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _races = originalRaces;
+          _filteredRaces = originalFiltered;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${S.of(context).delete_error}: ${e.toString()}'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
 
-  void _createNewContent() {
+  Future<void> _createNewContent() async {
+    Widget page;
+
     if (_selectedContentType == HomeContentType.characters) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const CharacterEditPage()),
-      ).then((_) => _loadData());
-    } else if (_selectedContentType == HomeContentType.races) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const RaceManagementPage()),
-      ).then((_) => _loadData());
+      page = const CharacterEditPage();
+    } else {
+      page = const RaceManagementPage();
+    }
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => page),
+    );
+
+    if (result == true && mounted) {
+      await _loadData();
     }
   }
 
   void _importContent() {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(S.of(context).import_cancelled)),
+      SnackBar(
+        content: Text(S.of(context).import_cancelled),
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 
   void _createFromTemplate() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: Text(
-              '${S.of(context).templates_not_found} - ${S.of(context).import_cancelled}')),
+        content: Text(
+          '${S.of(context).templates_not_found} - ${S.of(context).import_cancelled}',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 
@@ -364,38 +444,40 @@ class _HomePageState extends State<HomePage> {
               heroTag: "home_list",
             )
           : null,
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SegmentedButton<HomeContentType>(
-              segments: [
-                ButtonSegment<HomeContentType>(
-                  value: HomeContentType.characters,
-                  label: Text(s.characters),
-                ),
-                ButtonSegment<HomeContentType>(
-                  value: HomeContentType.races,
-                  label: Text(s.races),
-                ),
-                ButtonSegment<HomeContentType>(
-                  value: HomeContentType.tools,
-                  label: Text(s.dnd_tools),
-                ),
-              ],
-              selected: <HomeContentType>{_selectedContentType},
-              onSelectionChanged: (Set<HomeContentType> newSelection) {
-                _changeContentType(newSelection.first);
-              },
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SegmentedButton<HomeContentType>(
+                segments: [
+                  ButtonSegment<HomeContentType>(
+                    value: HomeContentType.characters,
+                    label: Text(s.characters),
+                  ),
+                  ButtonSegment<HomeContentType>(
+                    value: HomeContentType.races,
+                    label: Text(s.races),
+                  ),
+                  ButtonSegment<HomeContentType>(
+                    value: HomeContentType.tools,
+                    label: Text(s.dnd_tools),
+                  ),
+                ],
+                selected: <HomeContentType>{_selectedContentType},
+                onSelectionChanged: (Set<HomeContentType> newSelection) {
+                  _changeContentType(newSelection.first);
+                },
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: _selectedContentType == HomeContentType.tools
-                ? _buildToolsContent()
-                : _buildContentGrid(),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Expanded(
+              child: _selectedContentType == HomeContentType.tools
+                  ? _buildToolsContent()
+                  : _buildContentGrid(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -496,87 +578,97 @@ class _HomePageState extends State<HomePage> {
     final colorScheme = theme.colorScheme;
     final s = S.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _selectedContentType == HomeContentType.characters
-                ? Icons.person_outline_rounded
-                : Icons.people_outline_rounded,
-            size: 64,
-            color: colorScheme.onSurface.withOpacity(0.3),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _searchQuery.isEmpty ? s.no_content_home : s.nothing_found,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: colorScheme.onSurface.withOpacity(0.6),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          if (_searchQuery.isEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              s.create_first_content,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+    return Center(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                _selectedContentType == HomeContentType.characters
+                    ? Icons.person_outline_rounded
+                    : Icons.people_outline_rounded,
+                size: 64,
+                color: colorScheme.onSurface.withOpacity(0.3),
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _createNewContent,
-              child: Text(s.create),
-            ),
-          ],
-        ],
+              const SizedBox(height: 16),
+              Text(
+                _searchQuery.isEmpty ? s.no_content_home : s.nothing_found,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: colorScheme.onSurface.withOpacity(0.6),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (_searchQuery.isEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  s.create_first_content,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: _createNewContent,
+                  child: Text(s.create),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildCharactersKeepGrid() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-        childAspectRatio: 0.85,
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: GridView.builder(
+        padding: const EdgeInsets.all(8),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          childAspectRatio: 0.85,
+        ),
+        itemCount: _filteredCharacters.length,
+        itemBuilder: (context, index) {
+          final character = _filteredCharacters[index];
+          return CharacterKeepCard(
+            character: character,
+            onTap: () => _showCharacterDetail(character),
+            onContextMenuTap: () => _showCharacterContextMenu(character),
+            formattedDate: _formatDate(character.lastEdited),
+          );
+        },
       ),
-      itemCount: _filteredCharacters.length,
-      itemBuilder: (context, index) {
-        final character = _filteredCharacters[index];
-        return CharacterKeepCard(
-          character: character,
-          onTap: () => _showCharacterDetail(character),
-          onContextMenuTap: () => _showCharacterContextMenu(character),
-          formattedDate: _formatDate(character.lastEdited),
-        );
-      },
     );
   }
 
   Widget _buildRacesKeepGrid() {
-    return GridView.builder(
-      padding: const EdgeInsets.all(8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-        childAspectRatio: 1.0,
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: GridView.builder(
+        padding: const EdgeInsets.all(8),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          childAspectRatio: 1.0,
+        ),
+        itemCount: _filteredRaces.length,
+        itemBuilder: (context, index) {
+          final race = _filteredRaces[index];
+          return RaceKeepCard(
+            race: race,
+            characterCount: _getCharacterCountForRace(race),
+            onTap: () => _showRaceDetail(race),
+            onContextMenuTap: () => _showRaceContextMenu(race),
+          );
+        },
       ),
-      itemCount: _filteredRaces.length,
-      itemBuilder: (context, index) {
-        final race = _filteredRaces[index];
-        return RaceKeepCard(
-          race: race,
-          characterCount: _getCharacterCountForRace(race),
-          onTap: () => _showRaceDetail(race),
-          onContextMenuTap: () => _showRaceContextMenu(race),
-        );
-      },
     );
   }
 }
