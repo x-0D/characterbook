@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/race_model.dart';
@@ -39,6 +42,12 @@ class _HomePageState extends State<HomePage> {
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
 
+  List<double> _characterTileSizes = [];
+  List<double> _raceTileSizes = [];
+  Map<int, bool> _characterTileAnimations = {};
+  Map<int, bool> _raceTileAnimations = {};
+  final Random _random = Random();
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +60,14 @@ class _HomePageState extends State<HomePage> {
           _filterData();
         });
       }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Timer.periodic(const Duration(seconds: 5), (timer) {
+        if (mounted && _selectedContentType != HomeContentType.tools) {
+          _startRandomAnimations();
+        }
+      });
     });
   }
 
@@ -73,6 +90,17 @@ class _HomePageState extends State<HomePage> {
           _filteredRaces = races;
         });
       }
+      _characterTileSizes = List.generate(characters.length,
+          (index) => 1.0 + _random.nextDouble() * 0.2);
+      _raceTileSizes = List.generate(
+          races.length, (index) => 1.0 + _random.nextDouble() * 0.2);
+
+      _characterTileAnimations = Map.fromIterable(
+          List.generate(characters.length, (index) => index),
+          value: (_) => false);
+      _raceTileAnimations = Map.fromIterable(
+          List.generate(races.length, (index) => index),
+          value: (_) => false);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -82,6 +110,46 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       }
+    }
+  }
+
+  void _animateTile(int index) {
+    if (_selectedContentType == HomeContentType.characters) {
+      setState(() {
+        _characterTileAnimations[index] = true;
+      });
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          setState(() {
+            _characterTileAnimations[index] = false;
+          });
+        }
+      });
+    } else {
+      setState(() {
+        _raceTileAnimations[index] = true;
+      });
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          setState(() {
+            _raceTileAnimations[index] = false;
+          });
+        }
+      });
+    }
+  }
+
+  void _startRandomAnimations() {
+    if (_selectedContentType == HomeContentType.characters &&
+        _filteredCharacters.isNotEmpty) {
+      final randomIndex = _random.nextInt(_filteredCharacters.length);
+      _animateTile(randomIndex);
+    } else if (_selectedContentType == HomeContentType.races &&
+        _filteredRaces.isNotEmpty) {
+      final randomIndex = _random.nextInt(_filteredRaces.length);
+      _animateTile(randomIndex);
     }
   }
 
@@ -626,21 +694,26 @@ class _HomePageState extends State<HomePage> {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: GridView.builder(
-        padding: const EdgeInsets.all(8),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-          childAspectRatio: 0.85,
+        padding: const EdgeInsets.all(8.0),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: _calculateCrossAxisCount(context),
+          crossAxisSpacing: 8.0,
+          mainAxisSpacing: 8.0,
+          childAspectRatio: 1.0,
         ),
         itemCount: _filteredCharacters.length,
         itemBuilder: (context, index) {
           final character = _filteredCharacters[index];
+          final originalIndex =
+              _characters.indexWhere((c) => c.key == character.key);
+
           return CharacterKeepCard(
             character: character,
             onTap: () => _showCharacterDetail(character),
             onContextMenuTap: () => _showCharacterContextMenu(character),
             formattedDate: _formatDate(character.lastEdited),
+            isAnimating: _characterTileAnimations[originalIndex] ?? false,
+            tileSize: _characterTileSizes[originalIndex],
           );
         },
       ),
@@ -651,25 +724,45 @@ class _HomePageState extends State<HomePage> {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: GridView.builder(
-        padding: const EdgeInsets.all(8),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
+        padding: const EdgeInsets.all(8.0),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: _calculateCrossAxisCount(context, forRaces: true),
+          crossAxisSpacing: 8.0,
+          mainAxisSpacing: 8.0,
           childAspectRatio: 1.0,
         ),
         itemCount: _filteredRaces.length,
         itemBuilder: (context, index) {
           final race = _filteredRaces[index];
+          final originalIndex = _races.indexWhere((r) => r.key == race.key);
+
           return RaceKeepCard(
             race: race,
             characterCount: _getCharacterCountForRace(race),
             onTap: () => _showRaceDetail(race),
             onContextMenuTap: () => _showRaceContextMenu(race),
+            isAnimating: _raceTileAnimations[originalIndex] ?? false,
+            tileSize: _raceTileSizes[originalIndex],
           );
         },
       ),
     );
+  }
+
+  int _calculateCrossAxisCount(BuildContext context, {bool forRaces = false}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    if (forRaces) {
+      if (screenWidth >= 1200) return 4;
+      if (screenWidth >= 800) return 3;
+      if (screenWidth >= 600) return 2;
+      return 1;
+    } else {
+      if (screenWidth >= 1200) return 5;
+      if (screenWidth >= 800) return 4;
+      if (screenWidth >= 600) return 3;
+      return 2;
+    }
   }
 }
 
