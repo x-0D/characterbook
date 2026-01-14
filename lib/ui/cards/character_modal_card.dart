@@ -918,7 +918,7 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
                       ))
                   .toList(),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
           ],
         ],
 

@@ -45,7 +45,7 @@ class TagFilter extends StatelessWidget with TagMixin {
     .toList();
 
     return SizedBox(
-      height: 64,
+      height: 48,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),

@@ -184,7 +184,7 @@ class _CustomFieldsEditorState extends State<CustomFieldsEditor> {
   Widget _buildVerticalFieldItem(int index, S s, ThemeData theme) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(20),

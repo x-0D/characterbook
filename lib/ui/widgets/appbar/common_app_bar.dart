@@ -107,14 +107,14 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     final actions = <Widget>[
       if (additionalActions != null) ...additionalActions,
       Padding(
-        padding: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.only(right: 8), // Уменьшено с 12
         child: IconButton.filledTonal(
           onPressed: onSave,
           icon: const Icon(Icons.save_rounded),
           tooltip: saveTooltip,
           style: IconButton.styleFrom(
             shape: const CircleBorder(),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14), // Уменьшено с 16
           ),
         ),
       ),
@@ -170,13 +170,13 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     if (isSearching) {
       return [
         Padding(
-          padding: const EdgeInsets.only(right: 12),
+          padding: const EdgeInsets.only(right: 8),
           child: IconButton.filledTonal(
             onPressed: onSearchToggle,
             icon: const Icon(Icons.close_rounded),
             style: IconButton.styleFrom(
               shape: const CircleBorder(),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
             ),
           ),
         ),
@@ -184,7 +184,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     }
 
     final actions = <Widget>[];
-    const actionSpacing = 8.0;
+    const actionSpacing = 4.0;
 
     actions.add(
       Padding(
@@ -195,7 +195,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
           tooltip: S.of(context).search,
           style: IconButton.styleFrom(
             shape: const CircleBorder(),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
           ),
         ),
       ),
@@ -235,7 +235,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     actions.add(
       Padding(
-        padding: const EdgeInsets.only(left: actionSpacing, right: 12),
+        padding: const EdgeInsets.only(left: actionSpacing, right: 8),
         child: IconButton.filledTonal(
           onPressed: () {
             Navigator.of(context).push(
@@ -246,7 +246,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
           tooltip: S.of(context).settings,
           style: IconButton.styleFrom(
             shape: const CircleBorder(),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
           ),
         ),
       ),
@@ -276,8 +276,8 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       position: PopupMenuPosition.under,
       surfaceTintColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       icon: Container(
-        width: 58,
-        height: 58,
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
           color: hasAnyItem
               ? Theme.of(context).colorScheme.secondaryContainer

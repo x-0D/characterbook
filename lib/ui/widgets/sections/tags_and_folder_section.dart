@@ -32,7 +32,7 @@ class TagsAndFolderSection extends StatelessWidget {
           tags: tags,
           onTagsChanged: onTagsChanged,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
         if (folders.isNotEmpty) ...[
           FolderSelectorWidget(
             selectedFolder: selectedFolder,
