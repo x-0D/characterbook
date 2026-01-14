@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:characterbook/models/character_model.dart';
 import 'dart:async';
@@ -7,8 +9,6 @@ class CharacterKeepCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onContextMenuTap;
   final String formattedDate;
-  final bool isAnimating;
-  final double tileSize;
 
   const CharacterKeepCard({
     super.key,
@@ -16,8 +16,6 @@ class CharacterKeepCard extends StatefulWidget {
     required this.onTap,
     required this.onContextMenuTap,
     required this.formattedDate,
-    this.isAnimating = false,
-    this.tileSize = 1.0,
   });
 
   @override
@@ -34,6 +32,7 @@ class _CharacterKeepCardState extends State<CharacterKeepCard>
   Timer? _flipTimer;
   bool _isFront = true;
   bool _isHovering = false;
+  bool _isAnimating = false;
 
   @override
   void initState() {
@@ -53,7 +52,7 @@ class _CharacterKeepCardState extends State<CharacterKeepCard>
     );
 
     _flipController = AnimationController(
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
 
@@ -61,47 +60,67 @@ class _CharacterKeepCardState extends State<CharacterKeepCard>
       CurvedAnimation(parent: _flipController, curve: Curves.easeInOut),
     );
 
-    _startFlipTimer();
+    final random = Random();
+    final initialDelay = Duration(seconds: random.nextInt(15) + 5);
+
+    _flipTimer = Timer(initialDelay, () {
+      if (mounted) {
+        _startAutoFlip();
+      }
+    });
   }
 
-  void _startFlipTimer() {
+  void _startAutoFlip() {
     _flipTimer?.cancel();
-    _flipTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (mounted && !_isHovering && !_flipController.isAnimating) {
+    _flipTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted && !_isHovering && !_isAnimating) {
         _flipCard();
       }
     });
   }
 
   void _flipCard() {
-    if (_flipController.isAnimating) return;
+    if (_isAnimating) return;
+
+    _isAnimating = true;
+
+    if (_isFront) {
+      _flipController.forward().then((_) {
+        if (mounted) {
+          Timer(const Duration(seconds: 5), () {
+            if (mounted && !_isHovering) {
+              _flipController.reverse().then((_) {
+                if (mounted) {
+                  _isAnimating = false;
+                }
+              });
+            } else {
+              _isAnimating = false;
+            }
+          });
+        }
+      });
+    } else {
+      _flipController.reverse().then((_) {
+        if (mounted) {
+          Timer(const Duration(seconds: 5), () {
+            if (mounted && !_isHovering) {
+              _flipController.forward().then((_) {
+                if (mounted) {
+                  _isAnimating = false;
+                }
+              });
+            } else {
+              _isAnimating = false;
+            }
+          });
+        }
+      });
+    }
 
     setState(() {
       _isFront = !_isFront;
     });
-
-    _flipController.forward().then((_) {
-      Timer(const Duration(seconds: 4), () {
-        if (mounted && !_isHovering) {
-          setState(() {
-            _isFront = !_isFront;
-          });
-          _flipController.reverse();
-        }
-      });
-    });
-  }
-
-  @override
-  void didUpdateWidget(CharacterKeepCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isAnimating && !oldWidget.isAnimating) {
-      _startPulseAnimation();
-    }
-  }
-
-  void _startPulseAnimation() {
-    _tapController.forward().then((_) => _tapController.reverse());
   }
 
   void _handleTapDown(TapDownDetails details) {
@@ -128,245 +147,277 @@ class _CharacterKeepCardState extends State<CharacterKeepCard>
 
   Widget _buildFrontSide(BuildContext context, ThemeData theme,
       ColorScheme colorScheme, bool hasImage) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(4.0),
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (hasImage)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4.0),
-              child: Image.memory(
-                widget.character.imageBytes!,
-                fit: BoxFit.cover,
-              ),
-            )
-          else
-            Container(
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(4.0),
-              ),
-            ),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4.0),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.6),
-                ],
-              ),
-            ),
+    return AnimatedOpacity(
+      opacity: _flipAnimation.value <= 0.5 ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 200),
+      child: Transform(
+        transform: Matrix4.identity()
+          ..setEntry(3, 2, 0.001)
+          ..rotateY(_flipAnimation.value * 3.14159),
+        alignment: Alignment.center,
+        child: Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(4.0),
           ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  widget.character.name,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(
-                        blurRadius: 4.0,
-                        color: Colors.black.withOpacity(0.5),
-                      ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (hasImage)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4.0),
+                  child: Image.memory(
+                    widget.character.imageBytes!,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              else
+                Container(
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(4.0),
+                  ),
+                ),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4.0),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.6),
                     ],
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4.0),
-                if (widget.character.race != null || widget.character.age > 0)
-                  Row(
-                    children: [
-                      if (widget.character.race != null)
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.people_rounded,
-                              size: 12.0,
-                              color: Colors.white.withOpacity(0.9),
-                            ),
-                            const SizedBox(width: 4.0),
-                            Text(
-                              widget.character.race!.name,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: Colors.white.withOpacity(0.9),
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      if (widget.character.age > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.cake_rounded,
-                                size: 12.0,
-                                color: Colors.white.withOpacity(0.9),
-                              ),
-                              const SizedBox(width: 4.0),
-                              Text(
-                                '${widget.character.age}',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: Colors.white.withOpacity(0.9),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      widget.character.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 4.0,
+                            color: Colors.black.withOpacity(0.5),
                           ),
-                        ),
-                    ],
-                  ),
-                const SizedBox(height: 4.0),
-                Text(
-                  widget.formattedDate,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: Colors.white.withOpacity(0.8),
-                  ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4.0),
+                    if (widget.character.race != null ||
+                        widget.character.age > 0)
+                      Row(
+                        children: [
+                          if (widget.character.race != null)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.people_rounded,
+                                  size: 12.0,
+                                  color: Colors.white.withOpacity(0.9),
+                                ),
+                                const SizedBox(width: 4.0),
+                                Text(
+                                  widget.character.race!.name,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          if (widget.character.age > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.cake_rounded,
+                                    size: 12.0,
+                                    color: Colors.white.withOpacity(0.9),
+                                  ),
+                                  const SizedBox(width: 4.0),
+                                  Text(
+                                    '${widget.character.age}',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: Colors.white.withOpacity(0.9),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    const SizedBox(height: 4.0),
+                    Text(
+                      widget.formattedDate,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: Colors.white.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildBackSide(
       BuildContext context, ThemeData theme, ColorScheme colorScheme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(4.0),
-      ),
-      padding: const EdgeInsets.all(12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline_rounded,
-                size: 16.0,
-                color: colorScheme.onPrimaryContainer,
-              ),
-              const SizedBox(width: 8.0),
-              Text(
-                'Информация',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ],
+    return AnimatedOpacity(
+      opacity: _flipAnimation.value > 0.5 ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 200),
+      child: Transform(
+        transform: Matrix4.identity()
+          ..setEntry(3, 2, 0.001)
+          ..rotateY((_flipAnimation.value - 1) * 3.14159),
+        alignment: Alignment.center,
+        child: Container(
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(4.0),
           ),
-          const SizedBox(height: 12.0),
-          if (widget.character.tags.isNotEmpty)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Теги:',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onPrimaryContainer.withOpacity(0.8),
-                  ),
-                ),
-                const SizedBox(height: 4.0),
-                Wrap(
-                  spacing: 6.0,
-                  runSpacing: 4.0,
-                  children: widget.character.tags
-                      .take(4)
-                      .map((tag) => Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8.0,
-                              vertical: 4.0,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(4.0),
-                              border: Border.all(
-                                color: colorScheme.primary.withOpacity(0.3),
-                                width: 1.0,
-                              ),
-                            ),
-                            child: Text(
-                              tag,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onPrimaryContainer,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ))
-                      .toList(),
-                ),
-                const SizedBox(height: 12.0),
-              ],
-            ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Последнее обновление:',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onPrimaryContainer.withOpacity(0.8),
-                  ),
-                ),
-                const SizedBox(height: 2.0),
-                Text(
-                  widget.formattedDate,
-                  style: theme.textTheme.bodySmall?.copyWith(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    size: 16.0,
                     color: colorScheme.onPrimaryContainer,
                   ),
-                ),
-                const SizedBox(height: 8.0),
-                if (widget.character.race != null) ...[
+                  const SizedBox(width: 8.0),
                   Text(
-                    'Раса:',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onPrimaryContainer.withOpacity(0.8),
-                    ),
-                  ),
-                  const SizedBox(height: 2.0),
-                  Text(
-                    widget.character.race!.name,
-                    style: theme.textTheme.bodySmall?.copyWith(
+                    'Информация',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
                       color: colorScheme.onPrimaryContainer,
                     ),
                   ),
                 ],
-              ],
-            ),
+              ),
+              const SizedBox(height: 12.0),
+              if (widget.character.tags.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Теги:',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onPrimaryContainer.withOpacity(0.8),
+                      ),
+                    ),
+                    const SizedBox(height: 4.0),
+                    Wrap(
+                      spacing: 6.0,
+                      runSpacing: 4.0,
+                      children: widget.character.tags
+                          .take(3)
+                          .map((tag) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6.0,
+                                  vertical: 3.0,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4.0),
+                                  border: Border.all(
+                                    color: colorScheme.primary.withOpacity(0.3),
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Text(
+                                  tag,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    fontSize: 10.0, // Уменьшил размер шрифта
+                                    color: colorScheme.onPrimaryContainer,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 12.0),
+                  ],
+                ),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Последнее обновление:',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontSize: 10.0,
+                          color:
+                              colorScheme.onPrimaryContainer.withOpacity(0.8),
+                        ),
+                      ),
+                      const SizedBox(height: 2.0),
+                      Text(
+                        widget.formattedDate,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 11.0,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                      const SizedBox(height: 8.0),
+                      if (widget.character.race != null) ...[
+                        Text(
+                          'Раса:',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontSize: 10.0,
+                            color:
+                                colorScheme.onPrimaryContainer.withOpacity(0.8),
+                          ),
+                        ),
+                        const SizedBox(height: 2.0),
+                        Text(
+                          widget.character.race!.name,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 11.0,
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4.0),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Icon(
+                  Icons.flip_rounded,
+                  size: 14.0,
+                  color: colorScheme.onPrimaryContainer.withOpacity(0.5),
+                ),
+              ),
+            ],
           ),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: Icon(
-              Icons.flip_rounded,
-              size: 16.0,
-              color: colorScheme.onPrimaryContainer.withOpacity(0.5),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -392,81 +443,68 @@ class _CharacterKeepCardState extends State<CharacterKeepCard>
           setState(() {
             _isHovering = false;
           });
-          _startFlipTimer();
+          _startAutoFlip();
         },
         child: AnimatedBuilder(
           animation: Listenable.merge([_tapController, _flipController]),
           builder: (context, child) {
-            final flipValue = _flipAnimation.value;
-
-            return Transform(
-              transform: Matrix4.identity()
-                ..setEntry(3, 2, 0.001)
-                ..rotateY(flipValue * 3.1415927),
-              alignment: Alignment.center,
-              child: Container(
-                margin: const EdgeInsets.all(6.0),
-                constraints: const BoxConstraints(
-                  minWidth: 160,
-                  minHeight: 160,
-                  maxWidth: 180,
-                  maxHeight: 180,
-                ),
-                decoration: BoxDecoration(
+            return Container(
+              margin: const EdgeInsets.all(6.0),
+              constraints: const BoxConstraints(
+                minWidth: 160,
+                minHeight: 160,
+                maxWidth: 180,
+                maxHeight: 180,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4.0),
+                color: colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 8.0 * _elevationAnimation.value,
+                    offset: Offset(0, 2.0 * _elevationAnimation.value),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(4.0),
+                child: InkWell(
                   borderRadius: BorderRadius.circular(4.0),
-                  color: colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 8.0 * _elevationAnimation.value,
-                      offset: Offset(0, 2.0 * _elevationAnimation.value),
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(4.0),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(4.0),
-                    onTap: widget.onTap,
-                    splashColor: colorScheme.primary.withOpacity(0.2),
-                    highlightColor: colorScheme.primary.withOpacity(0.1),
-                    child: Stack(
-                      children: [
-                        if (flipValue > 0.5 || !_isFront)
-                          _buildBackSide(context, theme, colorScheme),
-
-                        if (flipValue <= 0.5 || _isFront)
-                          _buildFrontSide(
-                              context, theme, colorScheme, hasImage),
-
-                        Positioned(
-                          top: 8.0,
-                          right: 8.0,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(4.0),
+                  onTap: widget.onTap,
+                  splashColor: colorScheme.primary.withOpacity(0.2),
+                  highlightColor: colorScheme.primary.withOpacity(0.1),
+                  child: Stack(
+                    children: [
+                      _buildFrontSide(context, theme, colorScheme, hasImage),
+                      _buildBackSide(context, theme, colorScheme),
+                      Positioned(
+                        top: 8.0,
+                        right: 8.0,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(4.0),
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.more_vert_rounded,
+                              size: 24.0,
+                              color: Colors.white,
                             ),
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.more_vert_rounded,
-                                size: 20.0,
-                                color: Colors.white,
-                              ),
-                              onPressed: widget.onContextMenuTap,
-                              splashRadius: 20.0,
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 32.0,
-                                minHeight: 32.0,
-                              ),
+                            onPressed: widget.onContextMenuTap,
+                            splashRadius: 20.0,
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                              minWidth: 48.0,
+                              minHeight: 48.0,
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
