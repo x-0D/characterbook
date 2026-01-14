@@ -27,7 +27,6 @@ class _CharacterKeepCardState extends State<CharacterKeepCard>
     with TickerProviderStateMixin {
   late AnimationController _tapController;
   late AnimationController _flipController;
-  late Animation<double> _scaleAnimation;
   late Animation<double> _elevationAnimation;
   late Animation<double> _flipAnimation;
   Timer? _flipTimer;
@@ -44,9 +43,6 @@ class _CharacterKeepCardState extends State<CharacterKeepCard>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
-      CurvedAnimation(parent: _tapController, curve: Curves.easeInOut),
-    );
 
     _elevationAnimation = Tween<double>(begin: 0.0, end: 8.0).animate(
       CurvedAnimation(parent: _tapController, curve: Curves.easeOut),

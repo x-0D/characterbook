@@ -214,7 +214,7 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
         ),
       );
 
-      final duplicatedCharacter = await characterService.duplicateCharacter(widget.character);
+      await characterService.duplicateCharacter(widget.character);
 
       if (context.mounted) {
         Navigator.pop(context);
