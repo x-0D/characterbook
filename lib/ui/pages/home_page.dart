@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/character_model.dart';
@@ -34,19 +33,13 @@ class _HomePageState extends State<HomePage> {
 
   List<Character> _characters = [];
   List<Race> _races = [];
-  List<Character> _filteredCharacters = [];
-  List<Race> _filteredRaces = [];
+  List<dynamic> _allContent = [];
+  List<dynamic> _filteredContent = [];
   String _searchQuery = '';
-  HomeContentType _selectedContentType = HomeContentType.characters;
+  HomeContentType _selectedContentType = HomeContentType.charactersAndRaces;
 
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
-
-  List<double> _characterTileSizes = [];
-  List<double> _raceTileSizes = [];
-  Map<int, bool> _characterTileAnimations = {};
-  Map<int, bool> _raceTileAnimations = {};
-  final Random _random = Random();
 
   @override
   void initState() {
@@ -60,14 +53,6 @@ class _HomePageState extends State<HomePage> {
           _filterData();
         });
       }
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Timer.periodic(const Duration(seconds: 5), (timer) {
-        if (mounted && _selectedContentType != HomeContentType.tools) {
-          _startRandomAnimations();
-        }
-      });
     });
   }
 
@@ -86,21 +71,10 @@ class _HomePageState extends State<HomePage> {
         setState(() {
           _characters = characters;
           _races = races;
-          _filteredCharacters = characters;
-          _filteredRaces = races;
+          _allContent = [...characters, ...races];
+          _filteredContent = _allContent;
         });
       }
-      _characterTileSizes = List.generate(characters.length,
-          (index) => 1.0 + _random.nextDouble() * 0.2);
-      _raceTileSizes = List.generate(
-          races.length, (index) => 1.0 + _random.nextDouble() * 0.2);
-
-      _characterTileAnimations = Map.fromIterable(
-          List.generate(characters.length, (index) => index),
-          value: (_) => false);
-      _raceTileAnimations = Map.fromIterable(
-          List.generate(races.length, (index) => index),
-          value: (_) => false);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -110,46 +84,6 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       }
-    }
-  }
-
-  void _animateTile(int index) {
-    if (_selectedContentType == HomeContentType.characters) {
-      setState(() {
-        _characterTileAnimations[index] = true;
-      });
-
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) {
-          setState(() {
-            _characterTileAnimations[index] = false;
-          });
-        }
-      });
-    } else {
-      setState(() {
-        _raceTileAnimations[index] = true;
-      });
-
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) {
-          setState(() {
-            _raceTileAnimations[index] = false;
-          });
-        }
-      });
-    }
-  }
-
-  void _startRandomAnimations() {
-    if (_selectedContentType == HomeContentType.characters &&
-        _filteredCharacters.isNotEmpty) {
-      final randomIndex = _random.nextInt(_filteredCharacters.length);
-      _animateTile(randomIndex);
-    } else if (_selectedContentType == HomeContentType.races &&
-        _filteredRaces.isNotEmpty) {
-      final randomIndex = _random.nextInt(_filteredRaces.length);
-      _animateTile(randomIndex);
     }
   }
 
@@ -166,18 +100,18 @@ class _HomePageState extends State<HomePage> {
   void _filterData() {
     if (_searchQuery.isEmpty) {
       setState(() {
-        _filteredCharacters = _characters;
-        _filteredRaces = _races;
+        _filteredContent = _allContent;
       });
     } else {
       final query = _searchQuery.toLowerCase();
       setState(() {
-        _filteredCharacters = _characters.where((character) {
-          return character.name.toLowerCase().contains(query);
-        }).toList();
-
-        _filteredRaces = _races.where((race) {
-          return race.name.toLowerCase().contains(query);
+        _filteredContent = _allContent.where((item) {
+          if (item is Character) {
+            return item.name.toLowerCase().contains(query);
+          } else if (item is Race) {
+            return item.name.toLowerCase().contains(query);
+          }
+          return false;
         }).toList();
       });
     }
@@ -319,11 +253,13 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _performDeleteCharacter(Character character) async {
     final originalCharacters = List<Character>.from(_characters);
-    final originalFiltered = List<Character>.from(_filteredCharacters);
     try {
       setState(() {
         _characters.removeWhere((c) => c.key == character.key);
-        _filteredCharacters.removeWhere((c) => c.key == character.key);
+        _allContent.removeWhere(
+            (item) => item is Character && item.key == character.key);
+        _filteredContent.removeWhere(
+            (item) => item is Character && item.key == character.key);
       });
 
       await _characterService.deleteCharacter(character);
@@ -338,7 +274,8 @@ class _HomePageState extends State<HomePage> {
       if (mounted) {
         setState(() {
           _characters = originalCharacters;
-          _filteredCharacters = originalFiltered;
+          _allContent = [..._characters, ..._races];
+          _filteredContent = _allContent;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -383,11 +320,12 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _performDeleteRace(Race race) async {
     final originalRaces = List<Race>.from(_races);
-    final originalFiltered = List<Race>.from(_filteredRaces);
     try {
       setState(() {
         _races.removeWhere((r) => r.key == race.key);
-        _filteredRaces.removeWhere((r) => r.key == race.key);
+        _allContent.removeWhere((item) => item is Race && item.key == race.key);
+        _filteredContent
+            .removeWhere((item) => item is Race && item.key == race.key);
       });
 
       await _raceService.deleteRace(race.key);
@@ -402,7 +340,8 @@ class _HomePageState extends State<HomePage> {
       if (mounted) {
         setState(() {
           _races = originalRaces;
-          _filteredRaces = originalFiltered;
+          _allContent = [..._characters, ..._races];
+          _filteredContent = _allContent;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -418,11 +357,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _createNewContent() async {
     Widget page;
 
-    if (_selectedContentType == HomeContentType.characters) {
-      page = const CharacterEditPage();
-    } else {
-      page = const RaceManagementPage();
-    }
+    page = const CharacterEditPage();
 
     final result = await Navigator.push(
       context,
@@ -487,31 +422,25 @@ class _HomePageState extends State<HomePage> {
         isSearching: _isSearching,
         searchController: _searchController,
         onSearchToggle: _onSearchToggle,
-        searchHint: _selectedContentType == HomeContentType.characters
-            ? s.search_characters
-            : s.search,
+        searchHint: s.search,
         onSearchChanged: _onSearchChanged,
         showViewModeToggle: false,
         showTemplatesToggle: false,
       ),
-      floatingActionButton: _selectedContentType != HomeContentType.tools
-          ? CommonListFloatingButtons(
-              onAdd: _createNewContent,
-              onImport: _importContent,
-              onTemplate: _createFromTemplate,
-              showImportButton: true,
-              addTooltip: _selectedContentType == HomeContentType.characters
-                  ? s.new_character
-                  : s.new_race,
-              importTooltip: s.import,
-              templateTooltip: s.create_from_template_tooltip,
-              createFromScratchTooltip:
-                  _selectedContentType == HomeContentType.characters
-                      ? s.new_character
-                      : s.new_race,
-              heroTag: "home_list",
-            )
-          : null,
+      floatingActionButton:
+          _selectedContentType == HomeContentType.charactersAndRaces
+              ? CommonListFloatingButtons(
+                  onAdd: _createNewContent,
+                  onImport: _importContent,
+                  onTemplate: _createFromTemplate,
+                  showImportButton: true,
+                  addTooltip: s.new_character,
+                  importTooltip: s.import,
+                  templateTooltip: s.create_from_template_tooltip,
+                  createFromScratchTooltip: s.new_character,
+                  heroTag: "home_list",
+                )
+              : null,
       body: SafeArea(
         child: Column(
           children: [
@@ -520,12 +449,8 @@ class _HomePageState extends State<HomePage> {
               child: SegmentedButton<HomeContentType>(
                 segments: [
                   ButtonSegment<HomeContentType>(
-                    value: HomeContentType.characters,
-                    label: Text(s.characters),
-                  ),
-                  ButtonSegment<HomeContentType>(
-                    value: HomeContentType.races,
-                    label: Text(s.races),
+                    value: HomeContentType.charactersAndRaces,
+                    label: Text("s.characters_and_races"),
                   ),
                   ButtonSegment<HomeContentType>(
                     value: HomeContentType.tools,
@@ -628,17 +553,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildContentGrid() {
-    if (_selectedContentType == HomeContentType.characters) {
-      if (_filteredCharacters.isEmpty) {
-        return _buildEmptyState();
-      }
-      return _buildCharactersKeepGrid();
-    } else {
-      if (_filteredRaces.isEmpty) {
-        return _buildEmptyState();
-      }
-      return _buildRacesKeepGrid();
+    if (_filteredContent.isEmpty) {
+      return _buildEmptyState();
     }
+    return _buildCombinedGrid();
   }
 
   Widget _buildEmptyState() {
@@ -654,9 +572,7 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                _selectedContentType == HomeContentType.characters
-                    ? Icons.person_outline_rounded
-                    : Icons.people_outline_rounded,
+                Icons.person_outline_rounded,
                 size: 64,
                 color: colorScheme.onSurface.withOpacity(0.3),
               ),
@@ -690,79 +606,50 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildCharactersKeepGrid() {
+  Widget _buildCombinedGrid() {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: GridView.builder(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(4.0),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: _calculateCrossAxisCount(context),
-          crossAxisSpacing: 8.0,
-          mainAxisSpacing: 8.0,
+          crossAxisSpacing: 4.0,
+          mainAxisSpacing: 4.0,
           childAspectRatio: 1.0,
         ),
-        itemCount: _filteredCharacters.length,
+        itemCount: _filteredContent.length,
         itemBuilder: (context, index) {
-          final character = _filteredCharacters[index];
-          final originalIndex =
-              _characters.indexWhere((c) => c.key == character.key);
+          final item = _filteredContent[index];
 
-          return CharacterKeepCard(
-            character: character,
-            onTap: () => _showCharacterDetail(character),
-            onContextMenuTap: () => _showCharacterContextMenu(character),
-            formattedDate: _formatDate(character.lastEdited),
-            isAnimating: _characterTileAnimations[originalIndex] ?? false,
-            tileSize: _characterTileSizes[originalIndex],
-          );
+          if (item is Character) {
+            return CharacterKeepCard(
+              character: item,
+              onTap: () => _showCharacterDetail(item),
+              onContextMenuTap: () => _showCharacterContextMenu(item),
+              formattedDate: _formatDate(item.lastEdited),
+            );
+          } else if (item is Race) {
+            return RaceKeepCard(
+              race: item,
+              characterCount: _getCharacterCountForRace(item),
+              onTap: () => _showRaceDetail(item),
+              onContextMenuTap: () => _showRaceContextMenu(item),
+            );
+          }
+
+          return const SizedBox.shrink();
         },
       ),
     );
   }
 
-  Widget _buildRacesKeepGrid() {
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: GridView.builder(
-        padding: const EdgeInsets.all(8.0),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _calculateCrossAxisCount(context, forRaces: true),
-          crossAxisSpacing: 8.0,
-          mainAxisSpacing: 8.0,
-          childAspectRatio: 1.0,
-        ),
-        itemCount: _filteredRaces.length,
-        itemBuilder: (context, index) {
-          final race = _filteredRaces[index];
-          final originalIndex = _races.indexWhere((r) => r.key == race.key);
-
-          return RaceKeepCard(
-            race: race,
-            characterCount: _getCharacterCountForRace(race),
-            onTap: () => _showRaceDetail(race),
-            onContextMenuTap: () => _showRaceContextMenu(race),
-            isAnimating: _raceTileAnimations[originalIndex] ?? false,
-            tileSize: _raceTileSizes[originalIndex],
-          );
-        },
-      ),
-    );
-  }
-
-  int _calculateCrossAxisCount(BuildContext context, {bool forRaces = false}) {
+  int _calculateCrossAxisCount(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
 
-    if (forRaces) {
-      if (screenWidth >= 1200) return 4;
-      if (screenWidth >= 800) return 3;
-      if (screenWidth >= 600) return 2;
-      return 1;
-    } else {
-      if (screenWidth >= 1200) return 5;
-      if (screenWidth >= 800) return 4;
-      if (screenWidth >= 600) return 3;
-      return 2;
-    }
+    if (screenWidth >= 1200) return 5;
+    if (screenWidth >= 800) return 4;
+    if (screenWidth >= 600) return 3;
+    return 2;
   }
 }
 
@@ -783,7 +670,6 @@ class _ToolItem {
 }
 
 enum HomeContentType {
-  characters,
-  races,
+  charactersAndRaces,
   tools,
 }
