@@ -219,14 +219,14 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
       if (context.mounted) {
         Navigator.pop(context);
 
-        _showSnackBar("s.character_duplicated", isError: false);
+        _showSnackBar(s.character_duplicated, isError: false);
 
         Navigator.pop(context);
       }
     } catch (e) {
       if (context.mounted) {
         Navigator.pop(context);
-        _showSnackBar('${"s.duplicate_error"}: ${e.toString()}');
+        _showSnackBar('${s.duplicate_error}: ${e.toString()}');
       }
     }
   }
@@ -590,7 +590,7 @@ class _CharacterModalCardState extends State<CharacterModalCard> {
                                     leading: Icon(Icons.copy_all_rounded,
                                         color: colorScheme.onSurfaceVariant),
                                     title:
-                                        Text("S.of(context).duplicate_character"),
+                                        Text(S.of(context).duplicate_character),
                                   ),
                                 ),
                                 const PopupMenuDivider(),

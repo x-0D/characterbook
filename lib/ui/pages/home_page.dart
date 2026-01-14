@@ -450,7 +450,7 @@ class _HomePageState extends State<HomePage> {
                 segments: [
                   ButtonSegment<HomeContentType>(
                     value: HomeContentType.charactersAndRaces,
-                    label: Text("s.characters_and_races"),
+                    label: Text(s.characters_and_races),
                   ),
                   ButtonSegment<HomeContentType>(
                     value: HomeContentType.tools,

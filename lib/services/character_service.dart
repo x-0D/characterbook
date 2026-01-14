@@ -69,7 +69,7 @@ class CharacterService {
 
       return await getCharacterByKey(newKey!);
     } catch (e) {
-      throw Exception('${"S.current.duplicate_error"}: ${e.toString()}');
+      throw Exception('${S.current.duplicate_error}: ${e.toString()}');
     }
   }
 

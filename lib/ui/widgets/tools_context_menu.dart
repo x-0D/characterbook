@@ -154,7 +154,7 @@ class ContextMenu extends StatelessWidget {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("s.character_duplicated"),
+              content: Text(s.character_duplicated),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -166,7 +166,7 @@ class ContextMenu extends StatelessWidget {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${"s.duplicate_error"}: ${e.toString()}'),
+            content: Text('${s.duplicate_error}: ${e.toString()}'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -338,7 +338,7 @@ class ContextMenu extends StatelessWidget {
           if (item is Character)
             buildMenuItem(
               icon: Icons.copy_all_rounded,
-              label: "s.duplicate",
+              label: s.duplicate,
               color: colorScheme.onSurface,
               onTap: () => _duplicateCharacter(context),
             ),

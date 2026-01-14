@@ -4776,6 +4776,66 @@ class S {
       args: [],
     );
   }
+
+  /// `Ошибка дублирования`
+  String get duplicate_error {
+    return Intl.message(
+      'Ошибка дублирования',
+      name: 'duplicate_error',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Дублирование персонажа`
+  String get duplicate_character {
+    return Intl.message(
+      'Дублирование персонажа',
+      name: 'duplicate_character',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Персонаж продублирован`
+  String get character_duplicated {
+    return Intl.message(
+      'Персонаж продублирован',
+      name: 'character_duplicated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Персонажи и расы`
+  String get characters_and_races {
+    return Intl.message(
+      'Персонажи и расы',
+      name: 'characters_and_races',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Дублировать`
+  String get duplicate {
+    return Intl.message(
+      'Дублировать',
+      name: 'duplicate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Информация`
+  String get information {
+    return Intl.message(
+      'Информация',
+      name: 'information',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {

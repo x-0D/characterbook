@@ -284,7 +284,7 @@ class _RaceKeepCardState extends State<RaceKeepCard>
                   ),
                   const SizedBox(width: 8.0),
                   Text(
-                    'Описание расы',
+                    S.of(context).description,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: colorScheme.onSecondaryContainer,
@@ -318,7 +318,7 @@ class _RaceKeepCardState extends State<RaceKeepCard>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Теги расы:',
+                              S.of(context).tags,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 fontSize: 10.0,
                                 color: colorScheme.onSecondaryContainer

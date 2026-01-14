@@ -128,6 +128,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Delete Character?"),
         "character_deleted":
             MessageLookupByLibrary.simpleMessage("Character deleted"),
+        "character_duplicated":
+            MessageLookupByLibrary.simpleMessage("Character duplicated"),
         "character_exported": m3,
         "character_gallery":
             MessageLookupByLibrary.simpleMessage("Character Gallery"),
@@ -140,6 +142,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "characterbookLicense": MessageLookupByLibrary.simpleMessage(
             "CharacterBook License (GNU GPL v3.0)"),
         "characters": MessageLookupByLibrary.simpleMessage("Characters"),
+        "characters_and_races":
+            MessageLookupByLibrary.simpleMessage("Characters & races"),
         "checking_dependencies":
             MessageLookupByLibrary.simpleMessage("Checking dependencies..."),
         "children": MessageLookupByLibrary.simpleMessage("Children"),
@@ -225,6 +229,11 @@ class MessageLookup extends MessageLookupByLibrary {
         "developer": MessageLookupByLibrary.simpleMessage("Developer"),
         "discard_changes": MessageLookupByLibrary.simpleMessage("Discard"),
         "dnd_tools": MessageLookupByLibrary.simpleMessage("D&D Tools"),
+        "duplicate": MessageLookupByLibrary.simpleMessage("Duplicate"),
+        "duplicate_character":
+            MessageLookupByLibrary.simpleMessage("Duplicate character"),
+        "duplicate_error":
+            MessageLookupByLibrary.simpleMessage("Duplicate error"),
         "edit": MessageLookupByLibrary.simpleMessage("Edit"),
         "edit_character":
             MessageLookupByLibrary.simpleMessage("Edit Character"),
@@ -311,6 +320,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Import Template"),
         "import_template_tooltip":
             MessageLookupByLibrary.simpleMessage("Import Template"),
+        "information": MessageLookupByLibrary.simpleMessage("Info"),
         "initialization":
             MessageLookupByLibrary.simpleMessage("Initialization"),
         "initialization_complete":

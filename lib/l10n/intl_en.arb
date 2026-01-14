@@ -379,6 +379,13 @@
   "preparing_services": "Preparing services...",
   "checking_dependencies": "Checking dependencies...",
   "initialization_timeout": "Initialization timeout",
-  "initialization_timeout_message": "Initialization took too long. Check your internet connection and try again."
+  "initialization_timeout_message": "Initialization took too long. Check your internet connection and try again.",
+
+  "duplicate_error": "Duplicate error",
+  "duplicate_character": "Duplicate character",
+  "character_duplicated": "Character duplicated",
+  "characters_and_races": "Characters & races",
+  "duplicate": "Duplicate",
+  "information": "Info"
 
 }

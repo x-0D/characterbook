@@ -504,5 +504,12 @@
   "finalizing_setup": "Завершение настройки...",
   "close": "Закрыть",
 
-  "file_race": "Файл расы (.race)"
+  "file_race": "Файл расы (.race)",
+  "duplicate_error": "Ошибка дублирования",
+  "duplicate_character": "Дублирование персонажа",
+  "character_duplicated": "Персонаж продублирован",
+  "characters_and_races": "Персонажи и расы",
+  "duplicate": "Дублировать",
+  "information": "Информация"
+
 }

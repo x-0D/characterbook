@@ -173,6 +173,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Удалить персонажа?"),
         "character_deleted":
             MessageLookupByLibrary.simpleMessage("Персонаж удален"),
+        "character_duplicated":
+            MessageLookupByLibrary.simpleMessage("Персонаж продублирован"),
         "character_events":
             MessageLookupByLibrary.simpleMessage("События персонажей"),
         "character_exported": m3,
@@ -189,6 +191,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "characterbookLicense": MessageLookupByLibrary.simpleMessage(
             "Лицензия CharacterBook (GNU GPL v3.0)"),
         "characters": MessageLookupByLibrary.simpleMessage("Персонажи"),
+        "characters_and_races":
+            MessageLookupByLibrary.simpleMessage("Персонажи и расы"),
         "characters_count": m21,
         "check_for_updates":
             MessageLookupByLibrary.simpleMessage("Проверить обновления"),
@@ -298,6 +302,11 @@ class MessageLookup extends MessageLookupByLibrary {
         "developer": MessageLookupByLibrary.simpleMessage("Разработчик"),
         "discard_changes": MessageLookupByLibrary.simpleMessage("Не сохранять"),
         "dnd_tools": MessageLookupByLibrary.simpleMessage("Инструменты D&D"),
+        "duplicate": MessageLookupByLibrary.simpleMessage("Дублировать"),
+        "duplicate_character":
+            MessageLookupByLibrary.simpleMessage("Дублирование персонажа"),
+        "duplicate_error":
+            MessageLookupByLibrary.simpleMessage("Ошибка дублирования"),
         "edit": MessageLookupByLibrary.simpleMessage("Редактировать"),
         "edit_character":
             MessageLookupByLibrary.simpleMessage("Редактировать персонажа"),
@@ -427,6 +436,7 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Импорт шаблона"),
         "include_images":
             MessageLookupByLibrary.simpleMessage("Включать изображения"),
+        "information": MessageLookupByLibrary.simpleMessage("Информация"),
         "initialization": MessageLookupByLibrary.simpleMessage("Инициализация"),
         "initialization_complete":
             MessageLookupByLibrary.simpleMessage("Инициализация завершена"),

@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:characterbook/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:characterbook/models/character_model.dart';
 import 'dart:async';
@@ -307,7 +308,7 @@ class _CharacterKeepCardState extends State<CharacterKeepCard>
                   ),
                   const SizedBox(width: 8.0),
                   Text(
-                    'Информация',
+                    S.of(context).information,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: colorScheme.onPrimaryContainer,
@@ -321,7 +322,7 @@ class _CharacterKeepCardState extends State<CharacterKeepCard>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Теги:',
+                      S.of(context).tags,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: colorScheme.onPrimaryContainer.withOpacity(0.8),
                       ),
@@ -348,7 +349,7 @@ class _CharacterKeepCardState extends State<CharacterKeepCard>
                                 child: Text(
                                   tag,
                                   style: theme.textTheme.labelSmall?.copyWith(
-                                    fontSize: 10.0, // Уменьшил размер шрифта
+                                    fontSize: 10.0,
                                     color: colorScheme.onPrimaryContainer,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -368,7 +369,7 @@ class _CharacterKeepCardState extends State<CharacterKeepCard>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Последнее обновление:',
+                        S.of(context).last_updated,
                         style: theme.textTheme.labelSmall?.copyWith(
                           fontSize: 10.0,
                           color:
@@ -386,7 +387,7 @@ class _CharacterKeepCardState extends State<CharacterKeepCard>
                       const SizedBox(height: 8.0),
                       if (widget.character.race != null) ...[
                         Text(
-                          'Раса:',
+                          S.of(context).race,
                           style: theme.textTheme.labelSmall?.copyWith(
                             fontSize: 10.0,
                             color:
