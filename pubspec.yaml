@@ -1,6 +1,6 @@
 name: characterbook
 description: "Implementation of the Character Book app on the Flutter framework"
-version: 1.7.0+35
+version: 1.7.1+36
 publish_to: 'MaxGog'
 
 environment:
@@ -59,8 +59,6 @@ dependencies:
 
   universal_html: ^2.2.1
 
-  window_manager: ^0.5.1
-
   table_calendar: ^3.0.9
 
   crop_image: ^1.0.16
@@ -96,16 +94,3 @@ flutter_launcher_icons:
   android: false
   ios: true
   image_path: "assets/icon.svg"
-
-msix_config:
-  display_name: CharacterBook
-  publisher_display_name: MaxGog
-  identity_name: 52304FeatherProjects.CBook
-  msix_version: 1.7.0.0
-  publisher: CN=B9003DCF-59B1-401C-9896-9F045D0A6C6D
-  logo_path: "assets/iconapp.png"
-  start_menu_icon_path: "assets/iconapp.png"
-  tile_icon_path: "assets/iconapp.png"
-  capabilities: internetClient
-  architecture: x64
-  install_mode: allow_elevation

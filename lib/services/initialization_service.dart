@@ -9,7 +9,6 @@ import 'package:characterbook/models/template_model.dart';
 import 'package:characterbook/services/hive_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:window_manager/window_manager.dart';
 
 class InitializationService {
   static bool get isDesktopPlatform =>
@@ -40,27 +39,6 @@ class InitializationService {
       debugPrint('Hive initialization error: $error');
       await HiveService.resetAndReinitialize();
       return false;
-    }
-  }
-
-  static Future<void> initializeWindowManager() async {
-    if (!isDesktopPlatform) return;
-
-    try {
-      await windowManager.ensureInitialized();
-      await windowManager.waitUntilReadyToShow();
-
-      await windowManager.setTitleBarStyle(
-        TitleBarStyle.hidden,
-        windowButtonVisibility: false,
-      );
-      await windowManager.setSize(const Size(1200, 800));
-      await windowManager.setMinimumSize(const Size(800, 600));
-      await windowManager.center();
-      await windowManager.show();
-    } catch (error) {
-      debugPrint('Window manager initialization error: $error');
-      rethrow;
     }
   }
 }

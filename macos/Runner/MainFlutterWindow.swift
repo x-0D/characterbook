@@ -7,8 +7,9 @@ class MainFlutterWindow: NSWindow {
     let windowFrame = self.frame
     self.contentViewController = flutterViewController
     self.setFrame(windowFrame, display: true)
-    self.title = "CharacterBook"
-    self.titleVisibility = .hidden
+
+    self.isMovableByWindowBackground = true
+    self.collectionBehavior = [.fullScreenPrimary]
 
     FilePickerPlugin.register(with: flutterViewController.registrar(forPlugin: "FilePickerPlugin"))
 
