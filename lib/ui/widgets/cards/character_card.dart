@@ -66,9 +66,9 @@ class CharacterCard extends StatelessWidget {
           return await _showDeleteConfirmation(context);
         }
       },
-      onDismissed: (direction) async => {await Hive.box<Character>('characters').delete(character.key)},
+      onDismissed: (direction) =>
+          Hive.box<Character>('characters').delete(character.key),
       child: Card(
-        key: key,
         margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
         elevation: isSelected ? 3.0 : 1.0,
         color: isSelected
@@ -77,10 +77,7 @@ class CharacterCard extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
           side: isSelected
-              ? BorderSide(
-                  color: colorScheme.primary,
-                  width: 2,
-                )
+              ? BorderSide(color: colorScheme.primary, width: 2)
               : BorderSide.none,
         ),
         child: InkWell(
@@ -115,119 +112,51 @@ class CharacterCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 6),
-                          SizedBox(
-                            height: 28,
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.secondaryContainer,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.cake_rounded,
-                                          size: 12,
-                                          color:
-                                              colorScheme.onSecondaryContainer,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          '${character.age} ${s.years}',
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(fontSize: 10),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const NeverScrollableScrollPhysics(),
+                            child: Row(
+                              children: [
+                                _buildChip(
+                                  context,
+                                  icon: Icons.cake_rounded,
+                                  label: '${character.age} ${s.years}',
+                                  backgroundColor: colorScheme.secondaryContainer,
+                                  iconColor: colorScheme.onSecondaryContainer,
+                                ),
+                                const SizedBox(width: 6),
+                                _buildChip(
+                                  context,
+                                  icon: _getGenderIcon(character.gender),
+                                  label: _getLocalizedGender(context, character.gender),
+                                  backgroundColor: _getGenderColor(context, character.gender),
+                                  iconColor: _getGenderIconColor(context, character.gender),
+                                ),
+                                if (folder != null) ...[
                                   const SizedBox(width: 6),
-
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: _getGenderColor(
-                                          context, character.gender),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          _getGenderIcon(character.gender),
-                                          size: 12,
-                                          color: _getGenderIconColor(
-                                              context, character.gender),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          _getLocalizedGender(
-                                              context, character.gender),
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(fontSize: 10),
-                                        ),
-                                      ],
-                                    ),
+                                  _buildChip(
+                                    context,
+                                    icon: Icons.folder_rounded,
+                                    label: folder.name,
+                                    backgroundColor:
+                                        folder.color.withOpacity(0.1),
+                                    iconColor: folder.color,
                                   ),
-
-                                  if (folder != null) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: folder.color.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.folder_rounded,
-                                            size: 12,
-                                            color: folder.color,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            folder.name,
-                                            style: theme.textTheme.labelSmall
-                                                ?.copyWith(fontSize: 10),
-                                            maxLines: 1,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-
-                                  ...character.tags.map((tag) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(left: 6),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: colorScheme
-                                              .surfaceContainerHighest,
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          tag,
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(fontSize: 10),
-                                          maxLines: 1,
-                                        ),
-                                      ),
-                                    );
-                                  }),
                                 ],
-                              ),
+                                ...character.tags.map((tag) {
+                                  return Row(
+                                    children: [
+                                      const SizedBox(width: 6),
+                                      _buildChip(
+                                        context,
+                                        label: tag,
+                                        backgroundColor:
+                                            colorScheme.surfaceContainerHighest,
+                                      ),
+                                    ],
+                                  );
+                                }).toList(),
+                              ],
                             ),
                           ),
                         ],
@@ -239,6 +168,37 @@ class CharacterCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildChip(
+    BuildContext context, {
+    IconData? icon,
+    required String label,
+    required Color backgroundColor,
+    Color? iconColor,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: iconColor),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(fontSize: 10),
+            maxLines: 1,
+          ),
+        ],
       ),
     );
   }
@@ -283,7 +243,7 @@ class CharacterCard extends StatelessWidget {
           context: context,
           builder: (context) => AlertDialog(
             title: Text(S.of(context).delete),
-            content: Text(S.of(context).delete),
+            content: Text(S.of(context).deleteConfirmation),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
