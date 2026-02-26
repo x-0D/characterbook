@@ -201,6 +201,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "children": MessageLookupByLibrary.simpleMessage("Дети"),
         "choose_character":
             MessageLookupByLibrary.simpleMessage("Выбранные персонажи"),
+        "choose_color": MessageLookupByLibrary.simpleMessage("Выберите цвет"),
         "close": MessageLookupByLibrary.simpleMessage("Закрыть"),
         "close_app": MessageLookupByLibrary.simpleMessage("Закрыть приложение"),
         "cloud_backup_characters_error": MessageLookupByLibrary.simpleMessage(
@@ -230,6 +231,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "color_dark": MessageLookupByLibrary.simpleMessage("Тёмный"),
         "color_green": MessageLookupByLibrary.simpleMessage("Зелёный"),
         "color_grey": MessageLookupByLibrary.simpleMessage("Серый"),
+        "color_light_blue": MessageLookupByLibrary.simpleMessage("Голубой"),
         "color_orange": MessageLookupByLibrary.simpleMessage("Оранжевый"),
         "color_picker": MessageLookupByLibrary.simpleMessage("Выбор цвета"),
         "color_pink": MessageLookupByLibrary.simpleMessage("Розовый"),
@@ -291,6 +293,8 @@ class MessageLookup extends MessageLookupByLibrary {
         "default_settings":
             MessageLookupByLibrary.simpleMessage("Настройки по умолчанию"),
         "delete": MessageLookupByLibrary.simpleMessage("Удалить"),
+        "deleteConfirmation": MessageLookupByLibrary.simpleMessage(
+            "Вы действительно хотите удалить выбранный объект?"),
         "delete_character":
             MessageLookupByLibrary.simpleMessage("Удалить персонажа"),
         "delete_error":
@@ -710,7 +714,7 @@ class MessageLookup extends MessageLookupByLibrary {
             "Ошибка создания сервиса для персонажа"),
         "service_initialization_error": MessageLookupByLibrary.simpleMessage(
             "Ошибка инициализации сервиса"),
-        "settings": MessageLookupByLibrary.simpleMessage("Настройки"),
+        "settings": MessageLookupByLibrary.simpleMessage("Параметры"),
         "settings_load_error": MessageLookupByLibrary.simpleMessage(
             "Ошибка загрузки настроек PDF"),
         "settings_save_error": MessageLookupByLibrary.simpleMessage(

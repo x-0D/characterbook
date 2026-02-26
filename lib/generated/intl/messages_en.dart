@@ -149,6 +149,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "children": MessageLookupByLibrary.simpleMessage("Children"),
         "choose_character":
             MessageLookupByLibrary.simpleMessage("Choose character"),
+        "choose_color": MessageLookupByLibrary.simpleMessage("Choose color"),
         "close": MessageLookupByLibrary.simpleMessage("Close"),
         "close_app":
             MessageLookupByLibrary.simpleMessage("Close the application"),
@@ -177,6 +178,7 @@ class MessageLookup extends MessageLookupByLibrary {
         "color_dark": MessageLookupByLibrary.simpleMessage("Dark"),
         "color_green": MessageLookupByLibrary.simpleMessage("Green"),
         "color_grey": MessageLookupByLibrary.simpleMessage("Grey"),
+        "color_light_blue": MessageLookupByLibrary.simpleMessage("Light blue"),
         "color_orange": MessageLookupByLibrary.simpleMessage("Orange"),
         "color_pink": MessageLookupByLibrary.simpleMessage("Pink"),
         "color_purple": MessageLookupByLibrary.simpleMessage("Purple"),
@@ -220,6 +222,8 @@ class MessageLookup extends MessageLookupByLibrary {
             MessageLookupByLibrary.simpleMessage("Data initialization error"),
         "days_ago": m7,
         "delete": MessageLookupByLibrary.simpleMessage("Delete"),
+        "deleteConfirmation": MessageLookupByLibrary.simpleMessage(
+            "Do you really want to delete the selected object?"),
         "delete_character":
             MessageLookupByLibrary.simpleMessage("Delete Character"),
         "delete_error": MessageLookupByLibrary.simpleMessage("Delete Error"),

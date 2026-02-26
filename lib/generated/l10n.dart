@@ -160,10 +160,10 @@ class S {
     );
   }
 
-  /// `Настройки`
+  /// `Параметры`
   String get settings {
     return Intl.message(
-      'Настройки',
+      'Параметры',
       name: 'settings',
       desc: '',
       args: [],
@@ -4832,6 +4832,36 @@ class S {
     return Intl.message(
       'Информация',
       name: 'information',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Вы действительно хотите удалить выбранный объект?`
+  String get deleteConfirmation {
+    return Intl.message(
+      'Вы действительно хотите удалить выбранный объект?',
+      name: 'deleteConfirmation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Голубой`
+  String get color_light_blue {
+    return Intl.message(
+      'Голубой',
+      name: 'color_light_blue',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Выберите цвет`
+  String get choose_color {
+    return Intl.message(
+      'Выберите цвет',
+      name: 'choose_color',
       desc: '',
       args: [],
     );

@@ -510,6 +510,11 @@
   "character_duplicated": "Персонаж продублирован",
   "characters_and_races": "Персонажи и расы",
   "duplicate": "Дублировать",
-  "information": "Информация"
+  "information": "Информация",
+
+  "deleteConfirmation": "Вы действительно хотите удалить выбранный объект?",
+
+  "color_light_blue": "Голубой",
+  "choose_color": "Выберите цвет"
 
 }

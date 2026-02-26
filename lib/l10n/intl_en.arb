@@ -386,6 +386,11 @@
   "character_duplicated": "Character duplicated",
   "characters_and_races": "Characters & races",
   "duplicate": "Duplicate",
-  "information": "Info"
+  "information": "Info",
+
+  "deleteConfirmation": "Do you really want to delete the selected object?",
+
+  "color_light_blue": "Light blue",
+  "choose_color": "Choose color"
 
 }

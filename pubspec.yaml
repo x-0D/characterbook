@@ -28,6 +28,8 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
 
+  flutter_colorpicker: ^1.0.3
+
   provider: ^6.0.5
   flutter_bloc: ^9.1.1
 
