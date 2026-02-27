@@ -107,7 +107,8 @@ class _AvatarCropperState extends State<AvatarCropper> {
 
   Future<Uint8List> _cropImage(BuildContext context) async {
     final cropRect = _cropController.crop;
-    final renderBox = _cropImageKey.currentContext?.findRenderObject() as RenderBox?;
+    final renderBox =
+        _cropImageKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) {
       final s = S.of(context);
       throw Exception(s.avatar_crop_widget_size_error);
@@ -144,27 +145,47 @@ class _AvatarCropperState extends State<AvatarCropper> {
 
     final sourceLeft = (cropX / scale).clamp(0.0, imageWidth);
     final sourceTop = (cropY / scale).clamp(0.0, imageHeight);
-    final sourceWidth = (cropWInPixels / scale).clamp(0.0, imageWidth - sourceLeft);
-    final sourceHeight = (cropHInPixels / scale).clamp(0.0, imageHeight - sourceTop);
+    final sourceWidth =
+        (cropWInPixels / scale).clamp(0.0, imageWidth - sourceLeft);
+    final sourceHeight =
+        (cropHInPixels / scale).clamp(0.0, imageHeight - sourceTop);
 
     if (sourceWidth <= 0 || sourceHeight <= 0) {
       final s = S.of(context);
       throw Exception(s.avatar_crop_coordinates_error);
     }
 
-    final sourceRect = Rect.fromLTWH(sourceLeft, sourceTop, sourceWidth, sourceHeight);
+    const double maxDimension = 1024.0;
+    double targetWidth = sourceWidth;
+    double targetHeight = sourceHeight;
+
+    if (targetWidth > maxDimension || targetHeight > maxDimension) {
+      if (targetWidth > targetHeight) {
+        targetWidth = maxDimension;
+        targetHeight = sourceHeight * (maxDimension / sourceWidth);
+      } else {
+        targetHeight = maxDimension;
+        targetWidth = sourceWidth * (maxDimension / sourceHeight);
+      }
+    }
+
+    final int outputWidth = targetWidth.round();
+    final int outputHeight = targetHeight.round();
+
+    final sourceRect =
+        Rect.fromLTWH(sourceLeft, sourceTop, sourceWidth, sourceHeight);
     final pictureRecorder = ui.PictureRecorder();
     final canvas = Canvas(pictureRecorder);
 
     canvas.drawImageRect(
       _decodedImage,
       sourceRect,
-      const Rect.fromLTWH(0, 0, 200, 200),
+      Rect.fromLTWH(0, 0, outputWidth.toDouble(), outputHeight.toDouble()),
       Paint(),
     );
 
     final picture = pictureRecorder.endRecording();
-    final image = await picture.toImage(200, 200);
+    final image = await picture.toImage(outputWidth, outputHeight);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     return byteData!.buffer.asUint8List();
   }
