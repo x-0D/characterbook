@@ -11,22 +11,26 @@ class FileShareService {
     String? text,
     String? subject,
   }) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/$fileName');
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/$fileName');
 
     try {
       await file.writeAsBytes(bytes);
 
+      if (!await file.exists()) {
+        throw Exception('File was not created');
+      }
+
       await Share.shareXFiles(
-        [XFile(file.path)],
+        [XFile(file.path, mimeType: 'application/pdf')],
         text: text,
         subject: subject,
       ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw TimeoutException('Шаринг занял слишком много времени');
-        },
+        const Duration(seconds: 60),
+        onTimeout: () => throw TimeoutException('Sharing timed out'),
       );
+
+      await Future.delayed(const Duration(seconds: 3));
     } finally {
       if (await file.exists()) {
         await file.delete();
