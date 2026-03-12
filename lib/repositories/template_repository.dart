@@ -3,16 +3,22 @@ import 'package:characterbook/services/default_templates.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 abstract class TemplateRepository {
+  Stream<List<QuestionnaireTemplate>> watchAll();
   Future<List<QuestionnaireTemplate>> getAll();
   Future<void> save(QuestionnaireTemplate template, {String? name});
   Future<void> delete(String name);
   Future<void> initializeDefaultTemplates();
+  Future<void> reorder(int oldIndex, int newIndex);
 }
 
 class TemplateRepositoryHive implements TemplateRepository {
   final Box<QuestionnaireTemplate> _box;
 
   TemplateRepositoryHive(this._box);
+
+  @override
+  Stream<List<QuestionnaireTemplate>> watchAll() =>
+      _box.watch().map((_) => _box.values.toList());
 
   @override
   Future<List<QuestionnaireTemplate>> getAll() async => _box.values.toList();
@@ -32,5 +38,10 @@ class TemplateRepositoryHive implements TemplateRepository {
     for (final template in defaultTemplates) {
       await _box.put(template.name, template);
     }
+  }
+
+  @override
+  Future<void> reorder(int oldIndex, int newIndex) async {
+
   }
 }

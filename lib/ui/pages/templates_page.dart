@@ -1,7 +1,8 @@
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/template_model.dart';
+import 'package:characterbook/repositories/template_repository.dart';
 import 'package:characterbook/services/template_service.dart';
-import 'package:characterbook/ui/widgets/list/base_list_page.dart';
+import 'package:characterbook/ui/controllers/template_list_controller.dart';
 import 'package:characterbook/ui/widgets/list/optimized_list_view.dart';
 import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
 import 'package:characterbook/ui/widgets/cards/template_card.dart';
@@ -11,64 +12,319 @@ import 'package:characterbook/ui/widgets/buttons/common_list_floating_buttons.da
 import 'package:characterbook/ui/pages/template_edit_page.dart';
 import 'package:characterbook/ui/pages/character_management_page.dart';
 import 'package:characterbook/ui/widgets/tags/tag_filter.dart';
+import 'package:characterbook/enums/template_sort_enum.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/rendering.dart';
+import 'package:provider/provider.dart';
 
-class TemplatesPage extends BaseListPage<QuestionnaireTemplate> {
-  const TemplatesPage({super.key})
-      : super(
-          boxName: 'templates',
-          titleKey: 'templates',
-        );
+class TemplatesPage extends StatefulWidget {
+  const TemplatesPage({super.key});
 
   @override
   State<TemplatesPage> createState() => _TemplatesPageState();
 }
 
-class _TemplatesPageState extends BaseListPageState<QuestionnaireTemplate, TemplatesPage> {
-  final TemplateService _templateService = TemplateService();
+class _TemplatesPageState extends State<TemplatesPage> {
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  bool _isSearching = false;
+  bool _isImporting = false;
+  bool _isFabVisible = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _initializeDefaultTemplates();
   }
 
+  void _onScroll() {
+    final isScrollingDown = _scrollController.position.userScrollDirection ==
+        ScrollDirection.reverse;
+    if (isScrollingDown && _isFabVisible) {
+      setState(() => _isFabVisible = false);
+    } else if (!isScrollingDown && !_isFabVisible) {
+      setState(() => _isFabVisible = true);
+    }
+  }
+
   Future<void> _initializeDefaultTemplates() async {
-    final box = Hive.box<QuestionnaireTemplate>(widget.boxName);
-    if (box.isEmpty) {
-      await _templateService.initializeDefaultTemplates();
-      if (mounted) {
-        final allTemplates = box.values.cast<QuestionnaireTemplate>();
-        filterItems(searchController.text, allTemplates.toList());
+    final repo = context.read<TemplateRepository>();
+    await repo.initializeDefaultTemplates();
+  }
+
+  List<String> _getSortTags(BuildContext context) {
+    final s = S.of(context);
+    return [s.a_to_z, s.z_to_a, s.fields_asc, s.fields_desc];
+  }
+
+  void _onTagSelected(
+      String tag, BuildContext context, TemplateListController controller) {
+    final s = S.of(context);
+    if (tag == s.a_to_z) {
+      controller.setSort(TemplateSort.nameAsc);
+    } else if (tag == s.z_to_a) {
+      controller.setSort(TemplateSort.nameDesc);
+    } else if (tag == s.fields_asc) {
+      controller.setSort(TemplateSort.fieldsAsc);
+    } else if (tag == s.fields_desc) {
+      controller.setSort(TemplateSort.fieldsDesc);
+    } else {
+      if (controller.selectedTag == tag) {
+        controller.setSelectedTag(null);
+      } else {
+        controller.setSelectedTag(tag);
       }
     }
   }
 
-  void showTemplateContextMenu(QuestionnaireTemplate template) {
+  void _showTemplateContextMenu(QuestionnaireTemplate template,
+      BuildContext context, TemplateListController controller) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => ContextMenu(
+      builder: (ctx) => ContextMenu(
         item: template,
-        onEdit: () => navigateToEdit(template),
-        onDelete: () => deleteItem(template),
+        onEdit: () => _navigateToEdit(context, template),
+        onDelete: () => _deleteTemplate(template, controller),
         showExportPdf: false,
         showCopy: false,
       ),
     );
   }
 
-  void navigateToDetail(QuestionnaireTemplate template) {
+  Future<void> _deleteTemplate(
+      QuestionnaireTemplate template, TemplateListController controller) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(S.of(context).template_delete_title),
+        content: Text(S.of(context).template_delete_confirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(S.of(context).cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              S.of(context).delete,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await controller.deleteTemplate(template);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).template_deleted)),
+        );
+      }
+    }
+  }
+
+  void _navigateToDetail(QuestionnaireTemplate template) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _buildTemplateDetailsModal(template),
+      builder: (context) => _TemplateDetailsModal(
+        template: template,
+        onCreateCharacter: () => _createCharacterFromTemplate(template),
+      ),
     );
   }
 
-  Widget _buildTemplateDetailsModal(QuestionnaireTemplate template) {
+  void _createCharacterFromTemplate(QuestionnaireTemplate template) async {
+    Navigator.pop(context);
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CharacterManagementPage(template: template),
+      ),
+    );
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                S.of(context).character_created_from_template(template.name))),
+      );
+    }
+  }
+
+  void _navigateToEdit(BuildContext context,
+      [QuestionnaireTemplate? template]) {
+    Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TemplateEditPage(template: template),
+      ),
+    ).then((changed) {
+      if (changed == true && mounted) {
+
+      }
+    });
+  }
+
+  Future<void> _importTemplate(BuildContext context, TemplateService service,
+      TemplateListController controller) async {
+    setState(() {
+      _isImporting = true;
+      _errorMessage = null;
+    });
+    try {
+      final template = await service.pickAndImportTemplate();
+      if (template == null) {
+        if (mounted) _showSnackBar(S.of(context).import_cancelled);
+        return;
+      }
+
+      final existing = await service.getAllTemplates();
+      final exists = existing.any((t) => t.name == template.name);
+      if (exists) {
+        final replace = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(S.of(context).template_exists),
+            content:
+                Text(S.of(context).template_replace_confirm(template.name)),
+            actions: [
+              TextButton(
+                child: Text(S.of(context).cancel),
+                onPressed: () => Navigator.pop(ctx, false),
+              ),
+              TextButton(
+                child: Text(S.of(context).replace),
+                onPressed: () => Navigator.pop(ctx, true),
+              ),
+            ],
+          ),
+        );
+        if (replace != true) {
+          if (mounted) _showSnackBar(S.of(context).import_cancelled);
+          return;
+        }
+      }
+
+      await service.saveTemplate(template);
+      if (mounted) {
+        _showSnackBar(S.of(context).template_imported(template.name));
+      }
+    } catch (e) {
+      setState(() => _errorMessage = e.toString());
+      if (mounted) _showSnackBar(S.of(context).import_error(e.toString()));
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = context.watch<TemplateListController>();
+    final service = context.read<TemplateService>();
+    final s = S.of(context);
+    final sortTags = _getSortTags(context);
+
+    return Scaffold(
+      appBar: CommonMainAppBar(
+        title: s.templates,
+        isSearching: _isSearching,
+        searchController: _searchController,
+        searchHint: s.search,
+        onSearchToggle: () {
+          setState(() {
+            _isSearching = !_isSearching;
+            if (!_isSearching) {
+              _searchController.clear();
+              controller.setSearchQuery('');
+            }
+          });
+        },
+        onSearchChanged: (query) => controller.setSearchQuery(query),
+      ),
+      body: Column(
+        children: [
+          ListStateIndicator(
+            isLoading: _isImporting || controller.isLoading,
+            errorMessage: _errorMessage ?? controller.error,
+            onErrorClose: () => setState(() => _errorMessage = null),
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                if (sortTags.isNotEmpty)
+                  TagFilter(
+                    tags: sortTags,
+                    selectedTag: controller
+                        .selectedTag,
+                    onTagSelected: (tag) =>
+                        _onTagSelected(tag!, context, controller),
+                    context: context,
+                  ),
+                Expanded(
+                  child: OptimizedListView<QuestionnaireTemplate>(
+                    items: controller.filteredItems,
+                    itemBuilder: (ctx, template, index) => TemplateCard(
+                      key: ValueKey('${template.name}-$index'),
+                      template: template,
+                      isSelected: false,
+                      onTap: () => _navigateToDetail(template),
+                      onLongPress: () => _showTemplateContextMenu(
+                          template, context, controller),
+                      onMenuPressed: () => _showTemplateContextMenu(
+                          template, context, controller),
+                    ),
+                    onReorder: (oldIndex, newIndex) =>
+                        controller.reorder(oldIndex, newIndex),
+                    scrollController: _scrollController,
+                    enableReorder: false,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: _isFabVisible
+          ? CommonListFloatingButtons(
+              onImport: () => _importTemplate(context, service, controller),
+              onAdd: () => _navigateToEdit(context),
+              importTooltip: s.import_template_tooltip,
+              addTooltip: s.create_template_tooltip,
+              heroTag: "templates_list",
+            )
+          : null,
+    );
+  }
+}
+
+class _TemplateDetailsModal extends StatelessWidget {
+  final QuestionnaireTemplate template;
+  final VoidCallback onCreateCharacter;
+
+  const _TemplateDetailsModal({
+    required this.template,
+    required this.onCreateCharacter,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final s = S.of(context);
@@ -109,8 +365,8 @@ class _TemplatesPageState extends BaseListPageState<QuestionnaireTemplate, Templ
                   color: colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.library_books_rounded, 
-                  color: colorScheme.primary, size: 28),
+                child: Icon(Icons.library_books_rounded,
+                    color: colorScheme.primary, size: 28),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -125,7 +381,8 @@ class _TemplatesPageState extends BaseListPageState<QuestionnaireTemplate, Templ
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      s.fields_count(template.standardFields.length + template.customFields.length),
+                      s.fields_count(template.standardFields.length +
+                          template.customFields.length),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -140,7 +397,6 @@ class _TemplatesPageState extends BaseListPageState<QuestionnaireTemplate, Templ
             ],
           ),
           const SizedBox(height: 24),
-          
           _buildFieldsSection(
             context,
             title: s.standard_fields,
@@ -148,9 +404,7 @@ class _TemplatesPageState extends BaseListPageState<QuestionnaireTemplate, Templ
             icon: Icons.check_circle_rounded,
             color: colorScheme.primary,
           ),
-          
           const SizedBox(height: 20),
-          
           if (template.customFields.isNotEmpty)
             _buildFieldsSection(
               context,
@@ -159,7 +413,6 @@ class _TemplatesPageState extends BaseListPageState<QuestionnaireTemplate, Templ
               icon: Icons.add_circle_rounded,
               color: colorScheme.tertiary,
             ),
-          
           const SizedBox(height: 24),
           Row(
             children: [
@@ -172,10 +425,7 @@ class _TemplatesPageState extends BaseListPageState<QuestionnaireTemplate, Templ
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _createCharacterFromTemplate(template);
-                  },
+                  onPressed: onCreateCharacter,
                   child: Text(s.create),
                 ),
               ),
@@ -245,274 +495,6 @@ class _TemplatesPageState extends BaseListPageState<QuestionnaireTemplate, Templ
           }).toList(),
         ),
       ],
-    );
-  }
-
-  Future<void> _createCharacterFromTemplate(QuestionnaireTemplate template) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CharacterEditPage(template: template),
-      ),
-    );
-
-    if (result == true && mounted) {
-      showSnackBar(S.of(context).character_created_from_template(template.name));
-    }
-  }
-
-  @override
-  List<String> getTags(List<QuestionnaireTemplate> templates) {
-    final s = S.of(context);
-    return [
-      s.a_to_z,
-      s.z_to_a,
-      s.fields_asc,
-      s.fields_desc,
-    ];
-  }
-
-  @override
-  bool matchesSearch(QuestionnaireTemplate template, String query) {
-    final queryLower = query.toLowerCase();
-    return template.name.toLowerCase().contains(queryLower) ||
-        template.standardFields.any((field) => field.toLowerCase().contains(queryLower)) ||
-        template.customFields.any((field) =>
-            field.key.toLowerCase().contains(queryLower) ||
-            field.value.toLowerCase().contains(queryLower));
-  }
-
-  @override
-  bool matchesTagFilter(QuestionnaireTemplate template, String? tag) {
-    if (tag == null) return true;
-    
-    final s = S.of(context);
-    if (tag == s.a_to_z || tag == s.z_to_a || 
-        tag == s.fields_asc || tag == s.fields_desc) {
-      return true;
-    }
-    
-    return false;
-  }
-
-  @override
-  Widget buildItemCard(QuestionnaireTemplate template, int index) {
-    return TemplateCard(
-      key: ValueKey('${template.name}-$index'),
-      template: template,
-      isSelected: false,
-      onTap: () => navigateToDetail(template),
-      onLongPress: () => showTemplateContextMenu(template),
-      onMenuPressed: () => showTemplateContextMenu(template),
-    );
-  }
-
-  @override
-  Future<void> importItem() async {
-    try {
-      setState(() {
-        isImporting = true;
-        errorMessage = null;
-      });
-
-      final template = await _templateService.pickAndImportTemplate();
-
-      if (template != null) {
-        final box = Hive.box<QuestionnaireTemplate>(widget.boxName);
-        if (box.containsKey(template.name)) {
-          final shouldReplace = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text(S.of(context).template_exists),
-              content: Text(S.of(context).template_replace_confirm(template.name)),
-              actions: [
-                TextButton(
-                  child: Text(S.of(context).cancel),
-                  onPressed: () => Navigator.of(context).pop(false),
-                ),
-                TextButton(
-                  child: Text(S.of(context).replace),
-                  onPressed: () => Navigator.of(context).pop(true),
-                ),
-              ],
-            ),
-          );
-
-          if (shouldReplace != true) {
-            if (mounted) showSnackBar(S.of(context).import_cancelled);
-            return;
-          }
-        }
-
-        await box.put(template.name, template);
-        if (mounted) showSnackBar(S.of(context).template_imported(template.name));
-      } else {
-        if (mounted) showSnackBar(S.of(context).import_cancelled);
-      }
-    } catch (e) {
-      setState(() {
-        errorMessage = e.toString();
-      });
-      if (mounted) showSnackBar(S.of(context).import_error(e.toString()));
-    } finally {
-      setState(() {
-        isImporting = false;
-      });
-    }
-  }
-
-  @override
-  Future<void> deleteItem(QuestionnaireTemplate template) async {
-    final confirmed = await showDeleteConfirmation(
-      S.of(context).template_delete_title,
-      S.of(context).template_delete_confirm,
-    );
-
-    if (confirmed) {
-      await _templateService.deleteTemplate(template.name);
-      if (mounted) showSnackBar(S.of(context).template_deleted);
-    }
-  }
-
-  @override
-  Future<void> reorderItems(int oldIndex, int newIndex) async {
-    return;
-  }
-
-  @override
-  void navigateToEdit(QuestionnaireTemplate template) {
-    Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TemplateEditPage(template: template),
-      ),
-    ).then((result) {
-      if (result == true && mounted) {
-        final templates = Hive.box<QuestionnaireTemplate>(widget.boxName).values.cast<QuestionnaireTemplate>();
-        filterItems(searchController.text, templates.toList());
-      }
-    });
-  }
-
-  @override
-  void navigateToCreate() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TemplateEditPage(onSaved: () {
-          final templates = Hive.box<QuestionnaireTemplate>(widget.boxName).values.cast<QuestionnaireTemplate>();
-          filterItems(searchController.text, templates.toList());
-        }),
-      ),
-    );
-  }
-
-  void filterItems(String query, List<QuestionnaireTemplate> allTemplates) {
-    final queryLower = query.toLowerCase();
-    
-    setState(() {
-      filteredItems = allTemplates.where((template) {
-        final matchesSearch = query.isEmpty ||
-            template.name.toLowerCase().contains(queryLower) ||
-            template.standardFields.any((field) => field.toLowerCase().contains(queryLower)) ||
-            template.customFields.any((field) =>
-                field.key.toLowerCase().contains(queryLower) ||
-                field.value.toLowerCase().contains(queryLower));
-
-        return matchesSearch && matchesTagFilter(template, selectedTag);
-      }).toList();
-
-      final s = S.of(context);
-      if (selectedTag == s.a_to_z) {
-        filteredItems.sort((a, b) => a.name.compareTo(b.name));
-      } else if (selectedTag == s.z_to_a) {
-        filteredItems.sort((a, b) => b.name.compareTo(a.name));
-      } else if (selectedTag == s.fields_asc) {
-        filteredItems.sort((a, b) => (a.standardFields.length + a.customFields.length)
-            .compareTo(b.standardFields.length + b.customFields.length));
-      } else if (selectedTag == s.fields_desc) {
-        filteredItems.sort((a, b) => (b.standardFields.length + b.customFields.length)
-            .compareTo(a.standardFields.length + a.customFields.length));
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CommonMainAppBar(
-        title: S.of(context).templates,
-        isSearching: isSearching,
-        searchController: searchController,
-        searchHint: S.of(context).search,
-        onSearchToggle: () => setState(() {
-          isSearching = !isSearching;
-          if (!isSearching) {
-            searchController.clear();
-            selectedTag = null;
-            filteredItems = [];
-          }
-        }),
-        onSearchChanged: (query) {
-          final allTemplates = Hive.box<QuestionnaireTemplate>(widget.boxName).values.cast<QuestionnaireTemplate>();
-          filterItems(query, allTemplates.toList());
-        },
-      ),
-      body: Column(
-        children: [
-          ListStateIndicator(
-            isLoading: isImporting,
-            errorMessage: errorMessage,
-            onErrorClose: () => setState(() => errorMessage = null),
-          ),
-          Expanded(
-            child: ValueListenableBuilder<Box<QuestionnaireTemplate>>(
-              valueListenable: Hive.box<QuestionnaireTemplate>(widget.boxName).listenable(),
-              builder: (context, box, _) {
-                final allTemplates = box.values.toList().cast<QuestionnaireTemplate>();
-                final tags = getTags(allTemplates);
-                final templatesToShow = isSearching || selectedTag != null
-                    ? filteredItems
-                    : allTemplates;
-
-                return Column(
-                  children: [
-                    if (tags.isNotEmpty)
-                      TagFilter(
-                        tags: tags,
-                        selectedTag: selectedTag,
-                        onTagSelected: (tag) {
-                          setState(() => selectedTag = tag);
-                          filterItems(searchController.text, allTemplates);
-                        },
-                        context: context,
-                      ),
-                    Expanded(
-                      child: OptimizedListView<QuestionnaireTemplate>(
-                        items: templatesToShow,
-                        itemBuilder: (context, template, index) => 
-                            buildItemCard(template, index),
-                        onReorder: reorderItems,
-                        scrollController: scrollController,
-                        enableReorder: false,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: isFabVisible 
-          ? CommonListFloatingButtons(
-              onImport: importItem,
-              onAdd: navigateToCreate,
-              importTooltip: S.of(context).import_template_tooltip,
-              addTooltip: S.of(context).create_template_tooltip,
-              heroTag: "templates_list",
-            )
-          : null,
     );
   }
 }
