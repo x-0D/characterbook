@@ -1,10 +1,10 @@
-import 'dart:typed_data';
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/models/race_model.dart';
+import 'package:characterbook/repositories/folder_repository.dart';
+import 'package:characterbook/repositories/race_repository.dart';
 import 'package:characterbook/services/folder_service.dart';
-import 'package:characterbook/services/race_service.dart';
-import 'package:characterbook/ui/handlers/unsaved_changes_handler.dart';
+import 'package:characterbook/ui/controllers/race_management_controller.dart';
 import 'package:characterbook/ui/widgets/appbar/common_edit_app_bar.dart';
 import 'package:characterbook/ui/widgets/avatar_picker_widget.dart';
 import 'package:characterbook/ui/widgets/base_edit_page_scaffold.dart';
@@ -14,7 +14,7 @@ import 'package:characterbook/ui/widgets/fields/fullscreen_field_preview.dart';
 import 'package:characterbook/ui/widgets/fields/fullscreen_text_editor.dart';
 import 'package:characterbook/ui/widgets/sections/tags_and_folder_section.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+import 'package:provider/provider.dart';
 
 class RaceManagementPage extends StatefulWidget {
   final Race? race;
@@ -25,258 +25,207 @@ class RaceManagementPage extends StatefulWidget {
   State<RaceManagementPage> createState() => _RaceManagementPageState();
 }
 
-class _RaceManagementPageState extends State<RaceManagementPage> with UnsavedChangesHandler {
+class _RaceManagementPageState extends State<RaceManagementPage> {
   static const _logoSize = 120.0;
-  static const _borderRadius = 12.0;
+  static const _fieldSpacing = 16.0;
 
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameController;
-  late final TextEditingController _descriptionController;
-  late final TextEditingController _biologyController;
-  late final TextEditingController _backstoryController;
-  Uint8List? _logoBytes;
-
-  late final FolderService _folderService;
-  List<Folder> _raceFolders = [];
-  Folder? _selectedFolder;
-  List<String> _tags = [];
+  final GlobalKey<FormState> _formKey = GlobalKey();
 
   @override
-  void initState() {
-    super.initState();
-    _folderService = FolderService(Hive.box<Folder>('folders'));
-    final race = widget.race;
-    _nameController = TextEditingController(text: race?.name ?? '');
-    _descriptionController = TextEditingController(text: race?.description ?? '');
-    _biologyController = TextEditingController(text: race?.biology ?? '');
-    _backstoryController = TextEditingController(text: race?.backstory ?? '');
-    _logoBytes = race?.logo;
-    _tags = List.from(widget.race?.tags ?? []);
-    hasUnsavedChanges = widget.race == null;
-    _setupControllers();
-    _loadFolders();
-  }
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => RaceManagementController(
+        raceRepo: context.read<RaceRepository>(),
+        folderRepo: context.read<FolderRepository>(),
+        race: widget.race,
+      ),
+      child: Consumer<RaceManagementController>(
+        builder: (context, controller, child) {
+          final s = S.of(context);
+          final title = widget.race == null ? s.new_race : s.edit_race;
 
-  @override
-  Future<void> saveChanges() async => await _saveRace();
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    _biologyController.dispose();
-    _backstoryController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadFolders() async {
-    final folders = _folderService.getFoldersByType(FolderType.race);
-    setState(() {
-      _raceFolders = folders;
-      _selectedFolder = widget.race?.folderId != null 
-        ? _folderService.getFolderById(widget.race!.folderId!) 
-        : null;
-    });
-  }
-
-  void _setupControllers() {
-    _nameController.addListener(() => setState(() => hasUnsavedChanges = true));
-    _descriptionController.addListener(() => setState(() => hasUnsavedChanges = true));
-    _biologyController.addListener(() => setState(() => hasUnsavedChanges = true));
-    _backstoryController.addListener(() => setState(() => hasUnsavedChanges = true));
-  }
-
-  Future<void> _saveRace() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_nameController.text.isEmpty) {
-      _showError(S.of(context).enter_race_name);
-      return;
-    }
-
-    try {
-      final race = widget.race?.copyWith() ??
-          Race(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            name: _nameController.text,
-          )
-        ..name = _nameController.text
-        ..description = _descriptionController.text
-        ..biology = _biologyController.text
-        ..backstory = _backstoryController.text
-        ..logo = _logoBytes
-        ..folderId = _selectedFolder?.id
-        ..tags = _tags;
-
-      final raceService = RaceService.forDatabase();
-      final raceKey = await raceService.saveRace(
-        race,
-        key: widget.race?.key,
-      );
-
-      if (_selectedFolder == null) {
-        for (final folder in _raceFolders) {
-          if (folder.contentIds.contains(raceKey.toString())) {
-            await _folderService.removeFromFolder(
-                folder.id, raceKey.toString());
-          }
-        }
-      } else {
-        for (final folder in _raceFolders) {
-          if (folder.id != _selectedFolder!.id &&
-              folder.contentIds.contains(raceKey.toString())) {
-            await _folderService.removeFromFolder(
-                folder.id, raceKey.toString());
-          }
-        }
-        await _folderService.addToFolder(
-            _selectedFolder!.id, raceKey.toString());
-      }
-
-      setState(() => hasUnsavedChanges = false);
-
-      if (!mounted) return;
-      Navigator.pop(context, true);
-    } catch (e) {
-      _showError('${S.of(context).save_error}: $e');
-    }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(_borderRadius),
-        ),
+          return BaseEditPageScaffold(
+            onWillPop: () async {
+              if (controller.hasUnsavedChanges) {
+                final shouldLeave = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text(s.unsaved_changes_title),
+                    content: Text(s.unsaved_changes_content),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text(s.cancel),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(s.close),
+                      ),
+                    ],
+                  ),
+                );
+                return shouldLeave ?? false;
+              }
+              return true;
+            },
+            appBar: CommonEditAppBar(
+              title: title,
+              onSave: () async {
+                if (_formKey.currentState!.validate()) {
+                  _formKey.currentState!.save();
+                  final success = await controller.save();
+                  if (success && mounted) {
+                    Navigator.pop(context, true);
+                  }
+                }
+              },
+              saveTooltip: s.save,
+            ),
+            body: Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _buildFolderAndTagsSection(context, controller),
+                  const SizedBox(height: 24),
+                  _buildLogoSection(context, controller),
+                  const SizedBox(height: 24),
+                  _buildNameField(context, controller),
+                  const SizedBox(height: _fieldSpacing),
+                  _buildDescriptionField(context, controller),
+                  const SizedBox(height: _fieldSpacing),
+                  _buildBiologyField(context, controller),
+                  const SizedBox(height: _fieldSpacing),
+                  _buildBackstoryField(context, controller),
+                  const SizedBox(height: 32),
+                  SaveButton(
+                    onPressed: () async {
+                      if (_formKey.currentState!.validate()) {
+                        _formKey.currentState!.save();
+                        final success = await controller.save();
+                        if (success && mounted) {
+                          Navigator.pop(context, true);
+                        }
+                      }
+                    },
+                    text: s.save_race,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Future<void> _openFullscreenEditor({
-    required String title,
-    required TextEditingController controller,
-    required String fieldName,
-  }) async {
+  Widget _buildFolderAndTagsSection(
+      BuildContext context, RaceManagementController controller) {
+    final folderService = context.read<FolderService>();
+    return TagsAndFolderSection(
+      tags: controller.tags,
+      onTagsChanged: controller.setTags,
+      folderService: folderService,
+      folderType: FolderType.race,
+      selectedFolder: controller.selectedFolder,
+      onFolderSelected: controller.setSelectedFolder,
+      folders: controller.availableFolders,
+    );
+  }
+
+  Widget _buildLogoSection(
+      BuildContext context, RaceManagementController controller) {
+    return AvatarPicker(
+      currentAvatar: controller.race.logo,
+      onAvatarChanged: (bytes) => controller.updateLogo(bytes),
+      size: _logoSize / 2,
+    );
+  }
+
+  Widget _buildNameField(BuildContext context, RaceManagementController controller) {
+    final s = S.of(context);
+    return CustomTextField(
+      label: s.enter_race_name,
+      initialValue: controller.race.name,
+      isRequired: true,
+      onSaved: (value) => controller.updateName(value ?? ''),
+      validator: (value) {
+        if (value?.isEmpty ?? true) return s.enter_race_name;
+        return null;
+      },
+    );
+  }
+
+  Widget _buildDescriptionField(
+      BuildContext context, RaceManagementController controller) {
+    final s = S.of(context);
+    return FullscreenFieldPreview(
+      label: s.description,
+      value: controller.race.description,
+      onTap: () => _openFullscreenEditor(
+        context,
+        controller,
+        s.description,
+        (value) => controller.updateDescription(value),
+        controller.race.description,
+      ),
+      maxPreviewLines: 3,
+    );
+  }
+
+  Widget _buildBiologyField(
+      BuildContext context, RaceManagementController controller) {
+    final s = S.of(context);
+    return FullscreenFieldPreview(
+      label: s.biology,
+      value: controller.race.biology,
+      onTap: () => _openFullscreenEditor(
+        context,
+        controller,
+        s.biology,
+        (value) => controller.updateBiology(value),
+        controller.race.biology,
+      ),
+      maxPreviewLines: 5,
+    );
+  }
+
+  Widget _buildBackstoryField(
+      BuildContext context, RaceManagementController controller) {
+    final s = S.of(context);
+    return FullscreenFieldPreview(
+      label: s.backstory,
+      value: controller.race.backstory,
+      onTap: () => _openFullscreenEditor(
+        context,
+        controller,
+        s.backstory,
+        (value) => controller.updateBackstory(value),
+        controller.race.backstory,
+      ),
+      maxPreviewLines: 7,
+    );
+  }
+
+  Future<void> _openFullscreenEditor(
+    BuildContext context,
+    RaceManagementController controller,
+    String title,
+    Function(String) onSave,
+    String initialValue,
+  ) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => FullscreenTextEditor(
           title: title,
-          initialValue: controller.text,
-          onChanged: (value) {
-            setState(() {
-              controller.text = value;
-              hasUnsavedChanges = true;
-            });
-          },
+          initialValue: initialValue,
+          onChanged: onSave,
         ),
       ),
     );
-
     if (result != null) {
-      setState(() {
-        controller.text = result;
-        hasUnsavedChanges = true;
-      });
+      onSave(result);
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    
-    final title = widget.race == null ? s.new_race : s.edit_race;
-
-    return BaseEditPageScaffold(
-      onWillPop: () => handleUnsavedChanges(context),
-      appBar: CommonEditAppBar(
-        title: title,
-        onSave: _saveRace,
-        saveTooltip: s.save,
-      ),
-      body: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            TagsAndFolderSection(
-              tags: _tags,
-              onTagsChanged: (tags) {
-                setState(() {
-                  _tags = tags;
-                  hasUnsavedChanges = true;
-                });
-              },
-              folderService: _folderService,
-              folderType: FolderType.race,
-              selectedFolder: _selectedFolder,
-              onFolderSelected: (folder) {
-                setState(() {
-                  _selectedFolder = folder;
-                  hasUnsavedChanges = true;
-                });
-              },
-              folders: _raceFolders,
-            ),
-            const SizedBox(height: 24),
-            AvatarPicker(
-              currentAvatar: _logoBytes,
-              onAvatarChanged: (bytes) {
-                setState(() {
-                  _logoBytes = bytes;
-                  hasUnsavedChanges = true;
-                });
-              },
-              size: _logoSize / 2,
-            ),
-            const SizedBox(height: 24),
-            CustomTextField(
-              controller: _nameController,
-              label: s.enter_race_name,
-              isRequired: true,
-            ),
-            const SizedBox(height: 16),
-            FullscreenFieldPreview(
-              label: s.description,
-              value: _descriptionController.text,
-              onTap: () => _openFullscreenEditor(
-                title: s.description,
-                controller: _descriptionController,
-                fieldName: 'description',
-              ),
-              maxPreviewLines: 3,
-            ),
-            const SizedBox(height: 16),
-            FullscreenFieldPreview(
-              label: s.biology,
-              value: _biologyController.text,
-              onTap: () => _openFullscreenEditor(
-                title: s.biology,
-                controller: _biologyController,
-                fieldName: 'biology',
-              ),
-              maxPreviewLines: 5,
-            ),
-            const SizedBox(height: 16),
-            FullscreenFieldPreview(
-              label: s.backstory,
-              value: _backstoryController.text,
-              onTap: () => _openFullscreenEditor(
-                title: s.backstory,
-                controller: _backstoryController,
-                fieldName: 'backstory',
-              ),
-              maxPreviewLines: 7,
-            ),
-            const SizedBox(height: 32),
-            SaveButton(
-              onPressed: _saveRace,
-              text: s.save_race,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

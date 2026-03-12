@@ -1,10 +1,11 @@
-import 'dart:async';
-
+import 'package:characterbook/enums/race_sort_enum.dart';
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/models/race_model.dart';
+import 'package:characterbook/services/race_service.dart';
 import 'package:characterbook/services/file_picker_service.dart';
+import 'package:characterbook/ui/controllers/race_list_controller.dart';
 import 'package:characterbook/ui/pages/folder_list_page.dart';
 import 'package:characterbook/ui/pages/race_management_page.dart';
 import 'package:characterbook/ui/widgets/tools_context_menu.dart';
@@ -14,11 +15,11 @@ import 'package:characterbook/ui/widgets/cards/race_card.dart';
 import 'package:characterbook/ui/cards/race_modal_card.dart';
 import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
 import 'package:characterbook/ui/widgets/list/optimized_list_view.dart';
-import 'package:characterbook/ui/widgets/performance/optimized_value_listenable.dart';
 import 'package:characterbook/ui/widgets/tags/tag_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 
 class RaceListPage extends StatefulWidget {
   const RaceListPage({super.key});
@@ -28,51 +29,62 @@ class RaceListPage extends StatefulWidget {
 }
 
 class _RaceListPageState extends State<RaceListPage> {
-  final List<Race> _filteredRaces = [];
-  String? _selectedTag;
-  Timer? _debounceTimer;
-  final Box<Race> _racesBox = Hive.box<Race>('races');
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
+  bool _isImporting = false;
+  String? _errorMessage;
+  bool _isFabVisible = true;
+  final ScrollController _scrollController = ScrollController();
+
   final Box<Character> _charactersBox = Hive.box<Character>('characters');
 
-  final TextEditingController searchController = TextEditingController();
-  final ScrollController scrollController = ScrollController();
-  
-  bool isSearching = false;
-  bool isImporting = false;
-  bool isFabVisible = true;
-  String? errorMessage;
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
-  List<String> _getAllTags(List<Race> races) {
-    final allTags = <String>{};
-    for (final race in races) {
-      allTags.addAll(race.tags);
+  void _onScroll() {
+    final isScrollingDown = _scrollController.position.userScrollDirection ==
+        ScrollDirection.reverse;
+    if (isScrollingDown && _isFabVisible) {
+      setState(() => _isFabVisible = false);
+    } else if (!isScrollingDown && !_isFabVisible) {
+      setState(() => _isFabVisible = true);
     }
-    return allTags.toList()..sort();
   }
 
-  bool _matchesTagFilter(Race race) {
-    if (_selectedTag == null) return true;
-    return race.tags.contains(_selectedTag);
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
   }
 
-  void _filterRaces(String query, List<Race> allRaces) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-      if (!mounted) return;
-      
-      setState(() {
-        _filteredRaces.clear();
-        _filteredRaces.addAll(
-          allRaces.where((race) {
-            final matchesSearch = query.isEmpty ||
-                race.name.toLowerCase().contains(query.toLowerCase()) ||
-                race.description.toLowerCase().contains(query.toLowerCase());
+  List<String> _getTags(BuildContext context, RaceListController controller) {
+    final s = S.of(context);
+    return [
+      s.a_to_z,
+      s.z_to_a,
+      ...controller.allTags,
+    ];
+  }
 
-            return matchesSearch && _matchesTagFilter(race);
-          }),
-        );
-      });
-    });
+  void _onTagSelected(
+      String tag, BuildContext context, RaceListController controller) {
+    final s = S.of(context);
+    if (tag == s.a_to_z) {
+      controller.setSort(RaceSort.nameAsc);
+    } else if (tag == s.z_to_a) {
+      controller.setSort(RaceSort.nameDesc);
+    } else {
+      if (controller.selectedTag == tag) {
+        controller.setSelectedTag(null);
+      } else {
+        controller.setSelectedTag(tag);
+      }
+    }
   }
 
   Future<bool> _isRaceUsed(Race race) async {
@@ -80,45 +92,22 @@ class _RaceListPageState extends State<RaceListPage> {
     return characters.any((character) => character.race?.key == race.key);
   }
 
-  Future<void> _deleteRace(Race race) async {
+  Future<void> _deleteRace(
+      Race race, RaceListController controller, RaceService service) async {
     if (await _isRaceUsed(race)) {
-      if (mounted) _showRaceInUseDialog();
+      _showRaceInUseDialog();
       return;
     }
-
     final confirmed = await _showDeleteConfirmationDialog(
       S.of(context).race_delete_title,
       S.of(context).race_delete_confirm,
     );
-
-    if (confirmed) {
-      await _racesBox.delete(race.key);
-      if (mounted) _showSnackBar(S.of(context).race_deleted);
-    }
-  }
-
-  Future<void> _importRaceFromFile() async {
-    try {
-      setState(() {
-        isImporting = true;
-        errorMessage = null;
-      });
-      FilePickerService filePickerService = FilePickerService();
-      final race = await filePickerService.importRace();
-      if (race == null) return;
-
-      await _racesBox.add(race);
-
+    if (confirmed == true) {
+      await controller.deleteRace(race.key);
       if (mounted) {
-        _showSnackBar(S.of(context).race_imported(race.name));
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => errorMessage = e.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() => isImporting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).race_deleted)),
+        );
       }
     }
   }
@@ -139,104 +128,82 @@ class _RaceListPageState extends State<RaceListPage> {
     );
   }
 
-  Future<bool> _showDeleteConfirmationDialog(String title, String content) async {
+  Future<bool> _showDeleteConfirmationDialog(
+      String title, String content) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(S.of(context).cancel),
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(title),
+            content: Text(content),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(S.of(context).cancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  S.of(context).delete,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              S.of(context).delete,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
-
-  void _showRaceContextMenu(Race race) {
+  void _showRaceContextMenu(Race race, BuildContext context,
+      RaceListController controller, RaceService service) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => ContextMenu.race(
+      builder: (ctx) => ContextMenu.race(
         race: race,
-        onEdit: () => _editRace(race),
-        onDelete: () => _deleteRace(race),
+        onEdit: () => _editRace(context, race),
+        onDelete: () => _deleteRace(race, controller, service),
+        // можно добавить экспорт
       ),
     );
   }
 
-  Future<void> _editRace(Race race) async {
+  Future<void> _editRace(BuildContext context, Race race) async {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => RaceModalCard(race: race),
     );
-    if (mounted) {
-      _filterRaces(searchController.text, _racesBox.values.toList());
-    }
+    // после закрытия модалки обновление не требуется, т.к. контроллер сам обновится
   }
 
-  Future<void> _reorderRaces(int oldIndex, int newIndex) async {
-    if (oldIndex == newIndex) return;
-
-    final races = _racesBox.values.toList();
-
-    if (oldIndex < newIndex) {
-      newIndex -= 1;
-    }
-
-    final race = races.removeAt(oldIndex);
-    races.insert(newIndex, race);
-
-    await _racesBox.clear();
-    await _racesBox.addAll(races);
-
-    if (mounted) {
-      setState(() {
-        _filterRaces(searchController.text, _racesBox.values.toList());
-      });
-    }
-  }
-
-  void _handleSearchToggle() {
+  Future<void> _importRace(BuildContext context, RaceService service) async {
     setState(() {
-      isSearching = !isSearching;
-      if (!isSearching) {
-        searchController.clear();
-        _selectedTag = null;
-        _filteredRaces.clear();
-      }
+      _isImporting = true;
+      _errorMessage = null;
     });
+    try {
+      final filePicker = FilePickerService();
+      final race = await filePicker.importRace();
+      if (race == null) return;
+      await service.saveRace(race);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).race_imported(race.name))),
+        );
+      }
+    } catch (e) {
+      setState(() => _errorMessage = e.toString());
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
   }
 
-  void _handleSearchChanged(String query) {
-    _filterRaces(query, _racesBox.values.toList());
-  }
-
-  Future<void> _handleCreateRace() async {
-    final result = await Navigator.push<bool>(
+  void _handleCreateRace(BuildContext context) {
+    Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const RaceManagementPage()),
     );
-    if (result == true && mounted) {
-      _filterRaces(searchController.text, _racesBox.values.toList());
-    }
   }
 
   void _openFoldersScreen() {
@@ -248,101 +215,80 @@ class _RaceListPageState extends State<RaceListPage> {
     );
   }
 
-  Widget _buildRaceCard(BuildContext context, Race race, int index) {
-    return RaceCard(
-      key: ValueKey(race.key),
-      race: race,
-      onTap: () => _editRace(race),
-      onLongPress: () => _showRaceContextMenu(race),
-    );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    scrollController.addListener(() {
-      final isScrollingDown = scrollController.position.userScrollDirection == 
-          ScrollDirection.reverse;
-      if (isScrollingDown && isFabVisible) {
-        setState(() => isFabVisible = false);
-      } else if (!isScrollingDown && !isFabVisible) {
-        setState(() => isFabVisible = true);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _debounceTimer?.cancel();
-    searchController.dispose();
-    scrollController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<RaceListController>();
+    final service = context.read<RaceService>();
+    final s = S.of(context);
+
     return Scaffold(
       appBar: CommonMainAppBar(
-        title: S.of(context).races,
-        isSearching: isSearching,
-        searchController: searchController,
-        searchHint: S.of(context).search_race_hint,
-        onSearchToggle: _handleSearchToggle,
-        onSearchChanged: _handleSearchChanged,
+        title: s.races,
+        isSearching: _isSearching,
+        searchController: _searchController,
+        searchHint: s.search_race_hint,
+        onSearchToggle: () {
+          setState(() {
+            _isSearching = !_isSearching;
+            if (!_isSearching) {
+              _searchController.clear();
+              controller.setSearchQuery('');
+            }
+          });
+        },
+        onSearchChanged: (query) => controller.setSearchQuery(query),
         onFoldersPressed: _openFoldersScreen,
+        // нет кнопки шаблонов для рас
       ),
       body: Column(
         children: [
           ListStateIndicator(
-            isLoading: isImporting,
-            errorMessage: errorMessage,
-            onErrorClose: () => setState(() => errorMessage = null),
+            isLoading: _isImporting || controller.isLoading,
+            errorMessage: _errorMessage ?? controller.error,
+            onErrorClose: () {
+              setState(() => _errorMessage = null);
+            },
           ),
           Expanded(
-            child: OptimizedValueListenable<Race>(
-              box: _racesBox,
-              listen: true,
-              builder: (context, allRaces) {
-                final tags = _getAllTags(allRaces);
-                final racesToShow = isSearching || _selectedTag != null
-                    ? _filteredRaces
-                    : allRaces;
-
-                return Column(
-                  children: [
-                    if (tags.isNotEmpty)
-                      TagFilter(
-                        tags: tags,
-                        selectedTag: _selectedTag,
-                        onTagSelected: (tag) {
-                          setState(() => _selectedTag = tag);
-                          _filterRaces(searchController.text, allRaces);
-                        }, 
-                        context: context,
-                      ),
-                    Expanded(
-                      child: OptimizedListView<Race>(
-                        items: racesToShow,
-                        itemBuilder: _buildRaceCard,
-                        onReorder: _reorderRaces,
-                        scrollController: scrollController,
-                        enableReorder: !isSearching && _selectedTag == null,
-                      ),
+            child: Column(
+              children: [
+                if (controller.allTags.isNotEmpty)
+                  TagFilter(
+                    tags: _getTags(context, controller),
+                    selectedTag: controller.selectedTag,
+                    onTagSelected: (tag) =>
+                        _onTagSelected(tag!, context, controller),
+                    context: context,
+                  ),
+                Expanded(
+                  child: OptimizedListView<Race>(
+                    items: controller.filteredItems,
+                    itemBuilder: (ctx, race, index) => RaceCard(
+                      key: ValueKey(race.key),
+                      race: race,
+                      onTap: () => _editRace(context, race),
+                      onLongPress: () => _showRaceContextMenu(
+                          race, context, controller, service),
                     ),
-                  ],
-                );
-              },
+                    onReorder: (oldIndex, newIndex) =>
+                        controller.reorder(oldIndex, newIndex),
+                    scrollController: _scrollController,
+                    enableReorder:
+                        !_isSearching && controller.selectedTag == null,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
-      floatingActionButton: isFabVisible 
-        ? CommonListFloatingButtons(
-            onImport: _importRaceFromFile,
-            onAdd: _handleCreateRace,
-            heroTag: "race_list",
-          ) 
-        : null,
+      floatingActionButton: _isFabVisible
+          ? CommonListFloatingButtons(
+              onImport: () => _importRace(context, service),
+              onAdd: () => _handleCreateRace(context),
+              heroTag: "race_list",
+            )
+          : null,
     );
   }
 }
