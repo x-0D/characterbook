@@ -1,66 +1,148 @@
+import 'package:characterbook/enums/character_sort_enum.dart';
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/models/template_model.dart';
+import 'package:characterbook/services/character_service.dart';
 import 'package:characterbook/services/file_picker_service.dart';
 import 'package:characterbook/ui/cards/character_modal_card.dart';
+import 'package:characterbook/ui/controllers/character_list_controller.dart';
 import 'package:characterbook/ui/pages/character_management_page.dart';
 import 'package:characterbook/ui/pages/folder_list_page.dart';
 import 'package:characterbook/ui/pages/templates_page.dart';
-import 'package:characterbook/ui/widgets/list/base_list_page.dart';
-import 'package:characterbook/ui/widgets/list/optimized_list_view.dart';
-import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
-import 'package:characterbook/ui/widgets/cards/character_card.dart';
-import 'package:characterbook/ui/widgets/tools_context_menu.dart';
 import 'package:characterbook/ui/widgets/appbar/common_main_app_bar.dart';
 import 'package:characterbook/ui/widgets/buttons/common_list_floating_buttons.dart';
+import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
+import 'package:characterbook/ui/widgets/list/optimized_list_view.dart';
+import 'package:characterbook/ui/widgets/cards/character_card.dart';
 import 'package:characterbook/ui/widgets/tags/tag_filter.dart';
+import 'package:characterbook/ui/widgets/tools_context_menu.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 
-class CharacterListPage extends BaseListPage<Character> {
-  const CharacterListPage({super.key})
-      : super(
-          boxName: 'characters',
-          titleKey: 'my_characters',
-        );
+class CharacterListPage extends StatefulWidget {
+  const CharacterListPage({super.key});
 
   @override
   State<CharacterListPage> createState() => _CharacterListPageState();
 }
 
-class _CharacterListPageState extends BaseListPageState<Character, CharacterListPage> {
-  Future<void> createFromTemplate() async {
-    final template = await Navigator.push<QuestionnaireTemplate>(
-      context,
-      MaterialPageRoute(builder: (context) => const TemplatesPage()),
-    );
+class _CharacterListPageState extends State<CharacterListPage> {
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
+  bool _isImporting = false;
+  String? _errorMessage;
 
-    if (template != null && mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CharacterEditPage(
-            character: template.applyToCharacter(Character.empty()),
-          ),
-        ),
-      );
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  List<String> _getTags(
+      BuildContext context, CharacterListController controller) {
+    final s = S.of(context);
+    return [
+      s.a_to_z,
+      s.z_to_a,
+      s.age_asc,
+      s.age_desc,
+      ...controller.allTags,
+    ];
+  }
+
+  void _onTagSelected(
+      String tag, BuildContext context, CharacterListController controller) {
+    final s = S.of(context);
+    if (tag == s.a_to_z) {
+      controller.setSort(CharacterSort.nameAsc);
+    } else if (tag == s.z_to_a) {
+      controller.setSort(CharacterSort.nameDesc);
+    } else if (tag == s.age_asc) {
+      controller.setSort(CharacterSort.ageAsc);
+    } else if (tag == s.age_desc) {
+      controller.setSort(CharacterSort.ageDesc);
+    } else {
+      if (controller.selectedTag == tag) {
+        controller.setSelectedTag(null);
+      } else {
+        controller.setSelectedTag(tag);
+      }
     }
   }
 
-  void showCharacterContextMenu(Character character) {
+  Future<void> _importCharacter(
+      BuildContext context, CharacterService service) async {
+    setState(() {
+      _isImporting = true;
+      _errorMessage = null;
+    });
+    try {
+      final filePicker = FilePickerService();
+      final character = await filePicker.importCharacter();
+      if (character == null) return;
+
+      await service.saveCharacter(character);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(S.of(context).character_imported(character.name))),
+        );
+      }
+    } catch (e) {
+      setState(() => _errorMessage = e.toString());
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
+  }
+
+  Future<void> _deleteCharacter(
+      Character character, CharacterListController controller) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(S.of(context).character_delete_title),
+        content: Text(S.of(context).character_delete_confirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(S.of(context).cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(S.of(context).delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await controller.deleteCharacter(character);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(S.of(context).character_deleted)),
+        );
+      }
+    }
+  }
+
+  void _showCharacterContextMenu(Character character, BuildContext context,
+      CharacterListController controller, CharacterService service) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => ContextMenu.character(
+      builder: (ctx) => ContextMenu.character(
         character: character,
-        onEdit: () => navigateToEdit(character),
-        onDelete: () => deleteItem(character),
+        onEdit: () => _navigateToEdit(context, character),
+        onDelete: () => _deleteCharacter(character, controller),
+        onDuplicate: () => service.duplicateCharacter(character),
       ),
     );
   }
 
-  void navigateToDetail(Character character) {
+  void _navigateToDetail(Character character) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -69,244 +151,107 @@ class _CharacterListPageState extends BaseListPageState<Character, CharacterList
     );
   }
 
-  @override
-  List<String> getTags(List<Character> characters) {
-    final allTags = characters.expand((c) => c.tags).toSet().toList();
-    final s = S.of(context);
-    
-    return [
-      s.a_to_z,
-      s.z_to_a,
-      s.age_asc,
-      s.age_desc,
-      ...allTags,
-    ];
-  }
-
-  @override
-  bool matchesSearch(Character character, String query) {
-    final queryLower = query.toLowerCase();
-    return character.name.toLowerCase().contains(queryLower) ||
-        character.age.toString().contains(query) ||
-        character.tags.any((tag) => tag.toLowerCase().contains(queryLower));
-  }
-
-  @override
-  bool matchesTagFilter(Character character, String? tag) {
-    if (tag == null) return true;
-    
-    final s = S.of(context);
-    if (tag == s.a_to_z || tag == s.z_to_a || 
-        tag == s.age_asc || tag == s.age_desc) {
-      return true;
-    }
-    
-    return character.tags.contains(tag);
-  }
-
-  @override
-  Widget buildItemCard(Character character, int index) {
-    return CharacterCard(
-      key: ValueKey(character.key),
-      character: character,
-      isSelected: false,
-      onTap: () => navigateToDetail(character),
-      onLongPress: () => showCharacterContextMenu(character),
-      onMenuPressed: () => showCharacterContextMenu(character),
-    );
-  }
-
-  @override
-  Future<void> importItem() async {
-    try {
-      setState(() {
-        isImporting = true;
-        errorMessage = null;
-      });
-      FilePickerService filePickerService = FilePickerService();
-      final character = await filePickerService.importCharacter();
-      if (character == null) return;
-
-      final box = Hive.box<Character>(widget.boxName);
-      await box.add(character);
-
-      if (mounted) showSnackBar(S.of(context).character_imported(character.name));
-    } catch (e) {
-      setState(() => errorMessage = e.toString());
-    } finally {
-      if (mounted) setState(() => isImporting = false);
-    }
-  }
-
-  @override
-  Future<void> deleteItem(Character character) async {
-    final confirmed = await showDeleteConfirmation(
-      S.of(context).character_delete_title,
-      S.of(context).character_delete_confirm,
-    );
-
-    if (confirmed) {
-      await Hive.box<Character>(widget.boxName).delete(character.key);
-      if (mounted) showSnackBar(S.of(context).character_deleted);
-    }
-  }
-
-  @override
-  Future<void> reorderItems(int oldIndex, int newIndex) async {
-    if (oldIndex == newIndex) return;
-
-    final box = Hive.box<Character>(widget.boxName);
-    final characters = box.values.toList().cast<Character>();
-
-    if (oldIndex < 0 || oldIndex >= characters.length || 
-        newIndex < 0 || newIndex >= characters.length) {
-      debugPrint('⚠️ Invalid indices: old=$oldIndex, new=$newIndex');
-      return;
-    }
-
-    final updatedList = List<Character>.from(characters);
-    final item = updatedList.removeAt(oldIndex);
-    updatedList.insert(newIndex, item);
-
-    await box.clear();
-    await box.addAll(updatedList);
-
-    if (mounted) {
-      final allCharacters = Hive.box<Character>(widget.boxName).values.cast<Character>();
-      filterCharacters(searchController.text, allCharacters.toList());
-    }
-  }
-
-  @override
-  void navigateToEdit(Character character) {
+  void _navigateToEdit(BuildContext context, [Character? character]) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CharacterEditPage(character: character),
+        builder: (_) => CharacterManagementPage(character: character),
       ),
-    ).then((result) {
-      if (result == true && mounted) {
-        final characters = Hive.box<Character>(widget.boxName).values.cast<Character>();
-        filterCharacters(searchController.text, characters.toList());
-      }
-    });
-  }
-
-  @override
-  void navigateToCreate() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const CharacterEditPage()),
     );
   }
 
-  void filterCharacters(String query, List<Character> allCharacters) {
-    final queryLower = query.toLowerCase();
-    
-    setState(() {
-      filteredItems = allCharacters.where((character) {
-        final matchesSearch = query.isEmpty ||
-            character.name.toLowerCase().contains(queryLower) ||
-            character.age.toString().contains(query) ||
-            character.tags.any((tag) => tag.toLowerCase().contains(queryLower));
-
-        return matchesSearch && matchesTagFilter(character, selectedTag);
-      }).toList();
-
-      final s = S.of(context);
-      if (selectedTag == s.a_to_z) {
-        filteredItems.sort((a, b) => a.name.compareTo(b.name));
-      } else if (selectedTag == s.z_to_a) {
-        filteredItems.sort((a, b) => b.name.compareTo(a.name));
-      } else if (selectedTag == s.age_asc) {
-        filteredItems.sort((a, b) => a.age.compareTo(b.age));
-      } else if (selectedTag == s.age_desc) {
-        filteredItems.sort((a, b) => b.age.compareTo(a.age));
-      }
-    });
+  Future<void> _createFromTemplate(BuildContext context) async {
+    final template = await Navigator.push<QuestionnaireTemplate>(
+      context,
+      MaterialPageRoute(builder: (_) => const TemplatesPage()),
+    );
+    if (template != null && mounted) {
+      _navigateToEdit(context, template.applyToCharacter(Character.empty()));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<CharacterListController>();
+    final service = context.read<CharacterService>();
+    final s = S.of(context);
+
     return Scaffold(
       appBar: CommonMainAppBar(
-        title: S.of(context).my_characters,
-        isSearching: isSearching,
-        searchController: searchController,
-        searchHint: S.of(context).search_characters,
-        onSearchToggle: () => setState(() {
-          isSearching = !isSearching;
-          if (!isSearching) {
-            searchController.clear();
-            selectedTag = null;
-            filteredItems = [];
-          }
-        }),
-        onSearchChanged: (query) {
-          final allCharacters = Hive.box<Character>(widget.boxName).values.cast<Character>();
-          filterCharacters(query, allCharacters.toList());
+        title: s.my_characters,
+        isSearching: _isSearching,
+        searchController: _searchController,
+        searchHint: s.search_characters,
+        onSearchToggle: () {
+          setState(() {
+            _isSearching = !_isSearching;
+            if (!_isSearching) {
+              _searchController.clear();
+              controller.setSearchQuery('');
+            }
+          });
         },
-        onTemplatesPressed: createFromTemplate,
+        onSearchChanged: (query) => controller.setSearchQuery(query),
+        onTemplatesPressed: () => _createFromTemplate(context),
         onFoldersPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => FoldersScreen(folderType: FolderType.character),
-              ),
+          context,
+          MaterialPageRoute(
+            builder: (_) => FoldersScreen(folderType: FolderType.character),
+          ),
         ),
       ),
       body: Column(
         children: [
           ListStateIndicator(
-            isLoading: isImporting,
-            errorMessage: errorMessage,
-            onErrorClose: () => setState(() => errorMessage = null),
+            isLoading: _isImporting || controller.isLoading,
+            errorMessage: _errorMessage ?? controller.error,
+            onErrorClose: () {
+              setState(() {
+                _errorMessage = null;
+              });
+            },
           ),
           Expanded(
-            child: ValueListenableBuilder<Box<Character>>(
-              valueListenable: Hive.box<Character>(widget.boxName).listenable(),
-              builder: (context, box, _) {
-                final allCharacters = box.values.toList().cast<Character>();
-                final tags = getTags(allCharacters);
-                final charactersToShow = isSearching || selectedTag != null
-                    ? filteredItems
-                    : allCharacters;
-
-                return Column(
-                  children: [
-                    if (tags.isNotEmpty)
-                      TagFilter(
-                        tags: tags,
-                        selectedTag: selectedTag,
-                        onTagSelected: (tag) {
-                          setState(() => selectedTag = tag);
-                          filterCharacters(searchController.text, allCharacters);
-                        },
-                        context: context,
-                      ),
-                    Expanded(
-                      child: OptimizedListView<Character>(
-                        items: charactersToShow,
-                        itemBuilder: (context, character, index) => 
-                            buildItemCard(character, index),
-                        onReorder: reorderItems,
-                        scrollController: scrollController,
-                      ),
+            child: Column(
+              children: [
+                if (controller.allTags.isNotEmpty ||
+                    _getTags(context, controller).length > 4)
+                  TagFilter(
+                    tags: _getTags(context, controller),
+                    selectedTag:
+                        controller.selectedTag,
+                    onTagSelected: (tag) =>_onTagSelected(tag!, context, controller),
+                    context: context,
+                  ),
+                Expanded(
+                  child: OptimizedListView<Character>(
+                    items: controller.filteredItems,
+                    itemBuilder: (ctx, character, index) => CharacterCard(
+                      key: ValueKey(character.key),
+                      character: character,
+                      isSelected: false,
+                      onTap: () => _navigateToDetail(character),
+                      onLongPress: () => _showCharacterContextMenu(
+                          character, context, controller, service),
+                      onMenuPressed: () => _showCharacterContextMenu(
+                          character, context, controller, service),
                     ),
-                  ],
-                );
-              },
+                    onReorder: (oldIndex, newIndex) =>
+                        controller.reorder(oldIndex, newIndex),
+                    scrollController: _scrollController,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
-      floatingActionButton: isFabVisible 
-          ? CommonListFloatingButtons(
-              onImport: importItem,
-              onAdd: navigateToCreate,
-              onTemplate: createFromTemplate,
-              heroTag: "character_list",
-            )
-          : null,
+      floatingActionButton: CommonListFloatingButtons(
+        onImport: () => _importCharacter(context, service),
+        onAdd: () => _navigateToEdit(context),
+        onTemplate: () => _createFromTemplate(context),
+        heroTag: "character_list",
+      ),
     );
   }
 }
