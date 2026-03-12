@@ -2,93 +2,195 @@ import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/models/note_model.dart';
-import 'package:characterbook/services/clipboard_service.dart';
+import 'package:characterbook/repositories/folder_repository.dart';
+import 'package:characterbook/repositories/note_repository.dart';
 import 'package:characterbook/services/folder_service.dart';
 import 'package:characterbook/services/note_service.dart';
-import 'package:characterbook/ui/handlers/unsaved_changes_handler.dart';
+import 'package:characterbook/ui/controllers/note_management_controller.dart';
 import 'package:characterbook/ui/widgets/appbar/common_edit_app_bar.dart';
 import 'package:characterbook/ui/widgets/avatar_widget.dart';
+import 'package:characterbook/ui/widgets/base_edit_page_scaffold.dart';
 import 'package:characterbook/ui/widgets/buttons/save_button_widget.dart';
 import 'package:characterbook/ui/widgets/fields/custom_text_field.dart';
 import 'package:characterbook/ui/widgets/markdown_context_menu.dart';
 import 'package:characterbook/ui/widgets/sections/tags_and_folder_section.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:hive/hive.dart';
+import 'package:provider/provider.dart';
 
-class NoteEditPage extends StatefulWidget {
+class NoteManagementPage extends StatefulWidget {
   final Note? note;
   final bool isCopyMode;
 
-  const NoteEditPage({super.key, this.note, this.isCopyMode = false});
+  const NoteManagementPage({super.key, this.note, this.isCopyMode = false});
 
   @override
-  State<NoteEditPage> createState() => _NoteEditPageState();
+  State<NoteManagementPage> createState() => _NoteManagementPageState();
 }
 
-class _NoteEditPageState extends State<NoteEditPage>
-    with UnsavedChangesHandler {
-  final _formKey = GlobalKey<FormState>();
+class _NoteManagementPageState extends State<NoteManagementPage> {
+  static const _fieldSpacing = 16.0;
+
+  final GlobalKey<FormState> _formKey = GlobalKey();
   late final TextEditingController _titleController;
   late final TextEditingController _contentController;
-  final List<String> _selectedCharacterIds = [];
+
   bool _isPreviewMode = false;
   bool _isMetaCardExpanded = true;
-
-  late final FolderService _folderService;
-  late final NoteService _noteService;
-  List<Folder> _noteFolders = [];
-  Folder? _selectedFolder;
-  List<String> _tags = [];
 
   @override
   void initState() {
     super.initState();
-    _folderService = FolderService(Hive.box<Folder>('folders'));
-    _noteService = NoteService.forDatabase();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final controller = context.read<NoteManagementController>();
+      _titleController = TextEditingController(text: controller.title);
+      _contentController = TextEditingController(text: controller.content);
 
-    _titleController = TextEditingController(
-      text: widget.isCopyMode
-          ? '${S.of(context).copy}: ${widget.note?.title ?? ''}'
-          : widget.note?.title ?? '',
-    );
-    _contentController =
-        TextEditingController(text: widget.note?.content ?? '');
-    _selectedCharacterIds.addAll(widget.note?.characterIds ?? []);
-    _isPreviewMode = widget.note != null && !widget.isCopyMode;
-    _selectedFolder = widget.note?.folderId != null
-        ? _folderService.getFolderById(widget.note!.folderId!)
-        : null;
-    _tags = List.from(widget.note?.tags ?? []);
+      _titleController.addListener(_onTitleChanged);
+      _contentController.addListener(_onContentChanged);
+    });
+  }
 
-    _titleController.addListener(_checkForChanges);
-    _contentController.addListener(_checkForChanges);
-    _loadFolders();
-    hasUnsavedChanges = widget.note == null || widget.isCopyMode;
+  void _onTitleChanged() {
+    final controller = context.read<NoteManagementController>();
+    controller.updateTitle(_titleController.text);
+  }
+
+  void _onContentChanged() {
+    final controller = context.read<NoteManagementController>();
+    controller.updateContent(_contentController.text);
   }
 
   @override
-  Future<void> saveChanges() async => await _saveNote();
-
-  Future<void> _loadFolders() async {
-    final folders = _folderService.getFoldersByType(FolderType.note);
-    setState(() {
-      _noteFolders = folders;
-    });
+  void dispose() {
+    _titleController.removeListener(_onTitleChanged);
+    _contentController.removeListener(_onContentChanged);
+    _titleController.dispose();
+    _contentController.dispose();
+    super.dispose();
   }
 
-  void _checkForChanges() {
-    final hasTitleChanges = widget.note?.title != _titleController.text;
-    final hasContentChanges = widget.note?.content != _contentController.text;
-    setState(() {
-      hasUnsavedChanges = hasTitleChanges || hasContentChanges;
-    });
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => NoteManagementController(
+        noteRepo: context.read<NoteRepository>(),
+        folderRepo: context.read<FolderRepository>(),
+        noteService: context.read<NoteService>(),
+        note: widget.note,
+        isCopyMode: widget.isCopyMode,
+      ),
+      child: Consumer<NoteManagementController>(
+        builder: (context, controller, child) {
+          final s = S.of(context);
+          final title = widget.note == null
+              ? s.create
+              : widget.isCopyMode
+                  ? '${s.copy} ${s.posts.toLowerCase()}'
+                  : s.edit;
+
+          final additionalActions = [
+            IconButton.filledTonal(
+              onPressed: () => _shareNote(context, controller),
+              icon: const Icon(Icons.share_rounded),
+              tooltip: s.share,
+              style: IconButton.styleFrom(
+                shape: const CircleBorder(),
+                padding: const EdgeInsets.all(16),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
+              onPressed: () => _copyToClipboard(context, controller),
+              icon: const Icon(Icons.copy_rounded),
+              tooltip: s.copy,
+              style: IconButton.styleFrom(
+                shape: const CircleBorder(),
+                padding: const EdgeInsets.all(16),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
+              onPressed: _togglePreviewMode,
+              icon: Icon(
+                  _isPreviewMode ? Icons.edit_rounded : Icons.preview_rounded),
+              tooltip: _isPreviewMode ? s.edit : s.grid_view,
+              style: IconButton.styleFrom(
+                shape: const CircleBorder(),
+                padding: const EdgeInsets.all(16),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ];
+
+          return BaseEditPageScaffold(
+            onWillPop: () async {
+              if (controller.hasUnsavedChanges) {
+                final shouldLeave = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text(s.unsaved_changes_title),
+                    content: Text(s.unsaved_changes_content),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text(s.cancel),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(s.close),
+                      ),
+                    ],
+                  ),
+                );
+                return shouldLeave ?? false;
+              }
+              return true;
+            },
+            appBar: CommonEditAppBar(
+              title: title,
+              onSave: () async {
+                if (_formKey.currentState!.validate()) {
+                  _formKey.currentState!.save();
+                  final success = await controller.save();
+                  if (success && mounted) {
+                    Navigator.pop(context);
+                  }
+                }
+              },
+              saveTooltip: s.save,
+              additionalActions: additionalActions,
+            ),
+            body: Form(
+              key: _formKey,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: _buildContentField(controller),
+                  ),
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 300),
+                    top: _isMetaCardExpanded ? 16 : 0,
+                    left: 16,
+                    right: 16,
+                    child: _isMetaCardExpanded
+                        ? _buildMetaCard(controller)
+                        : _buildCollapsedMetaCard(controller),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
-  Future<void> _shareNote() async {
+  Future<void> _shareNote(
+      BuildContext context, NoteManagementController controller) async {
     try {
-      final noteToShare = _createNoteFromForm();
-      await NoteService.forExport(noteToShare).shareNote(context, noteToShare);
+      await controller.share(context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -98,92 +200,9 @@ class _NoteEditPageState extends State<NoteEditPage>
     }
   }
 
-  Note _createNoteFromForm() {
-    return Note(
-      id: widget.note?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      title: _titleController.text.trim(),
-      content: _contentController.text.trim(),
-      characterIds: _selectedCharacterIds,
-      folderId: _selectedFolder?.id,
-      tags: _tags,
-      createdAt: widget.note?.createdAt ?? DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-  }
-
-  @override
-  void dispose() {
-    _titleController.removeListener(_checkForChanges);
-    _contentController.removeListener(_checkForChanges);
-    _titleController.dispose();
-    _contentController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _saveNote() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final title = _titleController.text.trim();
-    if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(S.of(context).save_error)),
-      );
-      return;
-    }
-
-    final now = DateTime.now();
-    int? noteKey;
-
-    if (widget.note != null && !widget.isCopyMode) {
-      widget.note!
-        ..title = title
-        ..content = _contentController.text.trim()
-        ..characterIds = _selectedCharacterIds
-        ..folderId = _selectedFolder?.id
-        ..updatedAt = now
-        ..tags = _tags;
-
-      noteKey =
-          await _noteService.saveNote(widget.note!, key: widget.note!.key);
-    } else {
-      final newNote = Note(
-        id: now.millisecondsSinceEpoch.toString(),
-        title: title,
-        content: _contentController.text.trim(),
-        characterIds: _selectedCharacterIds,
-        folderId: _selectedFolder?.id,
-        tags: _tags,
-      );
-
-      noteKey = await _noteService.saveNote(newNote);
-    }
-
-    if (_selectedFolder == null) {
-      for (final folder in _noteFolders) {
-        if (folder.contentIds.contains(noteKey.toString())) {
-          await _folderService.removeFromFolder(folder.id, noteKey.toString());
-        }
-      }
-    } else {
-      for (final folder in _noteFolders) {
-        if (folder.id != _selectedFolder!.id &&
-            folder.contentIds.contains(noteKey.toString())) {
-          await _folderService.removeFromFolder(folder.id, noteKey.toString());
-        }
-      }
-      await _folderService.addToFolder(_selectedFolder!.id, noteKey.toString());
-    }
-
-    setState(() => hasUnsavedChanges = false);
-    if (mounted) Navigator.pop(context);
-  }
-
-  Future<void> _copyToClipboard() async {
-    await ClipboardService.copyNoteToClipboard(
-      context: context,
-      content: _contentController.text,
-    );
-
+  Future<void> _copyToClipboard(
+      BuildContext context, NoteManagementController controller) async {
+    await controller.copyToClipboard(context);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(S.of(context).operationCompleted)),
@@ -199,82 +218,8 @@ class _NoteEditPageState extends State<NoteEditPage>
     setState(() => _isMetaCardExpanded = !_isMetaCardExpanded);
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildMetaCard(NoteManagementController controller) {
     final s = S.of(context);
-
-    final title = widget.note == null
-        ? s.create
-        : widget.isCopyMode
-            ? '${s.copy} ${s.posts.toLowerCase()}'
-            : s.edit;
-
-    final additionalActions = [
-      IconButton.filledTonal(
-        onPressed: _shareNote,
-        icon: const Icon(Icons.share_rounded),
-        tooltip: s.share,
-        style: IconButton.styleFrom(
-          shape: const CircleBorder(),
-          padding: const EdgeInsets.all(16),
-        ),
-      ),
-      const SizedBox(width: 8),
-      IconButton.filledTonal(
-        onPressed: _copyToClipboard,
-        icon: const Icon(Icons.copy_rounded),
-        tooltip: s.copy,
-        style: IconButton.styleFrom(
-          shape: const CircleBorder(),
-          padding: const EdgeInsets.all(16),
-        ),
-      ),
-      const SizedBox(width: 8),
-      IconButton.filledTonal(
-        onPressed: _togglePreviewMode,
-        icon: Icon(_isPreviewMode ? Icons.edit_rounded : Icons.preview_rounded),
-        tooltip: _isPreviewMode ? s.edit : s.grid_view,
-        style: IconButton.styleFrom(
-          shape: const CircleBorder(),
-          padding: const EdgeInsets.all(16),
-        ),
-      ),
-      const SizedBox(width: 8),
-    ];
-
-    return Scaffold(
-      appBar: CommonEditAppBar(
-        title: title,
-        onSave: _saveNote,
-        saveTooltip: s.save,
-        additionalActions: additionalActions,
-      ),
-      body: WillPopScope(
-        onWillPop: () => handleUnsavedChanges(context),
-        child: Form(
-          key: _formKey,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: _buildContentField(),
-              ),
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 300),
-                top: _isMetaCardExpanded ? 16 : 0,
-                left: 16,
-                right: 16,
-                child: _isMetaCardExpanded
-                    ? _buildMetaCard()
-                    : _buildCollapsedMetaCard(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetaCard() {
     return Card(
       elevation: 8,
       margin: EdgeInsets.zero,
@@ -288,9 +233,8 @@ class _NoteEditPageState extends State<NoteEditPage>
                 Expanded(
                   child: CustomTextField(
                     controller: _titleController,
-                    label: S.of(context).name,
+                    label: s.name,
                     isRequired: true,
-                    onChanged: (value) => _checkForChanges(),
                   ),
                 ),
                 IconButton(
@@ -300,41 +244,34 @@ class _NoteEditPageState extends State<NoteEditPage>
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: _fieldSpacing),
             TagsAndFolderSection(
-              tags: _tags,
-              onTagsChanged: (tags) {
-                setState(() {
-                  _tags = tags;
-                  hasUnsavedChanges = true;
-                });
-              },
-              folderService: _folderService,
+              tags: controller.tags,
+              onTagsChanged: controller.setTags,
+              folderService: context.read<FolderService>(),
               folderType: FolderType.note,
-              selectedFolder: _selectedFolder,
-              onFolderSelected: (folder) {
-                setState(() {
-                  _selectedFolder = folder;
-                  hasUnsavedChanges = true;
-                });
-              },
-              folders: _noteFolders,
+              selectedFolder: controller.selectedFolder,
+              onFolderSelected: controller.setSelectedFolder,
+              folders: controller.availableFolders,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: _fieldSpacing),
             _CharacterSelectorSection(
-              selectedCharacterIds: _selectedCharacterIds,
-              onCharactersChanged: (characterIds) {
-                setState(() {
-                  _selectedCharacterIds.clear();
-                  _selectedCharacterIds.addAll(characterIds);
-                  hasUnsavedChanges = true;
-                });
-              },
+              selectedCharacterIds: controller.selectedCharacterIds,
+              onAddCharacter: controller.addCharacterId,
+              onRemoveCharacter: controller.removeCharacterId,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: _fieldSpacing),
             SaveButton(
-              onPressed: _saveNote,
-              text: S.of(context).save,
+              onPressed: () async {
+                if (_formKey.currentState!.validate()) {
+                  _formKey.currentState!.save();
+                  final success = await controller.save();
+                  if (success && mounted) {
+                    Navigator.pop(context);
+                  }
+                }
+              },
+              text: s.save,
             ),
           ],
         ),
@@ -342,9 +279,9 @@ class _NoteEditPageState extends State<NoteEditPage>
     );
   }
 
-  Widget _buildCollapsedMetaCard() {
+  Widget _buildCollapsedMetaCard(NoteManagementController controller) {
     final charactersBox = Hive.box<Character>('characters');
-    final selectedCharacters = _selectedCharacterIds
+    final selectedCharacters = controller.selectedCharacterIds
         .map((id) => charactersBox.get(id))
         .where((character) => character != null)
         .cast<Character>()
@@ -362,17 +299,17 @@ class _NoteEditPageState extends State<NoteEditPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _titleController.text.isEmpty
+                    controller.title.isEmpty
                         ? S.of(context).name
-                        : _titleController.text,
+                        : controller.title,
                     style: Theme.of(context).textTheme.titleMedium,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (_tags.isNotEmpty) ...[
+                  if (controller.tags.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
-                      _tags.join(', '),
+                      controller.tags.join(', '),
                       style: Theme.of(context).textTheme.bodySmall,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -396,7 +333,7 @@ class _NoteEditPageState extends State<NoteEditPage>
     );
   }
 
-  Widget _buildContentField() {
+  Widget _buildContentField(NoteManagementController controller) {
     if (_isPreviewMode) {
       return Container(
         margin: EdgeInsets.only(top: _isMetaCardExpanded ? 180 : 60),
@@ -431,7 +368,6 @@ class _NoteEditPageState extends State<NoteEditPage>
                 fontSize: 16,
                 height: 1.5,
               ),
-          onChanged: (value) => _checkForChanges(),
           contextMenuBuilder: (context, editableTextState) {
             return MarkdownContextMenu(
               controller: _contentController,
@@ -471,46 +407,16 @@ class _NoteEditPageState extends State<NoteEditPage>
   }
 }
 
-class _CharacterSelectorSection extends StatefulWidget {
+class _CharacterSelectorSection extends StatelessWidget {
   final List<String> selectedCharacterIds;
-  final ValueChanged<List<String>> onCharactersChanged;
+  final ValueChanged<String> onAddCharacter;
+  final ValueChanged<String> onRemoveCharacter;
 
   const _CharacterSelectorSection({
     required this.selectedCharacterIds,
-    required this.onCharactersChanged,
+    required this.onAddCharacter,
+    required this.onRemoveCharacter,
   });
-
-  @override
-  State<_CharacterSelectorSection> createState() =>
-      _CharacterSelectorSectionState();
-}
-
-class _CharacterSelectorSectionState extends State<_CharacterSelectorSection> {
-  final List<String> _localSelectedIds = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _localSelectedIds.addAll(widget.selectedCharacterIds);
-  }
-
-  void _toggleCharacter(String characterId) {
-    setState(() {
-      if (_localSelectedIds.contains(characterId)) {
-        _localSelectedIds.remove(characterId);
-      } else {
-        _localSelectedIds.add(characterId);
-      }
-    });
-    widget.onCharactersChanged(_localSelectedIds);
-  }
-
-  void _removeCharacter(String characterId) {
-    setState(() {
-      _localSelectedIds.remove(characterId);
-    });
-    widget.onCharactersChanged(_localSelectedIds);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -521,7 +427,7 @@ class _CharacterSelectorSectionState extends State<_CharacterSelectorSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<String>(
-          initialValue: null,
+          value: null,
           decoration: InputDecoration(
             labelText:
                 '${S.of(context).choose_character} ${S.of(context).character.toLowerCase()}',
@@ -533,7 +439,7 @@ class _CharacterSelectorSectionState extends State<_CharacterSelectorSection> {
           items: characters.map((character) {
             final characterKey =
                 charactersBox.keyAt(characters.indexOf(character)).toString();
-            final isSelected = _localSelectedIds.contains(characterKey);
+            final isSelected = selectedCharacterIds.contains(characterKey);
             return DropdownMenuItem(
               value: characterKey,
               child: Row(
@@ -561,22 +467,32 @@ class _CharacterSelectorSectionState extends State<_CharacterSelectorSection> {
           }).toList(),
           onChanged: (value) {
             if (value != null) {
-              _toggleCharacter(value);
+              if (selectedCharacterIds.contains(value)) {
+                onRemoveCharacter(value);
+              } else {
+                onAddCharacter(value);
+              }
             }
           },
         ),
         const SizedBox(height: 16),
-        if (_localSelectedIds.isNotEmpty)
-          _buildSelectedCharactersChips(charactersBox),
+        if (selectedCharacterIds.isNotEmpty)
+          _buildSelectedCharactersChips(
+              context, selectedCharacterIds, charactersBox, onRemoveCharacter),
       ],
     );
   }
 
-  Widget _buildSelectedCharactersChips(Box<Character> charactersBox) {
+  Widget _buildSelectedCharactersChips(
+    BuildContext context,
+    List<String> selectedIds,
+    Box<Character> charactersBox,
+    ValueChanged<String> onRemove,
+  ) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: _localSelectedIds.map((characterId) {
+      children: selectedIds.map((characterId) {
         final character = charactersBox.get(characterId);
         return character != null
             ? InputChip(
@@ -585,7 +501,7 @@ class _CharacterSelectorSectionState extends State<_CharacterSelectorSection> {
                   size: 20,
                 ),
                 label: Text(character.name),
-                onDeleted: () => _removeCharacter(characterId),
+                onDeleted: () => onRemove(characterId),
                 deleteIcon: Icon(
                   Icons.close,
                   size: 18,

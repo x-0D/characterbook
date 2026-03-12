@@ -1,8 +1,8 @@
-import 'dart:async';
+import 'package:characterbook/enums/note_sort_enum.dart';
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/models/note_model.dart';
-import 'package:characterbook/services/note_service.dart';
+import 'package:characterbook/ui/controllers/note_list_controller.dart';
 import 'package:characterbook/ui/pages/folder_list_page.dart';
 import 'package:characterbook/ui/pages/note_management_page.dart';
 import 'package:characterbook/ui/widgets/appbar/common_main_app_bar.dart';
@@ -11,11 +11,10 @@ import 'package:characterbook/ui/widgets/cards/note_card.dart';
 import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
 import 'package:characterbook/ui/widgets/list/optimized_list_view.dart';
 import 'package:characterbook/ui/widgets/states/empty_notes_state.dart';
-import 'package:characterbook/ui/widgets/performance/optimized_value_listenable.dart';
 import 'package:characterbook/ui/widgets/tags/tag_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 
 class NotesListPage extends StatefulWidget {
   const NotesListPage({super.key});
@@ -25,144 +24,118 @@ class NotesListPage extends StatefulWidget {
 }
 
 class _NotesListPageState extends State<NotesListPage> {
-  final List<Note> _filteredNotes = [];
-  String? _selectedTag;
-  Timer? _debounceTimer;
-  final NoteService _noteService = NoteService.forDatabase();
-  final Box<Note> _notesBox = Hive.box<Note>('notes');
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
+  bool _isFabVisible = true;
+  String? _errorMessage; 
 
-  final TextEditingController searchController = TextEditingController();
-  final ScrollController scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
 
-  bool isSearching = false;
-  bool isImporting = false;
-  bool isFabVisible = true;
-  String? errorMessage;
-
-  List<String> _getAllTags(List<Note> notes) {
-    final allTags = <String>{};
-    for (final note in notes) {
-      allTags.addAll(note.tags);
-    }
-    return allTags.toList()..sort();
-  }
-
-  bool _matchesTagFilter(Note note) {
-    if (_selectedTag == null) return true;
-    return note.tags.contains(_selectedTag);
-  }
-
-  void _filterNotes(String query, List<Note> allNotes) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-      if (!mounted) return;
-
-      final queryLower = query.toLowerCase();
-
-      setState(() {
-        _filteredNotes.clear();
-        _filteredNotes.addAll(allNotes.where((note) {
-          final matchesSearch = query.isEmpty ||
-              note.title.toLowerCase().contains(queryLower) ||
-              note.content.toLowerCase().contains(queryLower);
-
-          return matchesSearch && _matchesTagFilter(note);
-        }));
-      });
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      final isScrollingDown = _scrollController.position.userScrollDirection ==
+          ScrollDirection.reverse;
+      if (isScrollingDown && _isFabVisible) {
+        setState(() => _isFabVisible = false);
+      } else if (!isScrollingDown && !_isFabVisible) {
+        setState(() => _isFabVisible = true);
+      }
     });
   }
 
-  Future<void> _deleteNote(Note note) async {
-    final confirmed = await _showDeleteConfirmationDialog(
-      S.of(context).template_delete_title,
-      '${S.of(context).posts} "${note.title}" ${S.of(context).template_delete_confirm}',
-    );
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
-    if (confirmed) {
-      await _noteService.deleteNote(note);
-      if (!mounted) return;
+  List<String> _getTags(BuildContext context, NoteListController controller) {
+    final s = S.of(context);
+    return [
+      s.a_to_z,
+      s.z_to_a,
+      ...controller.allTags,
+    ];
+  }
 
-      _showSnackBar(
-        '${S.of(context).posts} "${note.title}" ${S.of(context).template_deleted}',
-        action: SnackBarAction(
-          label: S.of(context).cancel,
-          onPressed: () async {
-            await _notesBox.add(note);
-          },
-        ),
-      );
+  void _onTagSelected(
+      String tag, BuildContext context, NoteListController controller) {
+    final s = S.of(context);
+    if (tag == s.a_to_z) {
+      controller.setSort(NoteSort.titleAsc);
+    } else if (tag == s.z_to_a) {
+      controller.setSort(NoteSort.titleDesc);
+    } else {
+      if (controller.selectedTag == tag) {
+        controller.setSelectedTag(null);
+      } else {
+        controller.setSelectedTag(tag);
+      }
     }
   }
 
-  Future<void> _editNote(Note note) async {
-    final result = await Navigator.push<bool>(
+  Future<void> _deleteNote(Note note, NoteListController controller) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(S.of(context).template_delete_title),
+        content: Text(
+            '${S.of(context).posts} "${note.title}" ${S.of(context).template_delete_confirm}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(S.of(context).cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              S.of(context).delete,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await controller.deleteNote(note);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '${S.of(context).posts} "${note.title}" ${S.of(context).template_deleted}'),
+            action: SnackBarAction(
+              label: S.of(context).cancel,
+              onPressed: () async {
+              },
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  void _editNote(Note note) {
+    Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (context) => NoteEditPage(note: note)),
+      MaterialPageRoute(builder: (context) => NoteManagementPage(note: note)),
     );
-    if (result == true && mounted) {
-      _filterNotes(
-          searchController.text, _notesBox.values.cast<Note>().toList());
-    }
-  }
-
-  Future<void> _reorderNotes(int oldIndex, int newIndex) async {
-    if (oldIndex == newIndex) return;
-
-    final notes = _notesBox.values.cast<Note>().toList();
-
-    if (oldIndex < newIndex) {
-      newIndex -= 1;
-    }
-
-    final note = notes.removeAt(oldIndex);
-    notes.insert(newIndex, note);
-
-    await _notesBox.clear();
-    await _notesBox.addAll(notes);
-
-    if (mounted) {
-      setState(() {
-        _filterNotes(searchController.text, notes);
-      });
-    }
   }
 
   void _handleNoteTap(Note note) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => NoteEditPage(note: note)),
+      MaterialPageRoute(builder: (context) => NoteManagementPage(note: note)),
     );
   }
 
-  Widget _buildNoteCard(BuildContext context, Note note, int index) {
-    return NoteCard(
-      key: ValueKey(note.key),
-      note: note,
-      onTap: () => _handleNoteTap(note),
-      onEdit: () => _editNote(note),
-      onDelete: () => _deleteNote(note),
+  void _openNoteCreation() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const NoteManagementPage()),
     );
-  }
-
-  void _handleSearchToggle() {
-    setState(() {
-      isSearching = !isSearching;
-      if (!isSearching) {
-        searchController.clear();
-        _selectedTag = null;
-        _filteredNotes.clear();
-      }
-    });
-  }
-
-  void _handleSearchChanged(String query) {
-    final allNotes = _notesBox.values.cast<Note>().toList();
-    _filterNotes(query, allNotes);
-  }
-
-  void _handleTagSelected(String? tag) {
-    setState(() => _selectedTag = tag);
-    _filterNotes(searchController.text, _notesBox.values.cast<Note>().toList());
   }
 
   void _openFoldersScreen() {
@@ -174,127 +147,80 @@ class _NotesListPageState extends State<NotesListPage> {
     );
   }
 
-  void _openNoteCreation() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const NoteEditPage()),
-    );
-  }
-
-  List<Note> _getSortedNotes(List<Note> notes) {
-    final sortedNotes = List<Note>.from(notes);
-    sortedNotes.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    return sortedNotes;
-  }
-
-  List<Note> _getNotesToShow(List<Note> allNotes) {
-    return isSearching || _selectedTag != null ? _filteredNotes : allNotes;
-  }
-
-  Future<bool> _showDeleteConfirmationDialog(
-      String title, String content) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(title),
-            content: Text(content),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(S.of(context).cancel),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(
-                  S.of(context).delete,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-  }
-
-  void _showSnackBar(String message, {SnackBarAction? action}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        action: action,
-      ),
-    );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    scrollController.addListener(() {
-      final isScrollingDown = scrollController.position.userScrollDirection ==
-          ScrollDirection.reverse;
-      if (isScrollingDown && isFabVisible) {
-        setState(() => isFabVisible = false);
-      } else if (!isScrollingDown && !isFabVisible) {
-        setState(() => isFabVisible = true);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _debounceTimer?.cancel();
-    searchController.dispose();
-    scrollController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<NoteListController>();
+    final s = S.of(context);
+
     return Scaffold(
       appBar: CommonMainAppBar(
-        title: '${S.of(context).my} ${S.of(context).posts.toLowerCase()}',
-        isSearching: isSearching,
-        searchController: searchController,
-        searchHint: S.of(context).search_hint,
-        onSearchToggle: _handleSearchToggle,
-        onSearchChanged: _handleSearchChanged,
+        title: '${s.my} ${s.posts.toLowerCase()}',
+        isSearching: _isSearching,
+        searchController: _searchController,
+        searchHint: s.search_hint,
+        onSearchToggle: () {
+          setState(() {
+            _isSearching = !_isSearching;
+            if (!_isSearching) {
+              _searchController.clear();
+              controller.setSearchQuery('');
+            }
+          });
+        },
+        onSearchChanged: (query) => controller.setSearchQuery(query),
         onFoldersPressed: _openFoldersScreen,
       ),
       body: Column(
         children: [
           ListStateIndicator(
-            isLoading: isImporting,
-            errorMessage: errorMessage,
-            onErrorClose: () => setState(() => errorMessage = null),
+            isLoading: controller.isLoading,
+            errorMessage: _errorMessage ?? controller.error,
+            onErrorClose: () {
+              setState(() => _errorMessage = null);
+            },
           ),
           Expanded(
-            child: OptimizedValueListenable<Note>(
-              box: _notesBox,
-              listen: true,
-              builder: (context, allNotes) {
-                final sortedNotes = _getSortedNotes(allNotes);
-                final tags = _getAllTags(sortedNotes);
-                final notesToShow = _getNotesToShow(sortedNotes);
+            child: Builder(
+              builder: (context) {
+                final tags = _getTags(context, controller);
+                final notesToShow = controller.filteredItems;
+
+                if (notesToShow.isEmpty &&
+                    !_isSearching &&
+                    controller.selectedTag == null) {
+                  return NotesEmptyState(isSearching: false);
+                }
 
                 return Column(
                   children: [
                     if (tags.isNotEmpty)
                       TagFilter(
-                          tags: tags,
-                          selectedTag: _selectedTag,
-                          onTagSelected: _handleTagSelected,
-                          context: context),
+                        tags: tags,
+                        selectedTag: controller.selectedTag,
+                        onTagSelected: (tag) =>
+                            _onTagSelected(tag!, context, controller),
+                        context: context,
+                      ),
                     Expanded(
                       child: notesToShow.isEmpty
                           ? NotesEmptyState(
-                              isSearching: isSearching &&
-                                  searchController.text.isNotEmpty)
+                              isSearching: _isSearching &&
+                                  _searchController.text.isNotEmpty,
+                            )
                           : OptimizedListView<Note>(
                               items: notesToShow,
-                              itemBuilder: _buildNoteCard,
-                              onReorder: _reorderNotes,
-                              scrollController: scrollController,
-                              enableReorder:
-                                  !isSearching && _selectedTag == null,
+                              itemBuilder: (ctx, note, index) => NoteCard(
+                                key: ValueKey(note.key),
+                                note: note,
+                                onTap: () => _handleNoteTap(note),
+                                onEdit: () => _editNote(note),
+                                onDelete: () => _deleteNote(note, controller),
+                              ),
+                              onReorder: (oldIndex, newIndex) =>
+                                  controller.reorder(oldIndex, newIndex),
+                              scrollController: _scrollController,
+                              enableReorder: !_isSearching &&
+                                  controller.selectedTag == null,
                             ),
                     ),
                   ],
@@ -304,7 +230,7 @@ class _NotesListPageState extends State<NotesListPage> {
           ),
         ],
       ),
-      floatingActionButton: isFabVisible
+      floatingActionButton: _isFabVisible
           ? CommonListFloatingButtons(
               showImportButton: false,
               onAdd: _openNoteCreation,

@@ -59,4 +59,18 @@ class Note extends HiveObject {
     characterIds: List<String>.from(json['characterIds'] ?? []),
     folderId: json['folderId']
   );
+
+  Note copyWith({
+    String? id,
+    String? title,
+    String? content,
+    String? folderId
+  }) {
+    return Note(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      folderId: folderId ?? this.folderId,
+    );
+  }
 }
