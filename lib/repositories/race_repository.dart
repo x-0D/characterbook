@@ -9,6 +9,7 @@ abstract class RaceRepository {
   Future<dynamic> save(Race race, {dynamic key});
   Future<void> delete(dynamic key);
   Future<void> reorder(int oldIndex, int newIndex);
+  Future<void> clear();
 }
 
 class RaceRepositoryHive implements RaceRepository {
@@ -56,5 +57,8 @@ class RaceRepositoryHive implements RaceRepository {
     await _box.clear();
     await _box.addAll(updated);
   }
+
+  @override
+  Future<void> clear() async => _box.clear();
   
 }

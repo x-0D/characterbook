@@ -7,6 +7,7 @@ abstract class CharacterRepository {
   Future<void> save(Character character, {dynamic key});
   Future<void> delete(dynamic key);
   Future<void> reorder(int oldIndex, int newIndex);
+  Future<void> clear();
 }
 
 class CharacterRepositoryHive implements CharacterRepository {
@@ -48,4 +49,7 @@ class CharacterRepositoryHive implements CharacterRepository {
     await _box.clear();
     await _box.addAll(updated);
   }
+
+  @override
+  Future<void> clear() async => _box.clear();
 }

@@ -9,6 +9,7 @@ abstract class TemplateRepository {
   Future<void> delete(String name);
   Future<void> initializeDefaultTemplates();
   Future<void> reorder(int oldIndex, int newIndex);
+  Future<void> clear();
 }
 
 class TemplateRepositoryHive implements TemplateRepository {
@@ -44,4 +45,7 @@ class TemplateRepositoryHive implements TemplateRepository {
   Future<void> reorder(int oldIndex, int newIndex) async {
 
   }
+
+  @override
+  Future<void> clear() async => _box.clear();
 }

@@ -9,6 +9,7 @@ abstract class NoteRepository {
   Future<void> delete(dynamic key);
   Future<List<Note>> getNotesForCharacter(String characterId);
   Future<void> reorder(int oldIndex, int newIndex);
+  Future<void> clear();
 }
 
 class NoteRepositoryHive implements NoteRepository {
@@ -60,4 +61,7 @@ class NoteRepositoryHive implements NoteRepository {
     await _box.clear();
     await _box.addAll(updated);
   }
+
+  @override
+  Future<void> clear() async => _box.clear();
 }

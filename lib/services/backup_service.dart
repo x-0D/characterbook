@@ -8,182 +8,110 @@ import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/models/note_model.dart';
 import 'package:characterbook/models/race_model.dart';
 import 'package:characterbook/models/template_model.dart';
+import 'package:characterbook/repositories/character_repository.dart';
+import 'package:characterbook/repositories/folder_repository.dart';
+import 'package:characterbook/repositories/note_repository.dart';
+import 'package:characterbook/repositories/race_repository.dart';
+import 'package:characterbook/repositories/template_repository.dart';
 import 'package:characterbook/services/file_picker_service.dart';
-import 'package:characterbook/services/hive_service.dart';
 import 'package:characterbook/services/notification_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
-import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:universal_html/html.dart' as html;
+
+class BackupManager {
+  final CharacterRepository characterRepo;
+  final NoteRepository noteRepo;
+  final RaceRepository raceRepo;
+  final TemplateRepository templateRepo;
+  final FolderRepository folderRepo;
+
+  BackupManager({
+    required this.characterRepo,
+    required this.noteRepo,
+    required this.raceRepo,
+    required this.templateRepo,
+    required this.folderRepo,
+  });
+
+  Future<Map<String, List<dynamic>>> getBackupData() async {
+    return {
+      'characters': await characterRepo.getAll(),
+      'notes': await noteRepo.getAll(),
+      'races': await raceRepo.getAll(),
+      'templates': await templateRepo.getAll(),
+      'folders': await folderRepo.getAll(),
+    };
+  }
+
+  Future<void> restoreFromBackupData(Map<String, dynamic> data) async {
+    await Future.wait([
+      characterRepo.clear(),
+      noteRepo.clear(),
+      raceRepo.clear(),
+      templateRepo.clear(),
+      folderRepo.clear(),
+    ]);
+
+    if (data.containsKey('characters')) {
+      await _restoreItems<Character>(characterRepo, data['characters']);
+    }
+    if (data.containsKey('notes')) {
+      await _restoreItems<Note>(noteRepo, data['notes']);
+    }
+    if (data.containsKey('races')) {
+      await _restoreItems<Race>(raceRepo, data['races']);
+    }
+    if (data.containsKey('templates')) {
+      await _restoreItems<QuestionnaireTemplate>(
+          templateRepo, data['templates']);
+    }
+    if (data.containsKey('folders')) {
+      await _restoreItems<Folder>(folderRepo, data['folders']);
+    }
+  }
+
+  Future<void> _restoreItems<T>(dynamic repo, List<dynamic> items) async {
+    for (final itemData in items) {
+      if (itemData is! Map<String, dynamic>) continue;
+      try {
+        final item = _createModel(T, itemData);
+        if (item != null) {
+          await repo.save(item);
+        }
+      } catch (e) {
+        debugPrint('Failed to restore item: $e');
+      }
+    }
+  }
+
+  dynamic _createModel(Type type, Map<String, dynamic> json) {
+    if (type == Character) return Character.fromJson(json);
+    if (type == Note) return Note.fromJson(json);
+    if (type == Race) return Race.fromJson(json);
+    if (type == QuestionnaireTemplate)
+      return QuestionnaireTemplate.fromJson(json);
+    if (type == Folder) return Folder.fromJson(json);
+    return null;
+  }
+}
+
 abstract class BackupService {
   Future<void> exportData();
   Future<void> importData();
 }
 
-class BackupHelper {
-  static const Map<String, Type> _boxTypes = {
-    'characters': Character,
-    'notes': Note,
-    'races': Race,
-    'templates': QuestionnaireTemplate,
-    'folders': Folder,
-  };
-
-  static Future<Map<String, dynamic>> getBackupData() async {
-    final characters = await HiveService.getBox<Character>('characters');
-    final notes = await HiveService.getBox<Note>('notes');
-    final races = await HiveService.getBox<Race>('races');
-    final templates = await HiveService.getBox<QuestionnaireTemplate>('templates');
-    final folders = await HiveService.getBox<Folder>('folders');
-
-
-    return {
-      'characters': characters.values.toList(),
-      'notes': notes.values.toList(),
-      'races': races.values.toList(),
-      'templates': templates.values.toList(),
-      'folders': folders.values.toList(),
-    };
-  }
-
-  static bool validateBackupStructure(Map<String, dynamic> data) {
-    try {
-      final requiredKeys = ['characters', 'races'];
-      final missingKeys = requiredKeys.where((key) => !data.containsKey(key)).toList();
-      
-      if (missingKeys.isNotEmpty) {
-        debugPrint('Missing required keys: $missingKeys');
-        return false;
-      }
-      for (final key in requiredKeys) {
-        if (data[key] is! List) {
-          debugPrint('$key is not a List');
-          return false;
-        }
-      }
-
-      return true;
-    } catch (e) {
-      debugPrint('Validation error: $e');
-      return false;
-    }
-  }
-
-  static Future<void> restoreFromBackupData(Map<String, dynamic> data) async {
-    await HiveService.initHive();
-    if (!validateBackupStructure(data)) {
-      final errorMessage = 'Invalid backup structure. '
-          'Please ensure the backup contains all required data.';
-      throw FormatException(errorMessage);
-    }
-
-    try {
-      final charactersBox = await HiveService.getBox<Character>('characters');
-      final notesBox = await HiveService.getBox<Note>('notes');
-      final racesBox = await HiveService.getBox<Race>('races');
-      final templatesBox = await HiveService.getBox<QuestionnaireTemplate>('templates');
-      final foldersBox = await HiveService.getBox<Folder>('folders');
-
-      await Future.wait([
-        charactersBox.clear(),
-        notesBox.clear(),
-        racesBox.clear(),
-        templatesBox.clear(),
-        foldersBox.clear(),
-      ]);
-      final futures = <Future>[];
-      
-      if (data.containsKey('characters')) {
-        futures.add(_restoreToBox<Character>(charactersBox, data['characters']));
-      }
-      
-      if (data.containsKey('races')) {
-        futures.add(_restoreToBox<Race>(racesBox, data['races']));
-      }
-      
-      if (data.containsKey('notes')) {
-        futures.add(_restoreToBox<Note>(notesBox, data['notes']));
-      }
-      
-      if (data.containsKey('templates')) {
-        futures.add(_restoreToBox<QuestionnaireTemplate>(templatesBox, data['templates']));
-      }
-      
-      if (data.containsKey('folders')) {
-        futures.add(_restoreToBox<Folder>(foldersBox, data['folders']));
-      }
-
-      await Future.wait(futures);
-    } catch (e) {
-      debugPrint('Restore failed: $e');
-      rethrow;
-    }
-  }
-
-  static Future<void> _restoreToBox<T>(Box<T> box, List<dynamic> items) async {
-    try {
-      for (final itemData in items) {
-        try {
-          if (itemData is! Map<String, dynamic>) {
-            debugPrint('Skipping invalid item (not a Map): $itemData');
-            continue;
-          }
-
-          final item = _createModel(T, itemData);
-          if (item != null) {
-            if (item is HiveObject && (itemData['id'] == null || itemData['id'] == '')) {
-              await box.add(item as T);
-            } else if (itemData.containsKey('id')) {
-              await box.put(itemData['id'], item as T);
-            } else {
-              await box.add(item as T);
-            }
-          }
-        } catch (e) {
-          debugPrint('Failed to restore item: $e\nItem: $itemData');
-        }
-      }
-    } catch (e) {
-      debugPrint('Error restoring to box ${box.name}: $e');
-      rethrow;
-    }
-  }
-
-  static final _modelFactories = {
-    'Character': (Map<String, dynamic> json) => Character.fromJson(json),
-    'Race': (Map<String, dynamic> json) => Race.fromJson(json),
-    'QuestionnaireTemplate': (Map<String, dynamic> json) => QuestionnaireTemplate.fromJson(json),
-    'Folder': (Map<String, dynamic> json) => Folder.fromJson(json),
-    'Note': (Map<String, dynamic> json) => Note.fromJson(json),
-  };
-
-  static dynamic _createModel(Type type, Map<String, dynamic> json) {
-    try {
-      final typeName = type.toString().split('.').last.replaceAll('\$', '');
-      final factory = _modelFactories[typeName];
-      
-      if (factory != null) {
-        return factory(json);
-      } else {
-        debugPrint('Unknown model type: $typeName');
-        return null;
-      }
-    } catch (e) {
-      debugPrint('Failed to create model of type $type: $e\nData: $json');
-      return null;
-    }
-  }
-}
-
 class LocalBackupService implements BackupService {
+  final BackupManager backupManager;
   final FilePickerService filePickerService;
   final NotificationService notificationService;
 
   LocalBackupService({
+    required this.backupManager,
     required this.filePickerService,
     required this.notificationService,
   });
@@ -191,23 +119,18 @@ class LocalBackupService implements BackupService {
   @override
   Future<void> exportData() async {
     try {
-      final backupData = await BackupHelper.getBackupData();
-      final hasData = backupData.values.any((list) => (list as List).isNotEmpty);
+      final backupData = await backupManager.getBackupData();
+      final hasData = backupData.values.any((list) => list.isNotEmpty);
 
       if (!hasData) {
         notificationService.showError(S.current.error);
         return;
       }
 
-      String backupJson;
-      try {
-        backupJson = await compute(_safeJsonEncode, backupData);
-      } catch (e) {
-        backupJson = jsonEncode(backupData);
-      }
+      final backupJson = jsonEncode(backupData);
 
       if (kIsWeb) {
-        await _exportForWeb(backupJson);
+        _exportForWeb(backupJson);
       } else {
         await _exportForMobile(backupJson);
       }
@@ -219,7 +142,7 @@ class LocalBackupService implements BackupService {
     }
   }
 
-  Future<void> _exportForWeb(String backupJson) async {
+  void _exportForWeb(String backupJson) {
     final bytes = utf8.encode(backupJson);
     final blob = html.Blob([bytes]);
     final url = html.Url.createObjectUrlFromBlob(blob);
@@ -227,21 +150,16 @@ class LocalBackupService implements BackupService {
   }
 
   Future<void> _exportForMobile(String backupJson) async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final fileName = 'characterbook_backup_${DateTime.now().millisecondsSinceEpoch}.json';
-      final file = File('${directory.path}/$fileName');
-      
-      await file.writeAsBytes(utf8.encode(backupJson));
-      
-      await Share.shareXFiles(
-        [XFile(file.path)], 
-        text: S.current.share_backup_file,
-        subject: fileName,
-      );
-    } catch (e) {
-      notificationService.showError('${S.current.local_backup_error}: $e');
-    }
+    final directory = await getApplicationDocumentsDirectory();
+    final fileName =
+        'characterbook_backup_${DateTime.now().millisecondsSinceEpoch}.json';
+    final file = File('${directory.path}/$fileName');
+    await file.writeAsBytes(utf8.encode(backupJson));
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: S.current.share_backup_file,
+      subject: fileName,
+    );
   }
 
   @override
@@ -252,35 +170,36 @@ class LocalBackupService implements BackupService {
         throw Exception('Invalid backup file');
       }
 
-      await BackupHelper.restoreFromBackupData(jsonData);
+      await backupManager.restoreFromBackupData(jsonData);
       notificationService.showSuccess(S.current.local_restore_success);
     } catch (e, stack) {
       notificationService.showError('${S.current.local_restore_error}: $e');
       debugPrint('Restore failed: $e\n$stack');
     }
   }
-
-  String _safeJsonEncode(dynamic data) => jsonEncode(data);
 }
 
 class CloudBackupService implements BackupService {
-  static const List<String> _scopes = [drive.DriveApi.driveFileScope];
-  static const String _backupPrefix = 'characterbook_backup';
-  
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: _scopes);
+  final BackupManager backupManager;
   final NotificationService notificationService;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: _scopes);
   drive.DriveApi? _driveApi;
   bool isProcessing = false;
 
-  CloudBackupService({required this.notificationService});
+  static const List<String> _scopes = [drive.DriveApi.driveFileScope];
+  static const String _backupPrefix = 'characterbook_backup';
+
+  CloudBackupService({
+    required this.backupManager,
+    required this.notificationService,
+  });
 
   @override
   Future<void> exportData() async {
     try {
       isProcessing = true;
-      final backupData = await BackupHelper.getBackupData();
+      final backupData = await backupManager.getBackupData();
       final backupJson = jsonEncode(backupData);
-      
       await _exportToGoogleDrive(backupJson);
       notificationService.showSuccess(S.current.cloud_backup_full_success);
     } catch (e) {
@@ -296,22 +215,9 @@ class CloudBackupService implements BackupService {
       isProcessing = true;
       final jsonStr = await _importFromGoogleDrive();
       final data = jsonDecode(jsonStr) as Map<String, dynamic>;
-      
-      await BackupHelper.restoreFromBackupData(data);
-
-      final counts = {
-        for (final entry in BackupHelper._boxTypes.entries)
-          entry.key: (data[entry.key] as List?)?.length ?? 0,
-      };
-
+      await backupManager.restoreFromBackupData(data);
       notificationService.showSuccess(
-        S.current.cloud_restore_success(
-          counts['characters'].toString(),
-          counts['notes'].toString(),
-          counts['races'].toString(),
-          counts['templates'].toString(),
-          counts['folders'].toString(),
-        ),
+        S.current.cloud_restore_success(0, 0, 0, 0, 0),
       );
     } catch (e) {
       notificationService.showError('${S.current.cloud_restore_error}: $e');
@@ -328,12 +234,13 @@ class CloudBackupService implements BackupService {
     if (client == null) throw Exception(S.current.auth_client_error);
 
     final driveApi = drive.DriveApi(client);
-    final fileName = '${_backupPrefix}_${DateTime.now().toIso8601String()}.json';
+    final fileName =
+        '${_backupPrefix}_${DateTime.now().toIso8601String()}.json';
 
     await driveApi.files.create(
       drive.File()..name = fileName,
       uploadMedia: drive.Media(
-        Stream.value(utf8.encode(jsonStr)), 
+        Stream.value(utf8.encode(jsonStr)),
         utf8.encode(jsonStr).length,
       ),
     );

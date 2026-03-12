@@ -9,6 +9,7 @@ abstract class FolderRepository {
   Future<void> delete(String id);
   Future<void> addToFolder(String folderId, String contentId);
   Future<void> removeFromFolder(String folderId, String contentId);
+  Future<void> clear();
 }
 
 class FolderRepositoryHive implements FolderRepository {
@@ -57,4 +58,7 @@ class FolderRepositoryHive implements FolderRepository {
       await save(folder);
     }
   }
+  
+  @override
+  Future<void> clear() async => _box.clear();
 }
