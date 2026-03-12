@@ -3,60 +3,29 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/template_model.dart';
-import 'package:characterbook/services/default_templates.dart';
+import 'package:characterbook/repositories/template_repository.dart';
 import 'package:characterbook/services/file_picker_service.dart';
 import 'package:characterbook/services/file_share_service.dart';
-import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
+
 class TemplateService {
-  static const String _templatesBoxName = 'templates';
-  static const String _fileExtension = '.chax';
-  static bool _isInitialized = false;
+  final TemplateRepository _repository;
 
-  Future<void> initializeDefaultTemplates() async {
-    final box = await _openTemplatesBox();
-    if (!_isInitialized) {
-      await _initializeDefaultTemplates(box);
-      _isInitialized = true;
-    }
-  }
+  TemplateService(this._repository);
 
-  Future<Box<QuestionnaireTemplate>> _openTemplatesBox() async {
-    final box = await Hive.openBox<QuestionnaireTemplate>(_templatesBoxName);
-    
-    if (!_isInitialized && box.isEmpty) {
-      await _initializeDefaultTemplates(box);
-      _isInitialized = true;
-    }
-    
-    return box;
-  }
+  Future<void> initializeDefaultTemplates() =>
+      _repository.initializeDefaultTemplates();
 
-  Future<void> _initializeDefaultTemplates(Box<QuestionnaireTemplate> box) async {
-    final defaultTemplates = getDefaultTemplates();
-    for (final template in defaultTemplates) {
-      await box.put(template.name, template);
-    }
-  }
+  Future<void> saveTemplate(QuestionnaireTemplate template) =>
+      _repository.save(template);
 
-  Future<void> saveTemplate(QuestionnaireTemplate template) async {
-    final box = await _openTemplatesBox();
-    await box.put(template.name, template);
-  }
+  Future<List<QuestionnaireTemplate>> getAllTemplates() => _repository.getAll();
 
-  Future<List<QuestionnaireTemplate>> getAllTemplates() async {
-    final box = await _openTemplatesBox();
-    return box.values.toList();
-  }
-
-  Future<void> deleteTemplate(String name) async {
-    final box = await _openTemplatesBox();
-    await box.delete(name);
-  }
+  Future<void> deleteTemplate(String name) => _repository.delete(name);
 
   Future<File> exportTemplate(QuestionnaireTemplate template) async {
     final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/${template.name}$_fileExtension');
+    final file = File('${dir.path}/${template.name}.chax');
     await file.writeAsString(jsonEncode(template.toJson()));
     return file;
   }
@@ -68,10 +37,10 @@ class TemplateService {
   }
 
   QuestionnaireTemplate createTemplateFromCharacter(
-      String name,
-      Character character,
-      List<String> includedStandardFields,
-      ) {
+    String name,
+    Character character,
+    List<String> includedStandardFields,
+  ) {
     return QuestionnaireTemplate(
       name: name,
       standardFields: includedStandardFields,
@@ -90,9 +59,7 @@ class TemplateService {
   Future<void> shareTemplate(QuestionnaireTemplate template) async {
     try {
       final String templateJson = jsonEncode(template.toJson());
-
       final Uint8List bytes = Uint8List.fromList(utf8.encode(templateJson));
-
       await FileShareService.shareFile(
         bytes,
         '${template.name}.chax',

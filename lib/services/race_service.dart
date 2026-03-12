@@ -1,309 +1,143 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/race_model.dart';
+import 'package:characterbook/repositories/race_repository.dart';
 import 'package:characterbook/services/pdf_export_manager.dart';
 import 'package:characterbook/services/file_share_service.dart';
 import 'package:characterbook/ui/dialogs/error_dialog.dart';
 import 'package:characterbook/ui/dialogs/loading_dialog.dart';
-import 'package:characterbook/generated/l10n.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 
 class RaceService {
-  static const String _boxName = 'races';
-  final Box<Race> _box = Hive.box<Race>(_boxName);
+  final RaceRepository _repository;
 
-  final Race? race;
+  RaceService(this._repository);
 
-  RaceService.forDatabase() : race = null;
-
-  RaceService.forExport(this.race);
-
-  Future<int?> saveRace(Race race, {int? key}) async {
-    try {
-      if (key != null) {
-        await _box.put(key, race);
-        return key;
-      }
-
-      if (race.key != null) {
-        await race.save();
-        return race.key;
-      }
-
-      return await _box.add(race);
-    } catch (e) {
-      throw Exception('${S.current.save_error}: ${e.toString()}');
-    }
-  }
-
-  Future<List<Race>> getAllRaces() async {
-    try {
-      return _box.values.toList();
-    } catch (e) {
-      throw Exception('${S.current.error}: ${e.toString()}');
-    }
-  }
-
-  Future<Race?> getRaceById(String id) async {
-    try {
-      return _box.values.firstWhere(
-        (race) => race.id == id,
-        orElse: () => Race.empty(),
-      );
-    } catch (e) {
-      throw Exception('${S.current.error}: ${e.toString()}');
-    }
-  }
-
-  Future<Race?> getRaceByKey(int key) async {
-    try {
-      return _box.get(key);
-    } catch (e) {
-      throw Exception('${S.current.error}: ${e.toString()}');
-    }
-  }
-
-  Future<void> deleteRace(int key) async {
-    try {
-      await _box.delete(key);
-    } catch (e) {
-      throw Exception('${S.current.delete_error}: ${e.toString()}');
-    }
-  }
+  Future<dynamic> saveRace(Race race, {dynamic key}) => _repository.save(race, key: key);
+  Future<void> deleteRace(dynamic key) => _repository.delete(key);
+  Future<List<Race>> getAllRaces() => _repository.getAll();
+  Future<Race?> getRaceById(String id) => _repository.getById(id);
+  Future<Race?> getRaceByKey(dynamic key) => _repository.getByKey(key);
 
   Future<void> deleteRaceById(String id) async {
-    try {
-      final raceKey = _findKeyByRaceId(id);
-      if (raceKey != null) {
-        await _box.delete(raceKey);
-      }
-    } catch (e) {
-      throw Exception('${S.current.delete_error}: ${e.toString()}');
-    }
-  }
-
-  int? _findKeyByRaceId(String id) {
-    for (final key in _box.keys) {
-      final race = _box.get(key);
-      if (race != null && race.id == id) {
-        return key as int;
-      }
-    }
-    return null;
+    final race = await _repository.getById(id);
+    if (race != null) await _repository.delete(race.key);
   }
 
   Future<List<Race>> getRacesByName(String name) async {
-    try {
-      final box = _box;
-      return box.values
-          .where((race) => race.name.toLowerCase().contains(name.toLowerCase()))
-          .toList();
-    } catch (e) {
-      throw Exception('Ошибка поиска рас по имени: ${e.toString()}');
-    }
+    final all = await _repository.getAll();
+    return all
+        .where((r) => r.name.toLowerCase().contains(name.toLowerCase()))
+        .toList();
   }
 
   Future<List<Race>> getRacesByTags(List<String> tags) async {
-    try {
-      final box = _box;
-      return box.values
-          .where((race) => race.tags.any((tag) => tags.contains(tag)))
-          .toList();
-    } catch (e) {
-      throw Exception('Ошибка поиска рас по тегам: ${e.toString()}');
-    }
+    final all = await _repository.getAll();
+    return all.where((r) => r.tags.any((tag) => tags.contains(tag))).toList();
   }
 
   Future<List<Race>> getRacesByFolderId(String folderId) async {
-    try {
-      final box = _box;
-      return box.values.where((race) => race.folderId == folderId).toList();
-    } catch (e) {
-      throw Exception('Ошибка поиска рас по папке: ${e.toString()}');
-    }
+    final all = await _repository.getAll();
+    return all.where((r) => r.folderId == folderId).toList();
   }
 
   Future<List<Race>> getRacesWithoutFolder() async {
-    try {
-      final box = _box;
-      return box.values
-          .where((race) => race.folderId == null || race.folderId!.isEmpty)
-          .toList();
-    } catch (e) {
-      throw Exception('Ошибка загрузки рас без папки: ${e.toString()}');
+    final all = await _repository.getAll();
+    return all.where((r) => r.folderId == null || r.folderId!.isEmpty).toList();
+  }
+
+  Future<void> updateRaceLogo(dynamic key, Uint8List? logoBytes) async {
+    final race = await _repository.getByKey(key);
+    if (race != null) {
+      race.logo = logoBytes;
+      await _repository.save(race, key: key);
     }
   }
 
-  Future<void> updateRaceLogo(int key, Uint8List? logoBytes) async {
-    try {
-      final box = _box;
-      final race = box.get(key);
-      if (race != null) {
-        race.logo = logoBytes;
-        await race.save();
-      }
-    } catch (e) {
-      throw Exception('Ошибка обновления логотипа расы: ${e.toString()}');
+  Future<void> updateRaceTags(dynamic key, List<String> tags) async {
+    final race = await _repository.getByKey(key);
+    if (race != null) {
+      race.tags = tags;
+      await _repository.save(race, key: key);
     }
   }
 
-  Future<void> updateRaceTags(int key, List<String> tags) async {
-    try {
-      final box = _box;
-      final race = box.get(key);
-      if (race != null) {
-        race.tags = tags;
-        await race.save();
-      }
-    } catch (e) {
-      throw Exception('Ошибка обновления тегов расы: ${e.toString()}');
+  Future<void> updateRaceFolder(dynamic key, String? folderId) async {
+    final race = await _repository.getByKey(key);
+    if (race != null) {
+      race.folderId = folderId;
+      await _repository.save(race, key: key);
     }
   }
 
-  Future<void> updateRaceFolder(int key, String? folderId) async {
-    try {
-      final box = _box;
-      final race = box.get(key);
-      if (race != null) {
-        race.folderId = folderId;
-        await race.save();
-      }
-    } catch (e) {
-      throw Exception('Ошибка обновления папки расы: ${e.toString()}');
-    }
-  }
+  Future<int> getRacesCount() async => (await _repository.getAll()).length;
 
-  Future<int> getRacesCount() async {
-    try {
-      final box = _box;
-      return box.length;
-    } catch (e) {
-      throw Exception('Ошибка получения количества рас: ${e.toString()}');
-    }
-  }
-
-  Future<int> getRacesCountInFolder(String folderId) async {
-    try {
-      final box = _box;
-      return box.values.where((race) => race.folderId == folderId).length;
-    } catch (e) {
-      throw Exception(
-          'Ошибка получения количества рас в папке: ${e.toString()}');
-    }
-  }
+  Future<int> getRacesCountInFolder(String folderId) async =>
+      (await _repository.getAll()).where((r) => r.folderId == folderId).length;
 
   Future<List<Race>> searchRaces(String query) async {
-    try {
-      final box = _box;
-      final lowerQuery = query.toLowerCase();
-
-      return box.values
-          .where((race) =>
-              race.name.toLowerCase().contains(lowerQuery) ||
-              race.description.toLowerCase().contains(lowerQuery) ||
-              race.biology.toLowerCase().contains(lowerQuery) ||
-              race.backstory.toLowerCase().contains(lowerQuery) ||
-              race.tags.any((tag) => tag.toLowerCase().contains(lowerQuery)))
-          .toList();
-    } catch (e) {
-      throw Exception('Ошибка поиска рас: ${e.toString()}');
-    }
+    final all = await _repository.getAll();
+    final lower = query.toLowerCase();
+    return all
+        .where((r) =>
+            r.name.toLowerCase().contains(lower) ||
+            r.description.toLowerCase().contains(lower) ||
+            r.biology.toLowerCase().contains(lower) ||
+            r.backstory.toLowerCase().contains(lower) ||
+            r.tags.any((t) => t.toLowerCase().contains(lower)))
+        .toList();
   }
 
   Future<Set<String>> getAllUniqueTags() async {
-    try {
-      final box = _box;
-      final allTags = <String>{};
-
-      for (final race in box.values) {
-        allTags.addAll(race.tags);
-      }
-
-      return allTags;
-    } catch (e) {
-      throw Exception('Ошибка получения уникальных тегов: ${e.toString()}');
-    }
+    final all = await _repository.getAll();
+    return all.expand((r) => r.tags).toSet();
   }
 
   Future<Map<String, int>> getPopularTags({int limit = 10}) async {
-    try {
-      final box = _box;
-      final tagCounts = <String, int>{};
-
-      for (final race in box.values) {
-        for (final tag in race.tags) {
-          tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
-        }
+    final all = await _repository.getAll();
+    final tagCounts = <String, int>{};
+    for (final race in all) {
+      for (final tag in race.tags) {
+        tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
       }
-
-      final sortedEntries = tagCounts.entries.toList()
-        ..sort((a, b) => b.value.compareTo(a.value));
-
-      return Map.fromEntries(
-        sortedEntries.take(limit),
-      );
-    } catch (e) {
-      throw Exception('Ошибка получения популярных тегов: ${e.toString()}');
     }
+    final sorted = tagCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return Map.fromEntries(sorted.take(limit));
   }
 
-  Future<Map<String, dynamic>> exportRaceToJson(int key) async {
-    try {
-      final box = _box;
-      final race = box.get(key);
-
-      if (race == null) {
-        throw Exception('Раса с ключом $key не найдена');
-      }
-
-      return race.toJson();
-    } catch (e) {
-      throw Exception('Ошибка экспорта расы в JSON: ${e.toString()}');
-    }
+  Future<Map<String, dynamic>> exportRaceToJson(dynamic key) async {
+    final race = await _repository.getByKey(key);
+    if (race == null) throw Exception('Race not found');
+    return race.toJson();
   }
 
   Future<int> importRaceFromJson(Map<String, dynamic> json) async {
-    try {
-      final race = Race.fromJson(json);
-      return await saveRace(race) ?? -1;
-    } catch (e) {
-      throw Exception('Ошибка импорта расы из JSON: ${e.toString()}');
-    }
+    final race = Race.fromJson(json);
+    return (await _repository.save(race)) as int;
   }
 
   Future<List<int>> importRacesFromJsonList(
       List<Map<String, dynamic>> jsonList) async {
-    try {
-      final results = <int>[];
-
-      for (final json in jsonList) {
-        try {
-          final race = Race.fromJson(json);
-          final key = await saveRace(race);
-          if (key != null) {
-            results.add(key);
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            print('Ошибка импорта расы: $e');
-          }
-        }
+    final results = <int>[];
+    for (final json in jsonList) {
+      try {
+        final race = Race.fromJson(json);
+        final key = await _repository.save(race);
+        results.add(key as int);
+      } catch (e) {
+        if (kDebugMode) print('Ошибка импорта расы: $e');
       }
-
-      return results;
-    } catch (e) {
-      throw Exception('Ошибка импорта списка рас: ${e.toString()}');
     }
+    return results;
   }
 
   Future<void> clearAllRaces() async {
-    try {
-      final box = _box;
-      await box.clear();
-    } catch (e) {
-      throw Exception('Ошибка очистки всех рас: ${e.toString()}');
+    final all = await _repository.getAll();
+    for (final race in all) {
+      await _repository.delete(race.key);
     }
   }
 
@@ -313,159 +147,95 @@ class RaceService {
     String? folderId,
     List<String>? tags,
   }) async {
-    try {
-      final box = _box;
-      List<Race> filteredRaces;
-
-      if (folderId != null) {
-        filteredRaces =
-            box.values.where((race) => race.folderId == folderId).toList();
-      } else if (tags != null && tags.isNotEmpty) {
-        filteredRaces = box.values
-            .where((race) => race.tags.any((tag) => tags.contains(tag)))
-            .toList();
-      } else {
-        filteredRaces = box.values.toList();
-      }
-
-      filteredRaces.sort((a, b) => a.name.compareTo(b.name));
-
-      final startIndex = (page - 1) * pageSize;
-      if (startIndex >= filteredRaces.length) {
-        return [];
-      }
-
-      final endIndex = startIndex + pageSize;
-      return filteredRaces.sublist(
-        startIndex,
-        endIndex > filteredRaces.length ? filteredRaces.length : endIndex,
-      );
-    } catch (e) {
-      throw Exception('Ошибка получения пагинированных рас: ${e.toString()}');
+    List<Race> filtered = await _repository.getAll();
+    if (folderId != null) {
+      filtered = filtered.where((r) => r.folderId == folderId).toList();
+    } else if (tags != null && tags.isNotEmpty) {
+      filtered = filtered
+          .where((r) => r.tags.any((tag) => tags.contains(tag)))
+          .toList();
     }
+    filtered.sort((a, b) => a.name.compareTo(b.name));
+    final start = (page - 1) * pageSize;
+    if (start >= filtered.length) return [];
+    final end = start + pageSize;
+    return filtered.sublist(
+        start, end > filtered.length ? filtered.length : end);
   }
 
   Future<bool> doesRaceExist(String name, {String? excludeId}) async {
-    try {
-      final box = _box;
-      return box.values.any((race) =>
-          race.name == name && (excludeId == null || race.id != excludeId));
-    } catch (e) {
-      throw Exception('Ошибка проверки существования расы: ${e.toString()}');
-    }
+    final all = await _repository.getAll();
+    return all
+        .any((r) => r.name == name && (excludeId == null || r.id != excludeId));
   }
 
   Future<Map<String, dynamic>> getRacesStatistics() async {
-    try {
-      final box = _box;
-      final races = box.values.toList();
-
-      return {
-        'totalRaces': races.length,
-        'racesWithLogo': races.where((race) => race.logo != null).length,
-        'racesWithFolder': races
-            .where((race) => race.folderId != null && race.folderId!.isNotEmpty)
-            .length,
-        'racesWithTags': races.where((race) => race.tags.isNotEmpty).length,
-        'averageTagsPerRace': races.isEmpty
-            ? 0
-            : races.fold(
-                    0,
-                    (sum, race) =>
-                        int.parse(sum.toString()) + race.tags.length) /
-                races.length,
-        'mostCommonTag': _getMostCommonTag(races),
-      };
-    } catch (e) {
-      throw Exception('Ошибка получения статистики рас: ${e.toString()}');
-    }
+    final all = await _repository.getAll();
+    final total = all.length;
+    final withLogo = all.where((r) => r.logo != null).length;
+    final withFolder =
+        all.where((r) => r.folderId != null && r.folderId!.isNotEmpty).length;
+    final withTags = all.where((r) => r.tags.isNotEmpty).length;
+    final avgTags =
+        total == 0 ? 0 : all.fold(0, (sum, r) => sum + r.tags.length) / total;
+    final mostCommonTag = _getMostCommonTag(all);
+    return {
+      'totalRaces': total,
+      'racesWithLogo': withLogo,
+      'racesWithFolder': withFolder,
+      'racesWithTags': withTags,
+      'averageTagsPerRace': avgTags,
+      'mostCommonTag': mostCommonTag,
+    };
   }
 
   String? _getMostCommonTag(List<Race> races) {
     final tagCounts = <String, int>{};
-
     for (final race in races) {
       for (final tag in race.tags) {
         tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
       }
     }
-
     if (tagCounts.isEmpty) return null;
-
     return tagCounts.entries.reduce((a, b) => a.value > b.value ? a : b).key;
   }
 
-  Future<void> exportToPdf(BuildContext context) async {
-    if (race == null) {
-      _showErrorDialog(
-        context,
-        'Ошибка экспорта',
-        'Раса не установлена для экспорта',
-      );
-      return;
-    }
-
+  Future<void> exportToPdf(BuildContext context, Race race) async {
     await PdfExportManager.exportRaceWithDialog(
       context,
-      race!,
-      fileName: '${race!.name}.pdf',
-      shareText: 'Описание расы ${race!.name}',
+      race,
+      fileName: '${race.name}.pdf',
+      shareText: 'Описание расы ${race.name}',
     );
   }
 
-  Future<void> exportToJson(BuildContext context) async {
-    if (race == null) {
-      _showErrorDialog(
-        context,
-        'Ошибка экспорта',
-        'Раса не установлена для экспорта',
-      );
-      return;
-    }
-
+  Future<void> exportToJson(BuildContext context, Race race) async {
     try {
-      showLoadingDialog(
-        context: context,
-        message: S.of(context).creating_file,
-      );
-
-      final jsonStr = jsonEncode(race!.toJson());
+      showLoadingDialog(context: context, message: S.of(context).creating_file);
+      final jsonStr = jsonEncode(race.toJson());
       final fileName =
-          '${race!.name}_${DateTime.now().millisecondsSinceEpoch}.race';
-
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      if (context.mounted) {
-        hideLoadingDialog(context);
-      }
-
+          '${race.name}_${DateTime.now().millisecondsSinceEpoch}.race';
+      if (context.mounted) hideLoadingDialog(context);
       await FileShareService.shareFile(
         Uint8List.fromList(jsonStr.codeUnits),
         fileName,
-        text: 'Раса: ${race!.name}',
+        text: 'Раса: ${race.name}',
       ).timeout(
         const Duration(seconds: 30),
         onTimeout: () => throw TimeoutException(
-          'Экспорт в JSON занял слишком много времени',
-        ),
+            'Экспорт в JSON занял слишком много времени'),
       );
     } on TimeoutException {
       if (context.mounted) {
         hideLoadingDialog(context);
         _showErrorDialog(
-          context,
-          'Таймаут',
-          'Экспорт в JSON занял слишком много времени',
-        );
+            context, 'Таймаут', 'Экспорт в JSON занял слишком много времени');
       }
     } catch (e) {
       if (context.mounted) {
         hideLoadingDialog(context);
-        _showErrorDialog(
-          context,
-          'Ошибка экспорта',
-          'Не удалось экспортировать в JSON: ${e.toString()}',
-        );
+        _showErrorDialog(context, 'Ошибка экспорта',
+            'Не удалось экспортировать в JSON: ${e.toString()}');
       }
     }
   }
@@ -473,11 +243,7 @@ class RaceService {
   void _showErrorDialog(BuildContext context, String title, String message) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (context.mounted) {
-        showErrorDialog(
-          context: context,
-          title: title,
-          message: message,
-        );
+        showErrorDialog(context: context, title: title, message: message);
       }
     });
   }

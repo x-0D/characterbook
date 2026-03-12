@@ -3,52 +3,26 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/note_model.dart';
+import 'package:characterbook/repositories/note_repository.dart';
 import 'package:characterbook/services/file_share_service.dart';
 import 'package:characterbook/ui/dialogs/loading_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+
 class NoteService {
-  static const String _boxName = 'notes';
+  final NoteRepository _repository;
 
-  final Note? note;
+  NoteService(this._repository);
 
-  NoteService.forDatabase() : note = null;
+  Future<dynamic> saveNote(Note note, {dynamic key}) => _repository.save(note, key: key);
 
-  NoteService.forExport(this.note);
+  Future<void> deleteNote(Note note) => _repository.delete(note.key);
 
-  Future<Box<Note>> get _box => Hive.openBox<Note>(_boxName);
+  Future<List<Note>> getAllNotes() => _repository.getAll();
 
-  Future<int?> saveNote(Note note, {int? key}) async {
-    final box = await _box;
-    if (key != null) {
-      await box.put(key, note);
-      return key;
-    } else {
-      return await box.add(note);
-    }
-  }
+  Future<List<Note>> getNotesForCharacter(String characterId) =>
+      _repository.getNotesForCharacter(characterId);
 
-  Future<void> deleteNote(Note note) async {
-    final box = await _box;
-
-    final actualKey = box.keys.firstWhere(
-      (k) => box.get(k)?.id == note.id,
-      orElse: () => null,
-    );
-
-    if (actualKey != null) {
-      await box.delete(actualKey);
-    }
-  }
-
-  Future<List<Note>> getAllNotes() async {
-    final box = await _box;
-    return box.values.toList();
-  }
-
-  Future<void> exportToJson(BuildContext context) async {
-    if (note == null) throw Exception("Note is not set for export");
-
+  Future<void> exportToJson(BuildContext context, Note note) async {
     bool isLoadingVisible = false;
 
     try {
@@ -56,9 +30,9 @@ class NoteService {
       showLoadingDialog(context: context, message: S.of(context).creating_file);
       await Future.delayed(const Duration(milliseconds: 50));
 
-      final jsonStr = jsonEncode(note!.toJson());
+      final jsonStr = jsonEncode(note.toJson());
       final fileName =
-          '${note!.title}_${DateTime.now().millisecondsSinceEpoch}.note';
+          '${note.title}_${DateTime.now().millisecondsSinceEpoch}.note';
 
       if (context.mounted) {
         hideLoadingDialog(context);
@@ -69,12 +43,10 @@ class NoteService {
       await FileShareService.shareFile(
         Uint8List.fromList(jsonStr.codeUnits),
         fileName,
-        text: 'Заметка: ${note!.title}',
+        text: 'Заметка: ${note.title}',
       );
     } catch (e) {
-      if (isLoadingVisible && context.mounted) {
-        hideLoadingDialog(context);
-      }
+      if (isLoadingVisible && context.mounted) hideLoadingDialog(context);
       throw Exception('Ошибка экспорта в JSON: ${e.toString()}');
     }
   }
@@ -104,9 +76,7 @@ class NoteService {
         subject: 'Заметка из CharacterBook',
       );
     } catch (e) {
-      if (isLoadingVisible && context.mounted) {
-        hideLoadingDialog(context);
-      }
+      if (isLoadingVisible && context.mounted) hideLoadingDialog(context);
       throw Exception('Ошибка при шаринге заметки: ${e.toString()}');
     }
   }
