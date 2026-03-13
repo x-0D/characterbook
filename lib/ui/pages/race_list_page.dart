@@ -3,6 +3,7 @@ import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/models/race_model.dart';
+import 'package:characterbook/repositories/race_repository.dart';
 import 'package:characterbook/services/race_service.dart';
 import 'package:characterbook/services/file_picker_service.dart';
 import 'package:characterbook/ui/controllers/race_list_controller.dart';
@@ -71,8 +72,12 @@ class _RaceListPageState extends State<RaceListPage> {
     ];
   }
 
-  void _onTagSelected(
-      String tag, BuildContext context, RaceListController controller) {
+  void _onTagSelected(String? tag, BuildContext context, RaceListController controller) {
+    if (tag == null) {
+      controller.setSelectedTag(null);
+      return;
+    }
+
     final s = S.of(context);
     if (tag == s.a_to_z) {
       controller.setSort(RaceSort.nameAsc);
@@ -162,7 +167,6 @@ class _RaceListPageState extends State<RaceListPage> {
         race: race,
         onEdit: () => _editRace(context, race),
         onDelete: () => _deleteRace(race, controller, service),
-        // можно добавить экспорт
       ),
     );
   }
@@ -174,7 +178,6 @@ class _RaceListPageState extends State<RaceListPage> {
       backgroundColor: Colors.transparent,
       builder: (context) => RaceModalCard(race: race),
     );
-    // после закрытия модалки обновление не требуется, т.к. контроллер сам обновится
   }
 
   Future<void> _importRace(BuildContext context, RaceService service) async {
@@ -217,11 +220,15 @@ class _RaceListPageState extends State<RaceListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<RaceListController>();
-    final service = context.read<RaceService>();
-    final s = S.of(context);
-
-    return Scaffold(
+    return ChangeNotifierProvider(
+    create: (_) => RaceListController(
+      context.read<RaceRepository>(),
+    ),
+    child: Consumer<RaceListController>(
+      builder: (context, controller, child) {
+        final service = context.read<RaceService>();
+        final s = S.of(context);
+        return Scaffold(
       appBar: CommonMainAppBar(
         title: s.races,
         isSearching: _isSearching,
@@ -238,7 +245,6 @@ class _RaceListPageState extends State<RaceListPage> {
         },
         onSearchChanged: (query) => controller.setSearchQuery(query),
         onFoldersPressed: _openFoldersScreen,
-        // нет кнопки шаблонов для рас
       ),
       body: Column(
         children: [
@@ -257,7 +263,7 @@ class _RaceListPageState extends State<RaceListPage> {
                     tags: _getTags(context, controller),
                     selectedTag: controller.selectedTag,
                     onTagSelected: (tag) =>
-                        _onTagSelected(tag!, context, controller),
+                        _onTagSelected(tag, context, controller),
                     context: context,
                   ),
                 Expanded(
@@ -289,6 +295,9 @@ class _RaceListPageState extends State<RaceListPage> {
               heroTag: "race_list",
             )
           : null,
+    );
+    }
+    )
     );
   }
 }

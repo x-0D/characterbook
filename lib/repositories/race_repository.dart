@@ -18,8 +18,10 @@ class RaceRepositoryHive implements RaceRepository {
   RaceRepositoryHive(this._box);
 
   @override
-  Stream<List<Race>> watchAll() =>
-      _box.watch().map((_) => _box.values.toList());
+  Stream<List<Race>> watchAll() async* {
+    yield _box.values.toList();
+    yield* _box.watch().map((_) => _box.values.toList());
+  }
 
   @override
   Future<List<Race>> getAll() async => _box.values.toList();
