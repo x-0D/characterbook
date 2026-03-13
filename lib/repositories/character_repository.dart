@@ -16,8 +16,10 @@ class CharacterRepositoryHive implements CharacterRepository {
   CharacterRepositoryHive(this._box);
 
   @override
-  Stream<List<Character>> watchAll() =>
-      _box.watch().map((_) => _box.values.toList());
+  Stream<List<Character>> watchAll() async* {
+    yield _box.values.toList();
+    yield* _box.watch().map((_) => _box.values.toList());
+  }
 
   @override
   Future<List<Character>> getAll() async => _box.values.toList();

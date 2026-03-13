@@ -3,6 +3,7 @@ import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/models/template_model.dart';
+import 'package:characterbook/repositories/character_repository.dart';
 import 'package:characterbook/services/character_service.dart';
 import 'package:characterbook/services/file_picker_service.dart';
 import 'package:characterbook/ui/cards/character_modal_card.dart';
@@ -54,8 +55,12 @@ class _CharacterListPageState extends State<CharacterListPage> {
     ];
   }
 
-  void _onTagSelected(
-      String tag, BuildContext context, CharacterListController controller) {
+  void _onTagSelected(String? tag, BuildContext context, CharacterListController controller) {
+    if (tag == null) {
+      controller.setSelectedTag(null);
+      return;
+    }
+
     final s = S.of(context);
     if (tag == s.a_to_z) {
       controller.setSort(CharacterSort.nameAsc);
@@ -172,86 +177,101 @@ class _CharacterListPageState extends State<CharacterListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<CharacterListController>();
-    final service = context.read<CharacterService>();
-    final s = S.of(context);
-
-    return Scaffold(
-      appBar: CommonMainAppBar(
-        title: s.my_characters,
-        isSearching: _isSearching,
-        searchController: _searchController,
-        searchHint: s.search_characters,
-        onSearchToggle: () {
-          setState(() {
-            _isSearching = !_isSearching;
-            if (!_isSearching) {
-              _searchController.clear();
-              controller.setSearchQuery('');
-            }
-          });
-        },
-        onSearchChanged: (query) => controller.setSearchQuery(query),
-        onTemplatesPressed: () => _createFromTemplate(context),
-        onFoldersPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => FoldersScreen(folderType: FolderType.character),
-          ),
-        ),
+    return ChangeNotifierProvider(
+      create: (_) => CharacterListController(
+        context.read<CharacterRepository>(),
       ),
-      body: Column(
-        children: [
-          ListStateIndicator(
-            isLoading: _isImporting || controller.isLoading,
-            errorMessage: _errorMessage ?? controller.error,
-            onErrorClose: () {
+      child: Consumer<CharacterListController>(
+        builder: (context, controller, child) {
+          final service = context.read<CharacterService>();
+          final s = S.of(context);
+          return Scaffold(
+          appBar: CommonMainAppBar(
+            title: s.my_characters,
+            isSearching: _isSearching,
+            searchController: _searchController,
+            searchHint: s.search_characters,
+            onSearchToggle: () {
               setState(() {
-                _errorMessage = null;
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchController.clear();
+                  controller.setSearchQuery('');
+                }
               });
             },
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                if (controller.allTags.isNotEmpty ||
-                    _getTags(context, controller).length > 4)
-                  TagFilter(
-                    tags: _getTags(context, controller),
-                    selectedTag:
-                        controller.selectedTag,
-                    onTagSelected: (tag) =>_onTagSelected(tag!, context, controller),
-                    context: context,
-                  ),
-                Expanded(
-                  child: OptimizedListView<Character>(
-                    items: controller.filteredItems,
-                    itemBuilder: (ctx, character, index) => CharacterCard(
-                      key: ValueKey(character.key),
-                      character: character,
-                      isSelected: false,
-                      onTap: () => _navigateToDetail(character),
-                      onLongPress: () => _showCharacterContextMenu(
-                          character, context, controller, service),
-                      onMenuPressed: () => _showCharacterContextMenu(
-                          character, context, controller, service),
-                    ),
-                    onReorder: (oldIndex, newIndex) =>
-                        controller.reorder(oldIndex, newIndex),
-                    scrollController: _scrollController,
-                  ),
-                ),
-              ],
+            onSearchChanged: (query) => controller.setSearchQuery(query),
+            onTemplatesPressed: () => _createFromTemplate(context),
+            onFoldersPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => FoldersScreen(folderType: FolderType.character),
+              ),
             ),
           ),
-        ],
-      ),
-      floatingActionButton: CommonListFloatingButtons(
-        onImport: () => _importCharacter(context, service),
-        onAdd: () => _navigateToEdit(context),
-        onTemplate: () => _createFromTemplate(context),
-        heroTag: "character_list",
-      ),
+          body: Column(
+            children: [
+              ListStateIndicator(
+                isLoading: _isImporting || controller.isLoading,
+                errorMessage: _errorMessage ?? controller.error,
+                onErrorClose: () {
+                  setState(() {
+                    _errorMessage = null;
+                  });
+                },
+              ),
+              Expanded(
+                child: Column(
+                  children: [
+                    if (controller.allTags.isNotEmpty ||
+                        _getTags(context, controller).length > 4)
+                      TagFilter(
+                        tags: _getTags(context, controller),
+                        selectedTag:
+                            controller.selectedTag,
+                        onTagSelected: (tag) =>_onTagSelected(tag, context, controller),
+                        context: context,
+                      ),
+                    Expanded(
+                      child: controller.filteredItems.isEmpty
+                      ? Center(
+                          child: Text(
+                            S.of(context).no_characters,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        )
+                      : OptimizedListView<Character>(
+                        items: controller.filteredItems,
+                        itemBuilder: (ctx, character, index) => CharacterCard(
+                          key: ValueKey(character.key),
+                          character: character,
+                          isSelected: false,
+                          onTap: () => _navigateToDetail(character),
+                          onLongPress: () => _showCharacterContextMenu(
+                              character, context, controller, service),
+                            onEdit: () => _navigateToEdit(context, character),
+                            onDelete: () => _deleteCharacter(character, controller),
+                          
+                        ),
+                        onReorder: (oldIndex, newIndex) =>
+                            controller.reorder(oldIndex, newIndex),
+                        scrollController: _scrollController,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          floatingActionButton: CommonListFloatingButtons(
+            onImport: () => _importCharacter(context, service),
+            onAdd: () => _navigateToEdit(context),
+            onTemplate: () => _createFromTemplate(context),
+            heroTag: "character_list",
+          ),
+        );
+      }
+      )
     );
   }
 }
