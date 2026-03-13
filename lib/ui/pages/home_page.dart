@@ -2,22 +2,21 @@ import 'dart:async';
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/race_model.dart';
+import 'package:characterbook/services/character_service.dart';
 import 'package:characterbook/services/date_formatter.dart';
-import 'package:characterbook/ui/cards/character_modal_card.dart';
-import 'package:characterbook/ui/cards/race_modal_card.dart';
+import 'package:characterbook/services/race_service.dart';
+import 'package:characterbook/ui/modals/character_modal_card.dart';
+import 'package:characterbook/ui/modals/race_modal_card.dart';
 import 'package:characterbook/ui/controllers/home_controller.dart';
-import 'package:characterbook/ui/pages/calendar_page.dart';
 import 'package:characterbook/ui/pages/character_management_page.dart';
-import 'package:characterbook/ui/pages/export_pdf_settings_page.dart';
 import 'package:characterbook/ui/pages/race_management_page.dart';
-import 'package:characterbook/ui/pages/random_number_page.dart';
-import 'package:characterbook/ui/pages/templates_page.dart';
-import 'package:characterbook/ui/widgets/appbar/common_main_app_bar.dart';
+import 'package:characterbook/ui/pages/settings_page.dart';
+import 'package:characterbook/ui/widgets/appbar/search_app_bar.dart';
 import 'package:characterbook/ui/widgets/buttons/common_list_floating_buttons.dart';
 import 'package:characterbook/ui/widgets/cards/character_keep_card.dart';
 import 'package:characterbook/ui/widgets/cards/race_keep_card.dart';
 import 'package:characterbook/ui/widgets/cards/tool_keep_card.dart';
-import 'package:characterbook/ui/widgets/home_item.dart';
+import 'package:characterbook/ui/widgets/items/home_item.dart';
 import 'package:characterbook/ui/widgets/tools_context_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -31,24 +30,22 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final HomeController _controller;
-  final TextEditingController _searchController = TextEditingController();
-  bool _isSearching = false;
-  HomeContentType _selectedContentType = HomeContentType.charactersAndRaces;
 
   @override
   void initState() {
     super.initState();
-    _controller = HomeController();
+    final characterService = context.read<CharacterService>();
+    final raceService = context.read<RaceService>();
+    _controller = HomeController(
+      characterService: characterService,
+      raceService: raceService,
+    );
     _loadData();
-
-    _searchController.addListener(() {
-      _controller.setSearchQuery(_searchController.text);
-    });
   }
+
 
   @override
   void dispose() {
-    _searchController.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -58,34 +55,8 @@ class _HomePageState extends State<HomePage> {
       await _controller.loadData();
       if (mounted) setState(() {});
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${S.of(context).error}: $e'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+
     }
-  }
-
-  void _changeContentType(HomeContentType type) {
-    setState(() {
-      _selectedContentType = type;
-      if (_isSearching) {
-        _isSearching = false;
-        _searchController.clear();
-      }
-    });
-  }
-
-  void _onSearchToggle() {
-    setState(() {
-      _isSearching = !_isSearching;
-      if (!_isSearching) {
-        _searchController.clear();
-      }
-    });
   }
 
   Future<void> _createNewContent() async {
@@ -125,73 +96,82 @@ class _HomePageState extends State<HomePage> {
     return ChangeNotifierProvider.value(
       value: _controller,
       child: Scaffold(
-        appBar: CommonMainAppBar(
+        appBar: SearchAppBar(
           title: s.app_name,
-          isSearching: _isSearching,
-          searchController: _searchController,
-          onSearchToggle: _onSearchToggle,
-          searchHint: s.search,
-          onSearchChanged: (value) => _controller.setSearchQuery(value),
-          showViewModeToggle: false,
-          showTemplatesToggle: false,
+          leading: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Image.asset(
+              'assets/iconapp.png',
+              height: 32,
+              errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.book_rounded, size: 32),
+            ),
+          ),
+          suggestions: _controller.getAllNamesForSuggestions(),
+          onSubmitted: (value) => _controller.setSearchQuery(value),
+          onChanged: (value) => _controller.setSearchQuery(value),
+          centerTitle: true,
+          actions: [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded),
+              tooltip: s.more_options,
+              onSelected: (value) {
+                switch (value) {
+                  case 'settings':
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SettingsPage()),
+                    );
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'settings',
+                  child: ListTile(
+                    leading: Icon(Icons.settings_outlined),
+                    title: Text('Настройки'),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-        floatingActionButton:
-            _selectedContentType == HomeContentType.charactersAndRaces
-                ? CommonListFloatingButtons(
-                    onAdd: _createNewContent,
-                    onImport: _importContent,
-                    onTemplate: _createFromTemplate,
-                    showImportButton: true,
-                    addTooltip: s.new_character,
-                    importTooltip: s.import,
-                    templateTooltip: s.create_from_template_tooltip,
-                    createFromScratchTooltip: s.new_character,
-                    heroTag: "home_list",
-                  )
-                : null,
+        floatingActionButton: CommonListFloatingButtons(
+          onAdd: _createNewContent,
+          onImport: _importContent,
+          onTemplate: _createFromTemplate,
+          showImportButton: true,
+          addTooltip: s.new_character,
+          importTooltip: s.import,
+          templateTooltip: s.create_from_template_tooltip,
+          createFromScratchTooltip: s.new_character,
+          heroTag: "home_list",
+        ),
         body: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: SegmentedButton<HomeContentType>(
-                  segments: [
-                    ButtonSegment(
-                      value: HomeContentType.charactersAndRaces,
-                      label: Text(s.characters_and_races),
-                    ),
-                    ButtonSegment(
-                      value: HomeContentType.tools,
-                      label: Text(s.tool_management),
-                    ),
-                  ],
-                  selected: {_selectedContentType},
-                  onSelectionChanged: (Set<HomeContentType> newSelection) {
-                    _changeContentType(newSelection.first);
-                  },
-                ),
-              ),
               const SizedBox(height: 4),
               Expanded(
-                child: _selectedContentType == HomeContentType.tools
-                    ? _ToolsGrid(onNavigate: _navigateToTool)
-                    : Consumer<HomeController>(
-                        builder: (context, controller, _) {
-                          if (!controller.hasItems) {
-                            return _EmptyState(
-                              isSearching: _searchController.text.isNotEmpty,
-                              onCreateNew: _createNewContent,
-                            );
-                          }
-                          return _ContentGrid(
-                            controller: controller,
-                            onCharacterTap: _showCharacterDetail,
-                            onCharacterContextMenu: _showCharacterContextMenu,
-                            onRaceTap: _showRaceDetail,
-                            onRaceContextMenu: _showRaceContextMenu,
-                          );
-                        },
-                      ),
+                child: Consumer<HomeController>(
+                  builder: (context, controller, _) {
+                    if (!controller.hasItems &&
+                        controller.searchQuery.isEmpty) {
+                      return _EmptyState(
+                        isSearching: false,
+                        onCreateNew: _createNewContent,
+                      );
+                    }
+                    return _ContentGrid(
+                      controller: controller,
+                      onCharacterTap: _showCharacterDetail,
+                      onCharacterContextMenu: _showCharacterContextMenu,
+                      onRaceTap: _showRaceDetail,
+                      onRaceContextMenu: _showRaceContextMenu,
+                      onToolTap: (tool) => _navigateToTool(tool.page),
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -320,72 +300,6 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class _ToolsGrid extends StatelessWidget {
-  const _ToolsGrid({required this.onNavigate});
-
-  final void Function(Widget) onNavigate;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final tools = [
-      _ToolItem(
-        title: s.randomNumberGenerator,
-        icon: Icons.casino_rounded,
-        iconColor: colorScheme.primary,
-        page: const RandomNumberPage(),
-      ),
-      _ToolItem(
-        title: s.export_pdf_settings,
-        icon: Icons.picture_as_pdf_rounded,
-        iconColor: colorScheme.primary,
-        page: const ExportPdfSettingsPage(),
-      ),
-      _ToolItem(
-        title: s.templates,
-        icon: Icons.library_books_rounded,
-        iconColor: colorScheme.primary,
-        page: const TemplatesPage(),
-      ),
-      _ToolItem(
-        title: s.calendar,
-        subtitle: s.event_calendar,
-        icon: Icons.calendar_today_rounded,
-        iconColor: colorScheme.primary,
-        page: const CalendarPage(),
-      ),
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = (constraints.maxWidth / 180).floor().clamp(2, 5);
-        return GridView.builder(
-          padding: const EdgeInsets.all(4),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 4,
-            mainAxisSpacing: 4,
-            childAspectRatio: 1,
-          ),
-          itemCount: tools.length,
-          itemBuilder: (context, index) {
-            final tool = tools[index];
-            return ToolKeepCard(
-              title: tool.title,
-              subtitle: tool.subtitle,
-              icon: tool.icon,
-              iconColor: tool.iconColor,
-              onTap: () => onNavigate(tool.page),
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
 class _ContentGrid extends StatelessWidget {
   const _ContentGrid({
     required this.controller,
@@ -393,6 +307,7 @@ class _ContentGrid extends StatelessWidget {
     required this.onCharacterContextMenu,
     required this.onRaceTap,
     required this.onRaceContextMenu,
+    required this.onToolTap,
   });
 
   final HomeController controller;
@@ -400,6 +315,7 @@ class _ContentGrid extends StatelessWidget {
   final void Function(CharacterHomeItem) onCharacterContextMenu;
   final void Function(RaceHomeItem) onRaceTap;
   final void Function(RaceHomeItem) onRaceContextMenu;
+  final void Function(ToolHomeItem) onToolTap;
 
   @override
   Widget build(BuildContext context) {
@@ -433,6 +349,13 @@ class _ContentGrid extends StatelessWidget {
                     characterCount: controller.characterCountForRace(race),
                     onTap: () => onRaceTap(item),
                     onContextMenuTap: () => onRaceContextMenu(item),
+                  ),
+                ToolHomeItem() => ToolKeepCard(
+                    title: item.getTitle(context),
+                    subtitle: item.getSubtitle(context),
+                    icon: item.getIcon(),
+                    iconColor: Theme.of(context).colorScheme.primary,
+                    onTap: () => onToolTap(item),
                   ),
               };
             },
@@ -498,21 +421,3 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
-
-class _ToolItem {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color iconColor;
-  final Widget page;
-
-  _ToolItem({
-    required this.title,
-    this.subtitle = '',
-    required this.icon,
-    required this.iconColor,
-    required this.page,
-  });
-}
-
-enum HomeContentType { charactersAndRaces, tools }

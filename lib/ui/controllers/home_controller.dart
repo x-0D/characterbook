@@ -2,28 +2,44 @@ import 'dart:async';
 import 'package:characterbook/models/race_model.dart';
 import 'package:characterbook/services/character_service.dart';
 import 'package:characterbook/services/race_service.dart';
-import 'package:characterbook/ui/widgets/home_item.dart';
+import 'package:characterbook/ui/pages/calendar_page.dart';
+import 'package:characterbook/ui/pages/export_pdf_settings_page.dart';
+import 'package:characterbook/ui/pages/random_number_page.dart';
+import 'package:characterbook/ui/pages/templates_page.dart';
+import 'package:characterbook/ui/widgets/items/home_item.dart';
 import 'package:flutter/material.dart';
 
 class HomeController extends ChangeNotifier {
   final CharacterService _characterService;
   final RaceService _raceService;
 
-  HomeController({
-    CharacterService? characterService,
-    RaceService? raceService,
-  })  : _characterService = characterService ?? CharacterService.forDatabase(),
-        _raceService = raceService ?? RaceService.forDatabase();
-
   List<CharacterHomeItem> _characters = [];
   List<RaceHomeItem> _races = [];
-  List<HomeItem> _allItems = [];
+  final List<ToolHomeItem> _tools = [];
   List<HomeItem> _filteredItems = [];
   String _searchQuery = '';
 
   List<HomeItem> get filteredItems => _filteredItems;
   String get searchQuery => _searchQuery;
   bool get hasItems => _filteredItems.isNotEmpty;
+
+  HomeController({
+    required CharacterService characterService,
+    required RaceService raceService,
+  })  : _characterService = characterService,
+        _raceService = raceService {
+    _initTools();
+  }
+
+  void _initTools() {
+    _tools.addAll([
+      ToolHomeItem(type: ToolType.randomNumber, page: const RandomNumberPage()),
+      ToolHomeItem(
+          type: ToolType.pdfExport, page: const ExportPdfSettingsPage()),
+      ToolHomeItem(type: ToolType.templates, page: const TemplatesPage()),
+      ToolHomeItem(type: ToolType.calendar, page: const CalendarPage()),
+    ]);
+  }
 
   Future<void> loadData() async {
     try {
@@ -32,11 +48,17 @@ class HomeController extends ChangeNotifier {
 
       _characters = characters.map(CharacterHomeItem.new).toList();
       _races = races.map(RaceHomeItem.new).toList();
-      _allItems = [..._characters, ..._races];
       _applyFilter();
     } catch (e) {
       rethrow;
     }
+  }
+
+  List<String> getAllNamesForSuggestions() {
+    return [
+      ..._characters.map((item) => item.character.name),
+      ..._races.map((item) => item.race.name),
+    ];
   }
 
   void setSearchQuery(String query) {
@@ -46,19 +68,19 @@ class HomeController extends ChangeNotifier {
   }
 
   void _applyFilter() {
+    List<HomeItem> filteredCharactersAndRaces = [];
     if (_searchQuery.isEmpty) {
-      _filteredItems = List.from(_allItems);
+      filteredCharactersAndRaces = [..._characters, ..._races];
     } else {
       final lowerQuery = _searchQuery.toLowerCase();
-      _filteredItems = _allItems.where((item) {
-        return switch (item) {
-          CharacterHomeItem(:final character) =>
-            character.name.toLowerCase().contains(lowerQuery),
-          RaceHomeItem(:final race) =>
-            race.name.toLowerCase().contains(lowerQuery),
-        };
-      }).toList();
+      filteredCharactersAndRaces = [
+        ..._characters.where(
+            (item) => item.character.name.toLowerCase().contains(lowerQuery)),
+        ..._races
+            .where((item) => item.race.name.toLowerCase().contains(lowerQuery)),
+      ];
     }
+    _filteredItems = [...filteredCharactersAndRaces, ..._tools];
     notifyListeners();
   }
 
@@ -69,25 +91,32 @@ class HomeController extends ChangeNotifier {
   }
 
   Future<void> deleteItem(HomeItem item) async {
-    final originalAll = List<HomeItem>.from(_allItems);
-    final originalFiltered = List<HomeItem>.from(_filteredItems);
+    final originalCharacters = List<CharacterHomeItem>.from(_characters);
+    final originalRaces = List<RaceHomeItem>.from(_races);
 
-    _allItems.remove(item);
-    _applyFilter(); // пересчитывает _filteredItems
+    if (item is CharacterHomeItem) {
+      _characters.remove(item);
+    } else if (item is RaceHomeItem) {
+      _races.remove(item);
+    } else {
+      return;
+    }
+
+    _applyFilter();
 
     try {
-      switch (item) {
-        case CharacterHomeItem(:final character):
-          await _characterService.deleteCharacter(character);
-        case RaceHomeItem(:final race):
-          await _raceService.deleteRace(race.key);
+      if (item is CharacterHomeItem) {
+        await _characterService.deleteCharacter(item.character);
+      } else if (item is RaceHomeItem) {
+        await _raceService.deleteRace(item.race.key);
       }
     } catch (e) {
-      _allItems = originalAll;
-      _filteredItems = originalFiltered;
-      notifyListeners();
+      _characters = originalCharacters;
+      _races = originalRaces;
+      _applyFilter();
       rethrow;
     }
   }
+
   int get itemCount => _filteredItems.length;
 }

@@ -86,7 +86,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     return CommonAppBar(
       key: key,
       title: title,
-      centerTitle: false,
+      centerTitle: true,
       showBackButton: false,
       toolbarHeight: 64,
       isSearching: isSearching,
@@ -176,13 +176,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     required bool showFoldersToggle,
   }) {
     if (isSearching) {
-      return [
-        IconButton(
-          onPressed: onSearchToggle,
-          icon: const Icon(Icons.close_rounded),
-          tooltip: S.of(context).close,
-        ),
-      ];
+      return [];
     }
 
     final actions = <Widget>[
@@ -306,32 +300,29 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 500),
-      child: SearchBar(
-        focusNode: FocusNode()..requestFocus(),
-        controller: searchController,
-        hintText: searchHint ?? s.search_hint,
-        leading: const Icon(Icons.search_rounded),
-        trailing: [
-          if (searchController?.text.isNotEmpty ?? false)
-            IconButton(
-              icon: const Icon(Icons.close_rounded),
-              onPressed: onSearchToggle,
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: TextField(
+          controller: searchController,
+          onChanged: onSearchChanged,
+          decoration: InputDecoration(
+            hintText: searchHint ?? s.search_hint,
+            hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              color: colorScheme.onSurfaceVariant,
             ),
-        ],
-        elevation: const WidgetStatePropertyAll(0),
-        shape: const WidgetStatePropertyAll(
-          RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(24)),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
           ),
+          style: Theme.of(context).textTheme.bodyLarge,
+          textAlignVertical: TextAlignVertical.center,
+          autofocus: true,
         ),
-        padding: const WidgetStatePropertyAll(
-          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        ),
-        backgroundColor: WidgetStatePropertyAll(
-          colorScheme.surfaceContainerHigh,
-        ),
-        surfaceTintColor: WidgetStatePropertyAll(Colors.transparent),
-        onChanged: onSearchChanged,
       ),
     );
   }
@@ -346,37 +337,59 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     final textTheme = theme.textTheme;
     final s = S.of(context);
 
-    final titleStyle = centerTitle
-        ? textTheme.titleLarge
-        : textTheme.headlineMedium
-            ?.copyWith(fontWeight: FontWeight.normal);
-
     return AppBar(
-      title: isSearching && onSearchToggle != null
-          ? AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: isSearching
-                  ? _buildSearchField(context)
-                  : Text(title, style: titleStyle),
-            )
-          : Text(title, style: titleStyle),
+      title: AnimatedSwitcher(
+        duration:
+            const Duration(milliseconds: 250),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.1, 0.0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: FadeTransition(
+              opacity: animation,
+              child: child,
+            ),
+          );
+        },
+        child: isSearching
+            ? _buildSearchField(context)
+            : Text(
+                title,
+                key: ValueKey('title'),
+                style: centerTitle
+                    ? textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w500)
+                    : textTheme.headlineMedium,
+              ),
+      ),
       centerTitle: centerTitle,
       toolbarHeight: toolbarHeight,
-      titleSpacing: 24,
+      titleSpacing: isSearching ? 0 : 24,
       elevation: 0,
       scrolledUnderElevation: 3,
       backgroundColor: backgroundColor ?? colorScheme.surface,
-      leading: showBackButton
+
+      leading: isSearching
           ? IconButton(
               icon: const Icon(Icons.arrow_back_rounded),
-              onPressed: onBack ?? () => Navigator.of(context).pop(),
-              tooltip: s.back,
+              onPressed: () {
+                FocusManager.instance.primaryFocus?.unfocus();
+                onSearchToggle?.call();
+              },
+              tooltip: s.close,
             )
-          : null,
+          : (showBackButton
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  onPressed: onBack ?? () => Navigator.of(context).pop(),
+                  tooltip: s.back,
+                )
+              : null),
       actions: actions,
       shape: ContinuousRectangleBorder(
-        borderRadius: bottomBorderRadius ??
-            BorderRadius.zero,
+        borderRadius: bottomBorderRadius ?? BorderRadius.zero,
       ),
     );
   }
