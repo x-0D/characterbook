@@ -2,6 +2,8 @@ import 'package:characterbook/enums/note_sort_enum.dart';
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/folder_model.dart';
 import 'package:characterbook/models/note_model.dart';
+import 'package:characterbook/repositories/note_repository.dart';
+import 'package:characterbook/services/note_service.dart';
 import 'package:characterbook/ui/controllers/note_list_controller.dart';
 import 'package:characterbook/ui/pages/folder_list_page.dart';
 import 'package:characterbook/ui/pages/note_management_page.dart';
@@ -61,8 +63,12 @@ class _NotesListPageState extends State<NotesListPage> {
     ];
   }
 
-  void _onTagSelected(
-      String tag, BuildContext context, NoteListController controller) {
+  void _onTagSelected(String? tag, BuildContext context, NoteListController controller) {
+    if (tag == null) {
+      controller.setSelectedTag(null);
+      return;
+    }
+
     final s = S.of(context);
     if (tag == s.a_to_z) {
       controller.setSort(NoteSort.titleAsc);
@@ -149,10 +155,15 @@ class _NotesListPageState extends State<NotesListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<NoteListController>();
-    final s = S.of(context);
-
-    return Scaffold(
+    return ChangeNotifierProvider(
+    create: (_) => NoteListController(
+      context.read<NoteRepository>(),
+    ),
+    child: Consumer<NoteListController>(
+      builder: (context, controller, child) {
+        final service = context.read<NoteService>();
+        final s = S.of(context);
+        return Scaffold(
       appBar: CommonMainAppBar(
         title: '${s.my} ${s.posts.toLowerCase()}',
         isSearching: _isSearching,
@@ -198,7 +209,7 @@ class _NotesListPageState extends State<NotesListPage> {
                         tags: tags,
                         selectedTag: controller.selectedTag,
                         onTagSelected: (tag) =>
-                            _onTagSelected(tag!, context, controller),
+                            _onTagSelected(tag, context, controller),
                         context: context,
                       ),
                     Expanded(
@@ -237,6 +248,9 @@ class _NotesListPageState extends State<NotesListPage> {
               heroTag: "note_list",
             )
           : null,
+    );
+    }
+    )
     );
   }
 }
