@@ -6,7 +6,7 @@ import 'package:characterbook/models/template_model.dart';
 import 'package:characterbook/repositories/character_repository.dart';
 import 'package:characterbook/services/character_service.dart';
 import 'package:characterbook/services/file_picker_service.dart';
-import 'package:characterbook/ui/cards/character_modal_card.dart';
+import 'package:characterbook/ui/modals/character_modal_card.dart';
 import 'package:characterbook/ui/controllers/character_list_controller.dart';
 import 'package:characterbook/ui/pages/character_management_page.dart';
 import 'package:characterbook/ui/pages/folder_list_page.dart';

@@ -13,7 +13,7 @@ import 'package:characterbook/ui/widgets/tools_context_menu.dart';
 import 'package:characterbook/ui/widgets/appbar/common_main_app_bar.dart';
 import 'package:characterbook/ui/widgets/buttons/common_list_floating_buttons.dart';
 import 'package:characterbook/ui/widgets/cards/race_card.dart';
-import 'package:characterbook/ui/cards/race_modal_card.dart';
+import 'package:characterbook/ui/modals/race_modal_card.dart';
 import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
 import 'package:characterbook/ui/widgets/list/optimized_list_view.dart';
 import 'package:characterbook/ui/widgets/tags/tag_filter.dart';

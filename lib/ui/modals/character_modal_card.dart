@@ -12,7 +12,7 @@ import 'package:characterbook/ui/controllers/character_modal_controller.dart';
 import 'package:characterbook/ui/pages/character_management_page.dart';
 import 'package:characterbook/ui/pages/note_management_page.dart';
 import 'package:characterbook/ui/widgets/cards/note_card.dart';
-import 'package:characterbook/ui/widgets/common_modal.dart';
+import 'package:characterbook/ui/modals/common_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
