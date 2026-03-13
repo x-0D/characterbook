@@ -8,10 +8,11 @@ import 'package:characterbook/models/race_model.dart';
 import 'package:characterbook/models/template_model.dart';
 import 'package:characterbook/services/character_service.dart';
 import 'package:characterbook/services/clipboard_service.dart';
-import 'package:characterbook/services/race_service.dart';
+import 'package:characterbook/services/pdf_export_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 class ContextMenu extends StatelessWidget {
@@ -137,7 +138,6 @@ class ContextMenu extends StatelessWidget {
     try {
       if (item is Character) {
         final character = item as Character;
-        final characterService = CharacterService.forDatabase();
 
         showDialog(
           context: context,
@@ -147,6 +147,7 @@ class ContextMenu extends StatelessWidget {
           ),
         );
 
+        final characterService = context.read<CharacterService>();
         await characterService.duplicateCharacter(character);
 
         if (context.mounted) {
@@ -158,8 +159,9 @@ class ContextMenu extends StatelessWidget {
               behavior: SnackBarBehavior.floating,
             ),
           );
+
+          onDuplicate?.call();
         }
-        onDuplicate?.call();
       }
     } catch (e) {
       if (context.mounted) {
@@ -175,32 +177,23 @@ class ContextMenu extends StatelessWidget {
   }
 
   Future<void> _exportToPdf(BuildContext context) async {
-    final s = S.of(context);
-
     try {
       if (item is Character) {
-        final exportService = CharacterService.forExport(item as Character);
-        await exportService.exportToPdf(context);
+        await PdfExportManager.exportCharacterWithDialog(
+          context,
+          item as Character,
+        );
       } else if (item is Race) {
-        final exportService = RaceService.forExport(item as Race);
-        await exportService.exportToPdf(context);
-      } else {
-        return;
-      }
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(s.pdf_export_success),
-            behavior: SnackBarBehavior.floating,
-          ),
+        await PdfExportManager.exportRaceWithDialog(
+          context,
+          item as Race,
         );
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${s.export_error}: ${e.toString()}'),
+            content: Text('${S.of(context).export_error}: ${e.toString()}'),
             behavior: SnackBarBehavior.floating,
           ),
         );
