@@ -63,7 +63,7 @@ class ContextMenu extends StatelessWidget {
       item: race,
       onEdit: onEdit,
       onDelete: onDelete,
-      showExportPdf: true
+      showExportPdf: true,
     );
   }
 
@@ -97,7 +97,9 @@ class ContextMenu extends StatelessWidget {
           personality: character.personality,
           abilities: character.abilities,
           other: character.other,
-          customFields: character.customFields.map((f) => {'key': f.key, 'value': f.value}).toList(),
+          customFields: character.customFields
+              .map((f) => {'key': f.key, 'value': f.value})
+              .toList(),
         );
       } else if (item is Race) {
         final race = item as Race;
@@ -260,7 +262,6 @@ class ContextMenu extends StatelessWidget {
       required Color color,
       required VoidCallback onTap,
     }) {
-      final theme = Theme.of(context);
       return Material(
         color: Colors.transparent,
         child: InkWell(
@@ -269,95 +270,109 @@ class ContextMenu extends StatelessWidget {
             Navigator.pop(context);
             onTap();
           },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Icon(icon, size: 24, color: color),
-                const SizedBox(width: 16),
-                Text(
-                  label,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w500,
+          child: SizedBox(
+            height: 48,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Icon(icon, size: 24, color: color),
+                  const SizedBox(width: 12),
+                  Text(
+                    label,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
       );
     }
 
-    return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          buildMenuItem(
-            icon: Icons.edit_rounded,
-            label: s.edit,
-            color: colorScheme.onSurface,
-            onTap: onEdit,
-          ),
-          
-          if (showCopy)
-            buildMenuItem(
-              icon: Icons.copy_rounded,
-              label: s.copy,
-              color: colorScheme.onSurface,
-              onTap: () => _copyToClipboard(context),
-            ),
-          
-          if (showShare)
-            buildMenuItem(
-              icon: Icons.share_rounded,
-              label: s.share,
-              color: colorScheme.onSurface,
-              onTap: () => _shareAsFile(context),
-            ),
-          
-          if (item is Character)
-            buildMenuItem(
-              icon: Icons.copy_all_rounded,
-              label: s.duplicate,
-              color: colorScheme.onSurface,
-              onTap: () => _duplicateCharacter(context),
-            ),
-          
-          if (showExportPdf)
-            buildMenuItem(
-              icon: Icons.picture_as_pdf_rounded,
-              label: s.file_pdf,
-              color: colorScheme.onSurface,
-              onTap: () => _exportToPdf(context),
-            ),
-          
-          Divider(
-            height: 1,
-            color: colorScheme.outlineVariant,
-            indent: 16,
-            endIndent: 16,
-          ),
-          
-          buildMenuItem(
-            icon: Icons.delete_rounded,
-            label: s.delete,
-            color: colorScheme.error,
-            onTap: onDelete,
-          ),
-        ],
+    final List<Widget> items = [];
+
+    items.add(buildMenuItem(
+      icon: Icons.edit_rounded,
+      label: s.edit,
+      color: colorScheme.onSurface,
+      onTap: onEdit,
+    ));
+
+    if (item is Character) {
+      items.add(buildMenuItem(
+        icon: Icons.copy_all_rounded,
+        label: s.duplicate,
+        color: colorScheme.onSurface,
+        onTap: () => _duplicateCharacter(context),
+      ));
+    }
+
+    if (showCopy) {
+      items.add(buildMenuItem(
+        icon: Icons.copy_rounded,
+        label: s.copy,
+        color: colorScheme.onSurface,
+        onTap: () => _copyToClipboard(context),
+      ));
+    }
+
+    final bool hasExportShare = showShare || showExportPdf;
+    if (hasExportShare && items.isNotEmpty) {
+      items.add(Divider(
+        height: 1,
+        thickness: 1,
+        color: colorScheme.outlineVariant,
+        indent: 16,
+        endIndent: 16,
+      ));
+    }
+
+    if (showShare) {
+      items.add(buildMenuItem(
+        icon: Icons.share_rounded,
+        label: s.share,
+        color: colorScheme.onSurface,
+        onTap: () => _shareAsFile(context),
+      ));
+    }
+
+    if (showExportPdf) {
+      items.add(buildMenuItem(
+        icon: Icons.picture_as_pdf_rounded,
+        label: s.file_pdf,
+        color: colorScheme.onSurface,
+        onTap: () => _exportToPdf(context),
+      ));
+    }
+
+    if (items.isNotEmpty) {
+      items.add(Divider(
+        height: 1,
+        thickness: 1,
+        color: colorScheme.outlineVariant,
+        indent: 16,
+        endIndent: 16,
+      ));
+    }
+
+    items.add(buildMenuItem(
+      icon: Icons.delete_rounded,
+      label: s.delete,
+      color: colorScheme.error,
+      onTap: onDelete,
+    ));
+
+    return Material(
+      elevation: 3,
+      borderRadius: BorderRadius.circular(28),
+      color: colorScheme.surfaceContainerHigh,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 280),
+        child: Column(mainAxisSize: MainAxisSize.min, children: items),
       ),
     );
   }
