@@ -15,6 +15,12 @@ class RaceModalController extends ChangeNotifier {
   Folder? _currentFolder;
   bool _isLoading = false;
   String? _error;
+  final Map<String, bool> _expandedSections = {
+    'description': true,
+    'biology': true,
+    'backstory': true,
+    'additionalImages': true,
+  };
 
   RaceModalController({
     required this.race,
@@ -31,6 +37,12 @@ class RaceModalController extends ChangeNotifier {
   Folder? get currentFolder => _currentFolder;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  Map<String, bool> get expandedSections => _expandedSections;
+
+  void toggleSection(String key) {
+    _expandedSections[key] = !(_expandedSections[key] ?? true);
+    notifyListeners();
+  }
 
   Future<void> _loadFolder() async {
     if (race.folderId == null) return;
@@ -49,6 +61,7 @@ class RaceModalController extends ChangeNotifier {
   Future<void> deleteRace() async {
     try {
       await _raceRepo.delete(race.key);
+      notifyListeners();
     } catch (e) {
       _error = e.toString();
       notifyListeners();
