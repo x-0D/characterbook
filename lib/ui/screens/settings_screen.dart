@@ -91,7 +91,7 @@ class _SettingsBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      children: const [
+      children: [
         _LanguageSection(),
         SizedBox(height: 8),
         _ThemeSection(),
@@ -104,12 +104,22 @@ class _SettingsBody extends StatelessWidget {
         SizedBox(height: 8),
         _ExportPdfSettingsSection(),
         SizedBox(height: 8),
-        AboutSection(),
+        _buildAboutSection(context),
         SizedBox(height: 8),
         _AcknowledgementsSection(),
         SizedBox(height: 8),
         _LicensesSection(),
       ],
+    );
+  }
+
+  Widget _buildAboutSection(BuildContext context) {
+    final s = S.of(context);
+    return SettingsSection(
+      title: s.about, 
+      children: [
+        AboutSection()
+      ]
     );
   }
 }
