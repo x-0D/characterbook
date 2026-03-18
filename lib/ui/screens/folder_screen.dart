@@ -1,8 +1,8 @@
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/ui/dialogs/folder_dialog.dart';
-import 'package:characterbook/ui/screens/character_management_page.dart';
-import 'package:characterbook/ui/screens/note_management_page.dart';
-import 'package:characterbook/ui/screens/race_management_page.dart';
+import 'package:characterbook/ui/screens/character_management_screen.dart';
+import 'package:characterbook/ui/screens/note_management_screen.dart';
+import 'package:characterbook/ui/screens/race_management_screen.dart';
 import 'package:characterbook/ui/widgets/states/empty_folders_state.dart';
 import 'package:characterbook/ui/widgets/items/character_card_item.dart';
 import 'package:characterbook/ui/widgets/items/folder_card_item.dart';
@@ -113,7 +113,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
       ];
     }
 
-    return characters.map((character) => CharacterCard(
+    return characters.map((character) => CharacterCardItem(
       character: character,
       isSelected: false,
       onTap: () => _openCharacter(character),
@@ -140,7 +140,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
       ];
     }
 
-    return races.map((race) => RaceCard(
+    return races.map((race) => RaceCardItem(
       race: race,
       onTap: () => _openRace(race),
       onLongPress: () => _showRaceContextMenu(race),
@@ -164,7 +164,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
       ];
     }
 
-    return notes.map((note) => NoteCard(
+    return notes.map((note) => NoteCardItem(
       note: note,
       onTap: () => _openNote(note),
       onEdit: () => _editNote(note),
@@ -281,7 +281,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CharacterManagementPage(character: character),
+        builder: (context) => CharacterManagementScreen(character: character),
       ),
     ).then((_) {
       if (mounted) setState(() {});
@@ -324,7 +324,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => RaceManagementPage(race: race),
+        builder: (context) => RaceManagementScreen(race: race),
       ),
     ).then((_) {
       if (mounted) setState(() {});
@@ -392,7 +392,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => NoteManagementPage(note: note),
+        builder: (context) => NoteManagementScreen(note: note),
       ),
     );
   }
@@ -401,7 +401,7 @@ class _FoldersScreenState extends State<FoldersScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => NoteManagementPage(note: note),
+        builder: (context) => NoteManagementScreen(note: note),
       ),
     ).then((_) {
       if (mounted) setState(() {});

@@ -9,8 +9,8 @@ import 'package:characterbook/ui/controllers/home_controller.dart';
 import 'package:characterbook/ui/modals/character_modal_card.dart';
 import 'package:characterbook/ui/modals/race_modal_card.dart';
 import 'package:characterbook/ui/navigation/menu_content.dart';
-import 'package:characterbook/ui/screens/character_management_page.dart';
-import 'package:characterbook/ui/screens/race_management_page.dart';
+import 'package:characterbook/ui/screens/character_management_screen.dart';
+import 'package:characterbook/ui/screens/race_management_screen.dart';
 import 'package:characterbook/ui/widgets/buttons/common_list_floating_buttons.dart';
 import 'package:characterbook/ui/widgets/items/character_keep_card_item.dart';
 import 'package:characterbook/ui/widgets/items/home_item.dart';
@@ -78,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _createNewContent() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const CharacterManagementPage()),
+      MaterialPageRoute(builder: (_) => const CharacterManagementScreen()),
     );
     if (result == true && mounted) {
       await _loadData();
@@ -125,20 +125,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: Column(
               children: [
-                // Drag handle
                 Container(
                   margin: const EdgeInsets.only(top: 12, bottom: 4),
                   width: 32,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurfaceVariant
-                        .withOpacity(0.4),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.4),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                // Close button row
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: Row(
@@ -152,13 +147,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                // Menu content with scroll
                 Expanded(
                   child: MenuContent(
                     scrollController: scrollController,
-                    onSettingsTap: null, // можно передать, если нужно
-                    onHelpTap: null,
-                    onAboutTap: null,
                   ),
                 ),
               ],
@@ -332,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CharacterManagementPage(character: character),
+        builder: (_) => CharacterManagementScreen(character: character),
       ),
     );
     if (result == true && mounted) await _loadData();
@@ -342,7 +333,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => RaceManagementPage(race: race),
+        builder: (_) => RaceManagementScreen(race: race),
       ),
     );
     if (result == true && mounted) await _loadData();
@@ -439,20 +430,20 @@ class _ContentGrid extends StatelessWidget {
             itemBuilder: (context, index) {
               final item = controller.filteredItems[index];
               return switch (item) {
-                CharacterHomeItem(:final character) => CharacterKeepCard(
+                CharacterHomeItem(:final character) => CharacterKeepCardItem(
                     character: character,
                     onTap: () => onCharacterTap(item),
                     onContextMenuTap: () => onCharacterContextMenu(item),
                     formattedDate:
                         character.lastEdited.toRelativeString(context),
                   ),
-                RaceHomeItem(:final race) => RaceKeepCard(
+                RaceHomeItem(:final race) => RaceKeepCardItem(
                     race: race,
                     characterCount: controller.characterCountForRace(race),
                     onTap: () => onRaceTap(item),
                     onContextMenuTap: () => onRaceContextMenu(item),
                   ),
-                ToolHomeItem() => ToolKeepCard(
+                ToolHomeItem() => ToolKeepCardItem(
                     title: item.getTitle(context),
                     subtitle: item.getSubtitle(context),
                     icon: item.getIcon(),

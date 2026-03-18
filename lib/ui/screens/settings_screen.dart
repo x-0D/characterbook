@@ -10,8 +10,8 @@ import 'package:characterbook/services/file_picker_service.dart';
 import 'package:characterbook/services/backup_service.dart';
 import 'package:characterbook/providers/locale_provider.dart';
 import 'package:characterbook/providers/theme_provider.dart';
-import 'package:characterbook/ui/screens/calendar_page.dart';
-import 'package:characterbook/ui/screens/export_pdf_settings_page.dart';
+import 'package:characterbook/ui/screens/calendar_screen.dart';
+import 'package:characterbook/ui/screens/export_pdf_settings_screen.dart';
 import 'package:flutter/services.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -715,7 +715,7 @@ class _CalendarSection extends StatelessWidget {
           ),
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const CalendarPage()),
+            MaterialPageRoute(builder: (_) => const CalendarScreen()),
           ),
           contentPadding: EdgeInsets.zero,
         ),
@@ -761,7 +761,7 @@ class _ExportPdfSettingsSection extends StatelessWidget {
           ),
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ExportPdfSettingsPage()),
+            MaterialPageRoute(builder: (_) => const ExportPdfSettingsScreen()),
           ),
           contentPadding: EdgeInsets.zero,
         ),

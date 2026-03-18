@@ -8,7 +8,7 @@ import 'package:characterbook/services/race_service.dart';
 import 'package:characterbook/services/file_picker_service.dart';
 import 'package:characterbook/ui/controllers/race_list_controller.dart';
 import 'package:characterbook/ui/screens/folder_screen.dart';
-import 'package:characterbook/ui/screens/race_management_page.dart';
+import 'package:characterbook/ui/screens/race_management_screen.dart';
 import 'package:characterbook/ui/widgets/tools_context_menu.dart';
 import 'package:characterbook/ui/widgets/appbar/common_main_app_bar.dart';
 import 'package:characterbook/ui/widgets/buttons/common_list_floating_buttons.dart';
@@ -22,14 +22,14 @@ import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
-class RaceListPage extends StatefulWidget {
-  const RaceListPage({super.key});
+class RaceListScreen extends StatefulWidget {
+  const RaceListScreen({super.key});
 
   @override
-  State<RaceListPage> createState() => _RaceListPageState();
+  State<RaceListScreen> createState() => _RaceListScreenState();
 }
 
-class _RaceListPageState extends State<RaceListPage> {
+class _RaceListScreenState extends State<RaceListScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
   bool _isImporting = false;
@@ -205,7 +205,7 @@ class _RaceListPageState extends State<RaceListPage> {
   void _handleCreateRace(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const RaceManagementPage()),
+      MaterialPageRoute(builder: (context) => const RaceManagementScreen()),
     );
   }
 
@@ -269,7 +269,7 @@ class _RaceListPageState extends State<RaceListPage> {
                 Expanded(
                   child: OptimizedListView<Race>(
                     items: controller.filteredItems,
-                    itemBuilder: (ctx, race, index) => RaceCard(
+                    itemBuilder: (ctx, race, index) => RaceCardItem(
                       key: ValueKey(race.key),
                       race: race,
                       onTap: () => _editRace(context, race),

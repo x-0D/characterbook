@@ -10,7 +10,7 @@ import 'package:characterbook/services/race_service.dart';
 import 'package:characterbook/ui/modals/character_modal_card.dart';
 import 'package:characterbook/ui/modals/race_modal_card.dart';
 import 'package:characterbook/ui/controllers/calendar_controller.dart';
-import 'package:characterbook/ui/screens/note_management_page.dart';
+import 'package:characterbook/ui/screens/note_management_screen.dart';
 import 'package:characterbook/ui/widgets/appbar/common_edit_app_bar.dart';
 import 'package:characterbook/ui/widgets/items/character_card_item.dart';
 import 'package:characterbook/ui/widgets/items/note_card_item.dart';
@@ -19,8 +19,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-class CalendarPage extends StatelessWidget {
-  const CalendarPage({super.key});
+class CalendarScreen extends StatelessWidget {
+  const CalendarScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -219,7 +219,7 @@ class _EventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (event.type) {
       case CalendarEventType.character:
-        return CharacterCard(
+        return CharacterCardItem(
           character: event.character!,
           isSelected: false,
           onTap: () => _navigateToEvent(context, event),
@@ -228,14 +228,14 @@ class _EventCard extends StatelessWidget {
           onDelete: () => {},
         );
       case CalendarEventType.race:
-        return RaceCard(
+        return RaceCardItem(
           race: event.race!,
           isSelected: false,
           onTap: () => _navigateToEvent(context, event),
           onLongPress: () => _showRaceModal(context, event.race!),
         );
       case CalendarEventType.note:
-        return NoteCard(
+        return NoteCardItem(
           note: event.note!,
           isSelected: false,
           onTap: () => _navigateToEvent(context, event),
@@ -285,7 +285,7 @@ class _EventCard extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => NoteManagementPage(note: note),
+        builder: (_) => NoteManagementScreen(note: note),
       ),
     ).then((_) {
       context.read<CalendarController>().loadEvents();

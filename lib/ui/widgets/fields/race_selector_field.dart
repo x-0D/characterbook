@@ -1,6 +1,6 @@
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/race_model.dart';
-import 'package:characterbook/ui/screens/race_management_page.dart';
+import 'package:characterbook/ui/screens/race_management_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
@@ -86,7 +86,7 @@ class _RaceSelectorFieldState extends State<RaceSelectorField> {
               onPressed: () async {
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const RaceManagementPage()),
+                  MaterialPageRoute(builder: (context) => const RaceManagementScreen()),
                 );
                 if (result == true) await _loadRaces();
               },

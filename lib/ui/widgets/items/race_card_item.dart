@@ -1,18 +1,18 @@
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/race_model.dart';
-import 'package:characterbook/ui/screens/race_management_page.dart';
+import 'package:characterbook/ui/screens/race_management_screen.dart';
 import 'package:characterbook/ui/widgets/avatar_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
-class RaceCard extends StatelessWidget {
+class RaceCardItem extends StatelessWidget {
   final Race race;
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
   final bool enableDrag;
 
-  const RaceCard({
+  const RaceCardItem({
     super.key,
     required this.race,
     this.isSelected = false,
@@ -49,7 +49,7 @@ class RaceCard extends StatelessWidget {
           await Navigator.push<bool>(
             context,
             MaterialPageRoute(
-              builder: (context) => RaceManagementPage(race: race),
+              builder: (context) => RaceManagementScreen(race: race),
             ),
           );
           return false;

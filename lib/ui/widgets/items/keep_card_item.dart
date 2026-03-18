@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class KeepCard extends StatefulWidget {
+class KeepCardItem extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
   final VoidCallback? onEnter;
   final VoidCallback? onExit;
   final VoidCallback? onSecondaryTap;
 
-  const KeepCard({
+  const KeepCardItem({
     super.key,
     required this.child,
     this.onTap,
@@ -17,10 +17,10 @@ class KeepCard extends StatefulWidget {
   });
 
   @override
-  State<KeepCard> createState() => _KeepCardState();
+  State<KeepCardItem> createState() => _KeepCardState();
 }
 
-class _KeepCardState extends State<KeepCard> with TickerProviderStateMixin {
+class _KeepCardState extends State<KeepCardItem> with TickerProviderStateMixin {
   late AnimationController _tapController;
   late Animation<double> _elevationAnimation;
 

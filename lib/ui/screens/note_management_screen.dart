@@ -18,11 +18,11 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 
-class NoteManagementPage extends StatelessWidget {
+class NoteManagementScreen extends StatelessWidget {
   final Note? note;
   final bool isCopyMode;
 
-  const NoteManagementPage({super.key, this.note, this.isCopyMode = false});
+  const NoteManagementScreen({super.key, this.note, this.isCopyMode = false});
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +34,7 @@ class NoteManagementPage extends StatelessWidget {
         note: note,
         isCopyMode: isCopyMode,
       ),
-      child: _NoteManagementPageContent(
+      child: _NoteManagementScreenContent(
         note: note,
         isCopyMode: isCopyMode,
       ),
@@ -42,19 +42,19 @@ class NoteManagementPage extends StatelessWidget {
   }
 }
 
-class _NoteManagementPageContent extends StatefulWidget {
+class _NoteManagementScreenContent extends StatefulWidget {
   final Note? note;
   final bool isCopyMode;
 
-  const _NoteManagementPageContent(
+  const _NoteManagementScreenContent(
       {this.note, this.isCopyMode = false});
 
   @override
-  State<_NoteManagementPageContent> createState() =>
-      _NoteManagementPageContentState();
+  State<_NoteManagementScreenContent> createState() =>
+      _NoteManagementScreenContentState();
 }
 
-class _NoteManagementPageContentState extends State<_NoteManagementPageContent> {
+class _NoteManagementScreenContentState extends State<_NoteManagementScreenContent> {
   static const _fieldSpacing = 16.0;
 
   final GlobalKey<FormState> _formKey = GlobalKey();

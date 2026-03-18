@@ -16,16 +16,16 @@ import 'package:characterbook/ui/widgets/sections/tags_and_folder_section.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class RaceManagementPage extends StatefulWidget {
+class RaceManagementScreen extends StatefulWidget {
   final Race? race;
 
-  const RaceManagementPage({super.key, this.race});
+  const RaceManagementScreen({super.key, this.race});
 
   @override
-  State<RaceManagementPage> createState() => _RaceManagementPageState();
+  State<RaceManagementScreen> createState() => _RaceManagementScreenState();
 }
 
-class _RaceManagementPageState extends State<RaceManagementPage> {
+class _RaceManagementScreenState extends State<RaceManagementScreen> {
   static const _logoSize = 120.0;
   static const _fieldSpacing = 16.0;
 

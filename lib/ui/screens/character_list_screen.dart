@@ -8,9 +8,9 @@ import 'package:characterbook/services/character_service.dart';
 import 'package:characterbook/services/file_picker_service.dart';
 import 'package:characterbook/ui/modals/character_modal_card.dart';
 import 'package:characterbook/ui/controllers/character_list_controller.dart';
-import 'package:characterbook/ui/screens/character_management_page.dart';
+import 'package:characterbook/ui/screens/character_management_screen.dart';
 import 'package:characterbook/ui/screens/folder_screen.dart';
-import 'package:characterbook/ui/screens/templates_page.dart';
+import 'package:characterbook/ui/screens/templates_list_screen.dart';
 import 'package:characterbook/ui/widgets/appbar/common_main_app_bar.dart';
 import 'package:characterbook/ui/widgets/buttons/common_list_floating_buttons.dart';
 import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
@@ -21,14 +21,14 @@ import 'package:characterbook/ui/widgets/tools_context_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class CharacterListPage extends StatefulWidget {
-  const CharacterListPage({super.key});
+class CharacterListScreen extends StatefulWidget {
+  const CharacterListScreen({super.key});
 
   @override
-  State<CharacterListPage> createState() => _CharacterListPageState();
+  State<CharacterListScreen> createState() => _CharacterListScreenState();
 }
 
-class _CharacterListPageState extends State<CharacterListPage> {
+class _CharacterListScreenState extends State<CharacterListScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
   bool _isImporting = false;
@@ -160,7 +160,7 @@ class _CharacterListPageState extends State<CharacterListPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CharacterManagementPage(character: character),
+        builder: (_) => CharacterManagementScreen(character: character),
       ),
     );
   }

@@ -1,5 +1,5 @@
 import 'package:characterbook/generated/l10n.dart';
-import 'package:characterbook/ui/screens/note_management_page.dart';
+import 'package:characterbook/ui/screens/note_management_screen.dart';
 import 'package:flutter/material.dart';
 
 class NotesEmptyState extends StatelessWidget {
@@ -33,7 +33,7 @@ class NotesEmptyState extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const NoteManagementPage()),
+                  MaterialPageRoute(builder: (context) => const NoteManagementScreen()),
                 ),
                 child: Text(S.of(context).create),
               ),

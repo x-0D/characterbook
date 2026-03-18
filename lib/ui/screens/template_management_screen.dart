@@ -7,17 +7,17 @@ import 'package:characterbook/ui/widgets/fields/custom_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class TemplateEditPage extends StatefulWidget {
+class TemplateManagementScreen extends StatefulWidget {
   final QuestionnaireTemplate? template;
   final VoidCallback? onSaved;
 
-  const TemplateEditPage({super.key, this.template, this.onSaved});
+  const TemplateManagementScreen({super.key, this.template, this.onSaved});
 
   @override
-  State<TemplateEditPage> createState() => _TemplateEditPageState();
+  State<TemplateManagementScreen> createState() => _TemplateManagementScreenState();
 }
 
-class _TemplateEditPageState extends State<TemplateEditPage> {
+class _TemplateManagementScreenState extends State<TemplateManagementScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey();
 
   @override

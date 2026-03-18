@@ -3,13 +3,13 @@ import 'package:characterbook/models/race_model.dart';
 import 'package:characterbook/generated/l10n.dart';
 import 'flip_keep_card_item.dart';
 
-class RaceKeepCard extends StatelessWidget {
+class RaceKeepCardItem extends StatelessWidget {
   final Race race;
   final int characterCount;
   final VoidCallback onTap;
   final VoidCallback onContextMenuTap;
 
-  const RaceKeepCard({
+  const RaceKeepCardItem({
     super.key,
     required this.race,
     required this.characterCount,
@@ -19,7 +19,7 @@ class RaceKeepCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FlipKeepCard(
+    return FlipKeepCardItem(
       onTap: onTap,
       onContextMenuTap: onContextMenuTap,
       frontBuilder: (context, theme, colorScheme, flipValue, isFront) {

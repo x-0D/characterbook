@@ -3,13 +3,13 @@ import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/generated/l10n.dart';
 import 'flip_keep_card_item.dart';
 
-class CharacterKeepCard extends StatelessWidget {
+class CharacterKeepCardItem extends StatelessWidget {
   final Character character;
   final VoidCallback onTap;
   final VoidCallback onContextMenuTap;
   final String formattedDate;
 
-  const CharacterKeepCard({
+  const CharacterKeepCardItem({
     super.key,
     required this.character,
     required this.onTap,
@@ -19,7 +19,7 @@ class CharacterKeepCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FlipKeepCard(
+    return FlipKeepCardItem(
       onTap: onTap,
       onContextMenuTap: onContextMenuTap,
       frontBuilder: (context, theme, colorScheme, flipValue, isFront) {

@@ -7,9 +7,9 @@ import 'package:characterbook/handlers/file_handler.dart';
 import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/race_model.dart';
 import 'package:characterbook/models/template_model.dart';
-import 'package:characterbook/ui/screens/character_management_page.dart';
-import 'package:characterbook/ui/screens/race_management_page.dart';
-import 'package:characterbook/ui/screens/template_management_page.dart';
+import 'package:characterbook/ui/screens/character_management_screen.dart';
+import 'package:characterbook/ui/screens/race_management_screen.dart';
+import 'package:characterbook/ui/screens/template_management_screen.dart';
 
 class FileHandlerWrapper extends StatefulWidget {
   final Widget child;
@@ -104,7 +104,7 @@ class _FileHandlerWrapperState extends State<FileHandlerWrapper> {
   void _navigateToCharacterEdit(Character character) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => CharacterManagementPage(character: character),
+        builder: (_) => CharacterManagementScreen(character: character),
       ),
     );
   }
@@ -112,7 +112,7 @@ class _FileHandlerWrapperState extends State<FileHandlerWrapper> {
   void _navigateToRaceManagement(Race race) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => RaceManagementPage(race: race),
+        builder: (_) => RaceManagementScreen(race: race),
       ),
     );
   }
@@ -120,7 +120,7 @@ class _FileHandlerWrapperState extends State<FileHandlerWrapper> {
   void _navigateToTemplateManagement(QuestionnaireTemplate template) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => TemplateEditPage(template: template),
+        builder: (_) => TemplateManagementScreen(template: template),
       ),
     );
   }

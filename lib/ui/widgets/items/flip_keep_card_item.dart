@@ -11,7 +11,7 @@ typedef FlipSideBuilder = Widget Function(
   bool isFrontSide,
 );
 
-class FlipKeepCard extends StatefulWidget {
+class FlipKeepCardItem extends StatefulWidget {
   final FlipSideBuilder frontBuilder;
   final FlipSideBuilder backBuilder;
   final VoidCallback? onTap;
@@ -19,7 +19,7 @@ class FlipKeepCard extends StatefulWidget {
   final bool autoFlipEnabled;
   final Duration autoFlipInterval;
 
-  const FlipKeepCard({
+  const FlipKeepCardItem({
     super.key,
     required this.frontBuilder,
     required this.backBuilder,
@@ -30,10 +30,10 @@ class FlipKeepCard extends StatefulWidget {
   });
 
   @override
-  State<FlipKeepCard> createState() => _FlipKeepCardState();
+  State<FlipKeepCardItem> createState() => _FlipKeepCardState();
 }
 
-class _FlipKeepCardState extends State<FlipKeepCard>
+class _FlipKeepCardState extends State<FlipKeepCardItem>
     with TickerProviderStateMixin {
   late AnimationController _flipController;
   late Animation<double> _flipAnimation;
@@ -113,7 +113,7 @@ class _FlipKeepCardState extends State<FlipKeepCard>
 
   @override
   Widget build(BuildContext context) {
-    return KeepCard(
+    return KeepCardItem(
       onTap: widget.onTap,
       onEnter: _onEnter,
       onExit: _onExit,

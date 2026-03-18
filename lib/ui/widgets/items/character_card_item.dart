@@ -3,7 +3,7 @@ import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/ui/widgets/avatar_widget.dart';
 import 'package:flutter/material.dart';
 
-class CharacterCard extends StatelessWidget {
+class CharacterCardItem extends StatelessWidget {
   final Character character;
   final bool isSelected;
   final VoidCallback onTap;
@@ -13,7 +13,7 @@ class CharacterCard extends StatelessWidget {
   final bool enableDrag;
   final bool isHero;
 
-  const CharacterCard({
+  const CharacterCardItem({
     super.key,
     required this.character,
     required this.isSelected,

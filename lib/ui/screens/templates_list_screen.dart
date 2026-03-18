@@ -9,22 +9,22 @@ import 'package:characterbook/ui/widgets/items/template_card_item.dart';
 import 'package:characterbook/ui/widgets/tools_context_menu.dart';
 import 'package:characterbook/ui/widgets/appbar/common_main_app_bar.dart';
 import 'package:characterbook/ui/widgets/buttons/common_list_floating_buttons.dart';
-import 'package:characterbook/ui/screens/template_management_page.dart';
-import 'package:characterbook/ui/screens/character_management_page.dart';
+import 'package:characterbook/ui/screens/template_management_screen.dart';
+import 'package:characterbook/ui/screens/character_management_screen.dart';
 import 'package:characterbook/ui/widgets/tags/tag_filter.dart';
 import 'package:characterbook/enums/template_sort_enum.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
-class TemplatesPage extends StatefulWidget {
-  const TemplatesPage({super.key});
+class TemplatesListScreen extends StatefulWidget {
+  const TemplatesListScreen({super.key});
 
   @override
-  State<TemplatesPage> createState() => _TemplatesPageState();
+  State<TemplatesListScreen> createState() => _TemplatesListScreenState();
 }
 
-class _TemplatesPageState extends State<TemplatesPage> {
+class _TemplatesListScreenState extends State<TemplatesListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -148,7 +148,7 @@ class _TemplatesPageState extends State<TemplatesPage> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CharacterManagementPage(template: template),
+        builder: (context) => CharacterManagementScreen(template: template),
       ),
     );
     if (result == true && mounted) {
@@ -165,7 +165,7 @@ class _TemplatesPageState extends State<TemplatesPage> {
     Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) => TemplateEditPage(template: template),
+        builder: (_) => TemplateManagementScreen(template: template),
       ),
     ).then((changed) {
       if (changed == true && mounted) {
@@ -284,7 +284,7 @@ class _TemplatesPageState extends State<TemplatesPage> {
                 Expanded(
                   child: OptimizedListView<QuestionnaireTemplate>(
                     items: controller.filteredItems,
-                    itemBuilder: (ctx, template, index) => TemplateCard(
+                    itemBuilder: (ctx, template, index) => TemplateCardItem(
                       key: ValueKey('${template.name}-$index'),
                       template: template,
                       isSelected: false,

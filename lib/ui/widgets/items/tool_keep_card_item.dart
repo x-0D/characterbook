@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'keep_card_item.dart';
 
-class ToolKeepCard extends StatelessWidget {
+class ToolKeepCardItem extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
   final Color iconColor;
   final VoidCallback onTap;
 
-  const ToolKeepCard({
+  const ToolKeepCardItem({
     super.key,
     required this.title,
     required this.subtitle,
@@ -21,7 +21,7 @@ class ToolKeepCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return KeepCard(
+    return KeepCardItem(
       onTap: onTap,
       child: Stack(
         fit: StackFit.expand,

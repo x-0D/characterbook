@@ -23,18 +23,17 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
-class CharacterManagementPage extends StatefulWidget {
+class CharacterManagementScreen extends StatefulWidget {
   final Character? character;
   final QuestionnaireTemplate? template;
 
-  const CharacterManagementPage({super.key, this.character, this.template});
+  const CharacterManagementScreen({super.key, this.character, this.template});
 
   @override
-  State<CharacterManagementPage> createState() =>
-      _CharacterManagementPageState();
+  State<CharacterManagementScreen> createState() => _CharacterManagementScreenState();
 }
 
-class _CharacterManagementPageState extends State<CharacterManagementPage> {
+class _CharacterManagementScreenState extends State<CharacterManagementScreen> {
   static const _sectionSpacing = 24.0;
   static const _fieldSpacing = 16.0;
 

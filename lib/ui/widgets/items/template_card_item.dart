@@ -2,7 +2,7 @@ import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/template_model.dart';
 import 'package:flutter/material.dart';
 
-class TemplateCard extends StatelessWidget {
+class TemplateCardItem extends StatelessWidget {
   final QuestionnaireTemplate template;
   final bool isSelected;
   final VoidCallback onTap;
@@ -10,7 +10,7 @@ class TemplateCard extends StatelessWidget {
   final VoidCallback onMenuPressed;
   final bool enableDrag;
 
-  const TemplateCard({
+  const TemplateCardItem({
     super.key,
     required this.template,
     required this.isSelected,

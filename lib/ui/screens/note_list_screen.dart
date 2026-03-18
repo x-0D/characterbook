@@ -6,7 +6,7 @@ import 'package:characterbook/repositories/note_repository.dart';
 import 'package:characterbook/services/note_service.dart';
 import 'package:characterbook/ui/controllers/note_list_controller.dart';
 import 'package:characterbook/ui/screens/folder_screen.dart';
-import 'package:characterbook/ui/screens/note_management_page.dart';
+import 'package:characterbook/ui/screens/note_management_screen.dart';
 import 'package:characterbook/ui/widgets/appbar/common_main_app_bar.dart';
 import 'package:characterbook/ui/widgets/buttons/common_list_floating_buttons.dart';
 import 'package:characterbook/ui/widgets/items/note_card_item.dart';
@@ -18,14 +18,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
-class NotesListPage extends StatefulWidget {
-  const NotesListPage({super.key});
+class NotesListScreen extends StatefulWidget {
+  const NotesListScreen({super.key});
 
   @override
-  State<NotesListPage> createState() => _NotesListPageState();
+  State<NotesListScreen> createState() => _NotesListScreenState();
 }
 
-class _NotesListPageState extends State<NotesListPage> {
+class _NotesListScreenState extends State<NotesListScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
   bool _isFabVisible = true;
@@ -126,21 +126,21 @@ class _NotesListPageState extends State<NotesListPage> {
   void _editNote(Note note) {
     Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (context) => NoteManagementPage(note: note)),
+      MaterialPageRoute(builder: (context) => NoteManagementScreen(note: note)),
     );
   }
 
   void _handleNoteTap(Note note) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => NoteManagementPage(note: note)),
+      MaterialPageRoute(builder: (context) => NoteManagementScreen(note: note)),
     );
   }
 
   void _openNoteCreation() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const NoteManagementPage()),
+      MaterialPageRoute(builder: (context) => const NoteManagementScreen()),
     );
   }
 
@@ -220,7 +220,7 @@ class _NotesListPageState extends State<NotesListPage> {
                             )
                           : OptimizedListView<Note>(
                               items: notesToShow,
-                              itemBuilder: (ctx, note, index) => NoteCard(
+                              itemBuilder: (ctx, note, index) => NoteCardItem(
                                 key: ValueKey(note.key),
                                 note: note,
                                 onTap: () => _handleNoteTap(note),

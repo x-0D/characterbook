@@ -7,9 +7,10 @@ import 'package:characterbook/ui/dialogs/edit_relationship_dialog.dart';
 import 'package:provider/provider.dart';
 
 class RelationshipsScreen extends StatelessWidget {
+  const RelationshipsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
-    // Получаем репозитории через Provider
     final characterRepo = Provider.of<CharacterRepository>(context);
     final relationshipService = Provider.of<RelationshipService>(context);
 
@@ -22,7 +23,6 @@ class RelationshipsScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           final characters = charSnapshot.data!;
-          // Создаём карту ID -> Character для быстрого доступа
           final Map<String, Character> characterMap = {
             for (var c in characters) c.id: c
           };

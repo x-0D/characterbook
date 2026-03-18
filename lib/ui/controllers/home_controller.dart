@@ -2,10 +2,10 @@ import 'dart:async';
 import 'package:characterbook/models/race_model.dart';
 import 'package:characterbook/services/character_service.dart';
 import 'package:characterbook/services/race_service.dart';
-import 'package:characterbook/ui/screens/calendar_page.dart';
-import 'package:characterbook/ui/screens/export_pdf_settings_page.dart';
-import 'package:characterbook/ui/screens/random_number_page.dart';
-import 'package:characterbook/ui/screens/templates_page.dart';
+import 'package:characterbook/ui/screens/calendar_screen.dart';
+import 'package:characterbook/ui/screens/export_pdf_settings_screen.dart';
+import 'package:characterbook/ui/screens/random_number_screen.dart';
+import 'package:characterbook/ui/screens/templates_list_screen.dart';
 import 'package:characterbook/ui/widgets/items/home_item.dart';
 import 'package:flutter/material.dart';
 
@@ -33,11 +33,11 @@ class HomeController extends ChangeNotifier {
 
   void _initTools() {
     _tools.addAll([
-      ToolHomeItem(type: ToolType.randomNumber, page: const RandomNumberPage()),
+      ToolHomeItem(type: ToolType.randomNumber, page: const RandomNumberScreen()),
       ToolHomeItem(
-          type: ToolType.pdfExport, page: const ExportPdfSettingsPage()),
-      ToolHomeItem(type: ToolType.templates, page: const TemplatesPage()),
-      ToolHomeItem(type: ToolType.calendar, page: const CalendarPage()),
+          type: ToolType.pdfExport, page: const ExportPdfSettingsScreen()),
+      ToolHomeItem(type: ToolType.templates, page: const TemplatesListScreen()),
+      ToolHomeItem(type: ToolType.calendar, page: const CalendarScreen()),
     ]);
   }
 

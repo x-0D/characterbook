@@ -5,14 +5,14 @@ import 'package:characterbook/ui/widgets/appbar/common_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class RandomNumberPage extends StatefulWidget {
-  const RandomNumberPage({super.key});
+class RandomNumberScreen extends StatefulWidget {
+  const RandomNumberScreen({super.key});
 
   @override
-  State<RandomNumberPage> createState() => _RandomNumberPageState();
+  State<RandomNumberScreen> createState() => _RandomNumberScreenState();
 }
 
-class _RandomNumberPageState extends State<RandomNumberPage> {
+class _RandomNumberScreenState extends State<RandomNumberScreen> {
   int _minValue = 0;
   int _maxValue = 100;
   int? _generatedNumber;

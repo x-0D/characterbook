@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:characterbook/models/export_pdf_settings_model.dart';
 import 'package:characterbook/generated/l10n.dart';
 
-class ExportPdfSettingsPage extends StatefulWidget {
-  const ExportPdfSettingsPage({super.key});
+class ExportPdfSettingsScreen extends StatefulWidget {
+  const ExportPdfSettingsScreen({super.key});
 
   @override
-  _ExportPdfSettingsPageState createState() => _ExportPdfSettingsPageState();
+  _ExportPdfSettingsScreenState createState() => _ExportPdfSettingsScreenState();
 }
 
-class _ExportPdfSettingsPageState extends State<ExportPdfSettingsPage> {
+class _ExportPdfSettingsScreenState extends State<ExportPdfSettingsScreen> {
   final ExportPdfSettingsService _settingsService = ExportPdfSettingsService();
   ExportPdfSettings? _settings;
   bool _isLoading = true;

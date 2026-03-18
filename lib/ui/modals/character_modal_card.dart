@@ -9,8 +9,8 @@ import 'package:characterbook/services/character_service.dart';
 import 'package:characterbook/services/clipboard_service.dart';
 import 'package:characterbook/services/note_service.dart';
 import 'package:characterbook/ui/controllers/character_modal_controller.dart';
-import 'package:characterbook/ui/screens/character_management_page.dart';
-import 'package:characterbook/ui/screens/note_management_page.dart';
+import 'package:characterbook/ui/screens/character_management_screen.dart';
+import 'package:characterbook/ui/screens/note_management_screen.dart';
 import 'package:characterbook/ui/widgets/items/note_card_item.dart';
 import 'package:characterbook/ui/modals/common_modal.dart';
 import 'package:flutter/material.dart';
@@ -340,7 +340,7 @@ class CharacterModalCard extends StatelessWidget {
     await Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (context) => CharacterManagementPage(character: character)),
+          builder: (context) => CharacterManagementScreen(character: character)),
     );
   }
 
@@ -433,7 +433,7 @@ class CharacterModalCard extends StatelessWidget {
               children: controller.relatedNotes
                   .map((note) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
-                        child: NoteCard(
+                        child: NoteCardItem(
                           key: ValueKey(note.id),
                           note: note,
                           onTap: () => _openNoteForEditing(context, note),
@@ -499,7 +499,7 @@ class CharacterModalCard extends StatelessWidget {
   Future<void> _openNoteForEditing(BuildContext context, Note note) async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => NoteManagementPage(note: note)),
+      MaterialPageRoute(builder: (context) => NoteManagementScreen(note: note)),
     );
     if (result == true) {
       context.read<CharacterModalController>().refreshNotes();

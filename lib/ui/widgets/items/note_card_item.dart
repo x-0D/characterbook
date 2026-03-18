@@ -2,7 +2,7 @@ import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/note_model.dart';
 import 'package:characterbook/ui/widgets/tools_context_menu.dart';
 import 'package:flutter/material.dart';
-class NoteCard extends StatelessWidget {
+class NoteCardItem extends StatelessWidget {
   final Note note;
   final bool isSelected;
   final VoidCallback onTap;
@@ -10,7 +10,7 @@ class NoteCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  const NoteCard({
+  const NoteCardItem({
     super.key,
     required this.note,
     this.isSelected = false,
