@@ -10,8 +10,9 @@ import 'package:characterbook/ui/modals/character_modal_card.dart';
 import 'package:characterbook/ui/modals/race_modal_card.dart';
 import 'package:characterbook/ui/navigation/menu_content.dart';
 import 'package:characterbook/ui/screens/character_management_screen.dart';
+import 'package:characterbook/ui/screens/note_management_screen.dart';
 import 'package:characterbook/ui/screens/race_management_screen.dart';
-import 'package:characterbook/ui/widgets/buttons/common_list_floating_buttons.dart';
+import 'package:characterbook/ui/widgets/buttons/home_fab_menu.dart';
 import 'package:characterbook/ui/widgets/items/character_keep_card_item.dart';
 import 'package:characterbook/ui/widgets/items/home_item.dart';
 import 'package:characterbook/ui/widgets/items/race_keep_card_item.dart';
@@ -76,29 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _createNewContent() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CharacterManagementScreen()),
-    );
-    if (result == true && mounted) {
-      await _loadData();
-    }
-  }
-
-  void _importContent() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(S.of(context).import_cancelled)),
-    );
-  }
-
-  void _createFromTemplate() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${S.of(context).templates_not_found} - ${S.of(context).import_cancelled}',
-        ),
-      ),
-    );
+    
   }
 
   void _navigateToTool(Widget page) {
@@ -192,16 +171,31 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        floatingActionButton: CommonListFloatingButtons(
-          onAdd: _createNewContent,
-          onImport: _importContent,
-          onTemplate: _createFromTemplate,
-          showImportButton: true,
-          addTooltip: s.new_character,
-          importTooltip: s.import,
-          templateTooltip: s.create_from_template_tooltip,
-          createFromScratchTooltip: s.new_character,
-          heroTag: "home_list",
+        floatingActionButton: HomeFloatingMenu(
+          onCreateCharacter: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CharacterManagementScreen()),
+            ).then((result) {
+              if (result == true && mounted) _loadData();
+            });
+          },
+          onCreateRace: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RaceManagementScreen()),
+            ).then((result) {
+              if (result == true && mounted) _loadData();
+            });
+          },
+          onCreateNote: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NoteManagementScreen()),
+            ).then((result) {
+              if (result == true && mounted) _loadData();
+            });
+          },
         ),
         body: SafeArea(
           child: Column(

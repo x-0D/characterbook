@@ -12,7 +12,7 @@ import 'package:characterbook/ui/screens/race_management_screen.dart';
 import 'package:characterbook/ui/screens/settings/swipe_action_settings_screen.dart';
 import 'package:characterbook/ui/widgets/tools_context_menu.dart';
 import 'package:characterbook/ui/widgets/appbar/common_main_app_bar.dart';
-import 'package:characterbook/ui/widgets/buttons/common_list_floating_buttons.dart';
+import 'package:characterbook/ui/widgets/buttons/common_fab_menu.dart';
 import 'package:characterbook/ui/widgets/items/race_card_item.dart';
 import 'package:characterbook/ui/modals/race_modal_card.dart';
 import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';

@@ -16,7 +16,7 @@ import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/race_model.dart';
 import 'package:characterbook/models/note_model.dart';
 import 'package:characterbook/ui/widgets/appbar/common_main_app_bar.dart';
-import 'package:characterbook/ui/widgets/buttons/common_list_floating_buttons.dart';
+import 'package:characterbook/ui/widgets/buttons/common_fab_menu.dart';
 import 'package:characterbook/ui/widgets/tools_context_menu.dart';
 import 'package:flutter/rendering.dart';
 import 'package:hive_flutter/hive_flutter.dart';

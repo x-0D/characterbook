@@ -13,7 +13,7 @@ import 'package:characterbook/ui/screens/folder_screen.dart';
 import 'package:characterbook/ui/screens/settings/swipe_action_settings_screen.dart';
 import 'package:characterbook/ui/screens/templates_list_screen.dart';
 import 'package:characterbook/ui/widgets/appbar/common_main_app_bar.dart';
-import 'package:characterbook/ui/widgets/buttons/common_list_floating_buttons.dart';
+import 'package:characterbook/ui/widgets/buttons/common_fab_menu.dart';
 import 'package:characterbook/ui/widgets/list/list_state_indicator.dart';
 import 'package:characterbook/ui/widgets/list/optimized_list_view.dart';
 import 'package:characterbook/ui/widgets/items/character_card_item.dart';
