@@ -2,6 +2,8 @@ import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/models/template_model.dart';
 import 'package:flutter/material.dart';
 
+import 'commod_card_item.dart';
+
 class TemplateCardItem extends StatelessWidget {
   final QuestionnaireTemplate template;
   final bool isSelected;
@@ -29,82 +31,77 @@ class TemplateCardItem extends StatelessWidget {
     final totalFields =
         template.standardFields.length + template.customFields.length;
 
-    return Card(
-      key: key,
+    return CommonCardItem(
+      id: template.key,
+      isSelected: isSelected,
+      onTap: onTap,
+      onLongPress: enableDrag ? null : onLongPress,
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-      elevation: isSelected ? 2.0 : 0.5,
-      color: isSelected
-          ? colorScheme.secondaryContainer
-          : colorScheme.surfaceContainerHigh,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        onLongPress: enableDrag ? null : onLongPress,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _buildTemplateIcon(context),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          template.name,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                _buildTemplateIcon(context),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        template.name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          S.of(context).fields_count(totalFields),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        S.of(context).fields_count(totalFields),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: Icon(Icons.more_vert_rounded,
-                        color: colorScheme.onSurfaceVariant),
-                    onPressed: onMenuPressed,
+                ),
+                IconButton(
+                  icon: Icon(Icons.more_vert_rounded,
+                      color: colorScheme.onSurfaceVariant),
+                  onPressed: onMenuPressed,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              children: [
+                Chip(
+                  avatar: Icon(
+                    Icons.checklist_rounded,
+                    size: 18,
+                    color: colorScheme.onPrimaryContainer,
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                children: [
-                  Chip(
-                    avatar: Icon(
-                      Icons.checklist_rounded,
-                      size: 18,
-                      color: colorScheme.onPrimaryContainer,
-                    ),
-                    label:
-                        Text('${template.standardFields.length} ${s.standard}'),
-                    backgroundColor: colorScheme.primaryContainer,
+                  label:
+                      Text('${template.standardFields.length} ${s.standard}'),
+                  backgroundColor: colorScheme.primaryContainer,
+                ),
+                Chip(
+                  avatar: Icon(
+                    Icons.edit_rounded,
+                    size: 18,
+                    color: colorScheme.onTertiaryContainer,
                   ),
-                  Chip(
-                    avatar: Icon(
-                      Icons.edit_rounded,
-                      size: 18,
-                      color: colorScheme.onTertiaryContainer,
-                    ),
-                    label: Text('${template.customFields.length} ${s.custom}'),
-                    backgroundColor: colorScheme.tertiaryContainer,
-                  ),
-                ],
-              ),
-            ],
-          ),
+                  label: Text('${template.customFields.length} ${s.custom}'),
+                  backgroundColor: colorScheme.tertiaryContainer,
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
