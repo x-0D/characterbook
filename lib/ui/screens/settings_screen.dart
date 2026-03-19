@@ -8,7 +8,6 @@ import 'package:characterbook/services/file_picker_service.dart';
 import 'package:characterbook/services/backup_service.dart';
 import 'package:characterbook/providers/locale_provider.dart';
 import 'package:characterbook/providers/theme_provider.dart';
-import 'package:characterbook/ui/screens/calendar_screen.dart';
 import 'package:characterbook/ui/screens/export_pdf_settings_screen.dart';
 import 'package:flutter/services.dart';
 
@@ -51,70 +50,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
           : SystemUiOverlayStyle.dark,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
-            s.settings,
-            style: theme.textTheme.headlineLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-              height: 1.2,
-              letterSpacing: -0.5,
-            ),
-          ),
-          centerTitle: false,
-          titleSpacing: 24,
-          scrolledUnderElevation: 3,
-          shadowColor: theme.colorScheme.shadow,
-          surfaceTintColor: Colors.transparent,
-          backgroundColor: theme.colorScheme.surfaceContainerLowest,
-          toolbarHeight: 80,
-          shape: const ContinuousRectangleBorder(
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(32),
-              bottomRight: Radius.circular(32),
-            ),
-          ),
+          title: Text(s.settings),
+          centerTitle: true,
         ),
         body: ChangeNotifierProvider.value(
           value: _controller,
-          child: const _SettingsBody(),
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            children: [
+              _LanguageSection(),
+              SizedBox(height: 8),
+              _ThemeSection(),
+              SizedBox(height: 8),
+              _ImportSection(),
+              SizedBox(height: 8),
+              _BackupSection(),
+              SizedBox(height: 8),
+              _ExportPdfSettingsSection(),
+              SizedBox(height: 8),
+              _buildAboutSection(context),
+            ],
+          ),
         ),
       ),
-    );
-  }
-}
-
-class _SettingsBody extends StatelessWidget {
-  const _SettingsBody();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      children: [
-        _LanguageSection(),
-        SizedBox(height: 8),
-        _ThemeSection(),
-        SizedBox(height: 8),
-        _ImportSection(),
-        SizedBox(height: 8),
-        _BackupSection(),
-        SizedBox(height: 8),
-        _CalendarSection(),
-        SizedBox(height: 8),
-        _ExportPdfSettingsSection(),
-        SizedBox(height: 8),
-        _buildAboutSection(context),
-      ],
     );
   }
 
   Widget _buildAboutSection(BuildContext context) {
     final s = S.of(context);
-    return SettingsSection(
-      title: s.about, 
-      children: [
-        AboutSection()
-      ]
-    );
+    return SettingsSection(title: s.about, children: [AboutSection()]);
   }
 }
 
@@ -335,11 +299,6 @@ class _AccentColorSelector extends StatelessWidget {
                 )),
           ],
         ),
-        const SizedBox(height: 12),
-        _CustomColorButton(
-          currentColor: currentColor,
-          onColorSelected: (color) => controller.setSeedColor(color),
-        ),
       ],
     );
   }
@@ -370,75 +329,6 @@ class _ColorChoiceChip extends StatelessWidget {
         color: selected ? Colors.white : null,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-    );
-  }
-}
-
-class _CustomColorButton extends StatelessWidget {
-  final Color currentColor;
-  final ValueChanged<Color> onColorSelected;
-
-  const _CustomColorButton({
-    required this.currentColor,
-    required this.onColorSelected,
-  });
-
-  bool get _isCustomColor => !_presetColors.contains(currentColor);
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isSelected = _isCustomColor;
-
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: colorScheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () async {
-          final pickedColor = await showDialog<Color>(
-            context: context,
-            builder: (context) =>
-                _ColorPickerDialog(initialColor: currentColor),
-          );
-          if (pickedColor != null) onColorSelected(pickedColor);
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Icon(Icons.color_lens, color: colorScheme.onSurfaceVariant),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  S.of(context).choose_color,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurface,
-                      ),
-                ),
-              ),
-              if (isSelected)
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: currentColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: colorScheme.primary, width: 2),
-                  ),
-                )
-              else
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -676,52 +566,6 @@ class _BackupButtons extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ],
-    );
-  }
-}
-
-class _CalendarSection extends StatelessWidget {
-  const _CalendarSection();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return SettingsSection(
-      title: s.calendar,
-      children: [
-        ListTile(
-          leading: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              Icons.calendar_month_outlined,
-              color: colorScheme.onPrimaryContainer,
-            ),
-          ),
-          title: Text(
-            s.calendar_statistics,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-          ),
-          trailing: Icon(
-            Icons.arrow_forward_ios,
-            size: 16,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CalendarScreen()),
-          ),
-          contentPadding: EdgeInsets.zero,
         ),
       ],
     );
