@@ -44,7 +44,7 @@ class MenuContent extends StatelessWidget {
   Widget _buildHeader(BuildContext context, ColorScheme colorScheme, ThemeData theme) {
     final s = S.of(context);
     return Container(
-      width: double.minPositive,
+      width: double.maxFinite,
       padding: const EdgeInsets.all(20),
       margin: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(

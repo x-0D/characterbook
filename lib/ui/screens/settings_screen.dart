@@ -1,8 +1,6 @@
-import 'dart:async';
 import 'package:characterbook/ui/widgets/sections/about_section_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/ui/controllers/settings_controller.dart';
 import 'package:characterbook/ui/widgets/sections/settings_section.dart';
@@ -105,10 +103,6 @@ class _SettingsBody extends StatelessWidget {
         _ExportPdfSettingsSection(),
         SizedBox(height: 8),
         _buildAboutSection(context),
-        SizedBox(height: 8),
-        _AcknowledgementsSection(),
-        SizedBox(height: 8),
-        _LicensesSection(),
       ],
     );
   }
@@ -777,100 +771,5 @@ class _ExportPdfSettingsSection extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-
-class _AcknowledgementsSection extends StatelessWidget {
-  const _AcknowledgementsSection();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-
-    return SettingsSection(
-      title: s.acknowledgements,
-      children: [
-        Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          children: [
-            _buildContributorChip(context, 'Артём Голубев'),
-            _buildContributorChip(context, 'Евгений Стратий'),
-            _buildContributorChip(context, 'Максим Семенков'),
-            _buildContributorChip(context, 'Makoto🐼'),
-            _buildContributorChip(context, 'Александр Черняев'),
-            _buildContributorChip(context, 'Мария Война'),
-            _buildContributorChip(context, 'Дарья Воробьёва'),
-            _buildContributorChip(context, 'Никита Жевнерович'),
-            _buildContributorChip(context, 'KellSmiley'),
-            _buildContributorChip(context, 'Участники EnA'),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildContributorChip(BuildContext context, String name) {
-    final theme = Theme.of(context);
-    return Chip(
-      label: Text(
-        name,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSecondaryContainer,
-        ),
-      ),
-      backgroundColor: theme.colorScheme.secondaryContainer,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      side: BorderSide.none,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-      visualDensity: VisualDensity.compact,
-    );
-  }
-}
-
-class _LicensesSection extends StatelessWidget {
-  const _LicensesSection();
-
-  @override
-  Widget build(BuildContext context) {
-    final s = S.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return SettingsSection(
-      title: s.licenses,
-      children: [
-        ListTile(
-          leading: Icon(Icons.code, color: colorScheme.onSurfaceVariant),
-          title: Text(s.flutterLicense),
-          onTap: () => _launchUrl(
-              'https://github.com/flutter/flutter/blob/master/LICENSE'),
-        ),
-        const SizedBox(height: 8),
-        ListTile(
-          leading: Icon(Icons.article, color: colorScheme.onSurfaceVariant),
-          title: Text(s.characterbookLicense),
-          onTap: () => _launchUrl('https://www.gnu.org/licenses/gpl-3.0.html'),
-        ),
-        const SizedBox(height: 8),
-        ListTile(
-          leading: Icon(Icons.list, color: colorScheme.onSurfaceVariant),
-          title: Text(s.usedLibraries),
-          onTap: () => showLicensePage(
-            context: context,
-            applicationName: s.app_name,
-            applicationVersion: '1.8.0',
-            applicationIcon:
-                Image.asset('assets/iconapp.png', width: 50, height: 50),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      throw Exception('Could not launch $url');
-    }
   }
 }
