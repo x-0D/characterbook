@@ -1,4 +1,4 @@
-import 'package:characterbook/enums/calendart_event_type_enum.dart';
+import 'package:characterbook/enums/calendar_event_type_enum.dart';
 import 'package:characterbook/models/calendar_event_model.dart';
 import 'package:characterbook/services/character_service.dart';
 import 'package:characterbook/services/note_service.dart';
