@@ -150,7 +150,6 @@ class _HomeScreenState extends State<HomeScreen> {
         appBar: AppBar(
           title: _buildSearchBar(context),
           centerTitle: true,
-          toolbarHeight: 72,
           elevation: 0,
           scrolledUnderElevation: 3,
           backgroundColor: colorScheme.surface,

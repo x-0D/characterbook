@@ -1,5 +1,5 @@
 import 'package:characterbook/generated/l10n.dart';
-import 'package:characterbook/ui/screens/settings/settings_screen.dart';
+import 'package:characterbook/ui/navigation/menu_content.dart';
 import 'package:flutter/material.dart';
 
 class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -19,9 +19,8 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onTemplatesPressed;
   final VoidCallback? onViewModePressed;
   final VoidCallback? onSettingsPressed;
-  final bool showViewModeToggle;
-  final bool showTemplatesToggle;
-  final bool showFoldersToggle;
+  final VoidCallback? onHelpPressed;
+  final VoidCallback? onAboutPressed;
   final BorderRadiusGeometry? bottomBorderRadius;
 
   const CommonAppBar({
@@ -42,9 +41,8 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onTemplatesPressed,
     this.onViewModePressed,
     this.onSettingsPressed,
-    this.showViewModeToggle = false,
-    this.showTemplatesToggle = false,
-    this.showFoldersToggle = false,
+    this.onHelpPressed,
+    this.onAboutPressed,
     this.bottomBorderRadius,
   });
 
@@ -58,13 +56,13 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     String? searchHint,
     ValueChanged<String>? onSearchChanged,
     List<Widget>? additionalActions,
+    bool showAppIcon = true,
     VoidCallback? onFoldersPressed,
     VoidCallback? onTemplatesPressed,
     VoidCallback? onViewModePressed,
     VoidCallback? onSettingsPressed,
-    bool showViewModeToggle = true,
-    bool showTemplatesToggle = true,
-    bool showFoldersToggle = true,
+    VoidCallback? onHelpPressed,
+    VoidCallback? onAboutPressed,
   }) {
     final actions = _buildMainActions(
       context: context,
@@ -74,13 +72,9 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       onFoldersPressed: onFoldersPressed,
       onTemplatesPressed: onTemplatesPressed,
       onViewModePressed: onViewModePressed,
-      onSettingsPressed: onSettingsPressed ??
-          () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              ),
-      showViewModeToggle: showViewModeToggle,
-      showTemplatesToggle: showTemplatesToggle,
-      showFoldersToggle: showFoldersToggle,
+      onSettingsPressed: onSettingsPressed,
+      onHelpPressed: onHelpPressed,
+      onAboutPressed: onAboutPressed,
     );
 
     return CommonAppBar(
@@ -98,9 +92,8 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       onTemplatesPressed: onTemplatesPressed,
       onViewModePressed: onViewModePressed,
       onSettingsPressed: onSettingsPressed,
-      showViewModeToggle: showViewModeToggle,
-      showTemplatesToggle: showTemplatesToggle,
-      showFoldersToggle: showFoldersToggle,
+      onHelpPressed: onHelpPressed,
+      onAboutPressed: onAboutPressed,
       actions: actions,
       bottomBorderRadius: BorderRadius.zero,
     );
@@ -170,10 +163,9 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     VoidCallback? onFoldersPressed,
     VoidCallback? onTemplatesPressed,
     VoidCallback? onViewModePressed,
-    required VoidCallback onSettingsPressed,
-    required bool showViewModeToggle,
-    required bool showTemplatesToggle,
-    required bool showFoldersToggle,
+    required VoidCallback? onSettingsPressed,
+    VoidCallback? onHelpPressed,
+    VoidCallback? onAboutPressed,
   }) {
     if (isSearching) {
       return [];
@@ -185,15 +177,19 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
         icon: const Icon(Icons.search_rounded),
         tooltip: S.of(context).search,
       ),
-      _buildMoreMenu(
-        context: context,
-        onFoldersPressed: onFoldersPressed,
-        onTemplatesPressed: onTemplatesPressed,
-        onViewModePressed: onViewModePressed,
-        onSettingsPressed: onSettingsPressed,
-        showFoldersToggle: showFoldersToggle,
-        showTemplatesToggle: showTemplatesToggle,
-        showViewModeToggle: showViewModeToggle,
+      IconButton(
+        onPressed: () => _showAppMenu(
+          context,
+          onFoldersPressed: onFoldersPressed,
+          onTemplatesPressed: onTemplatesPressed,
+          onViewModePressed: onViewModePressed,
+          onSettingsPressed: onSettingsPressed,
+          onHelpPressed: onHelpPressed,
+          onAboutPressed: onAboutPressed,
+        ),
+        icon: const Icon(Icons.account_circle_rounded),
+        iconSize: 32,
+        tooltip: S.of(context).more_options,
       ),
     ];
 
@@ -204,93 +200,69 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
     return actions;
   }
 
-  static Widget _buildMoreMenu({
-    required BuildContext context,
-    required VoidCallback? onFoldersPressed,
-    required VoidCallback? onTemplatesPressed,
-    required VoidCallback? onViewModePressed,
-    required VoidCallback onSettingsPressed,
-    required bool showFoldersToggle,
-    required bool showTemplatesToggle,
-    required bool showViewModeToggle,
+  static void _showAppMenu(
+    BuildContext context, {
+    VoidCallback? onFoldersPressed,
+    VoidCallback? onTemplatesPressed,
+    VoidCallback? onViewModePressed,
+    VoidCallback? onSettingsPressed,
+    VoidCallback? onHelpPressed,
+    VoidCallback? onAboutPressed,
   }) {
-    final s = S.of(context);
-
-    return PopupMenuButton<String>(
-      tooltip: s.more_options,
-      icon: const Icon(Icons.more_vert_rounded),
-      position: PopupMenuPosition.under,
-      onSelected: (value) {
-        switch (value) {
-          case 'folders':
-            onFoldersPressed?.call();
-            break;
-          case 'templates':
-            onTemplatesPressed?.call();
-            break;
-          case 'view_mode':
-            onViewModePressed?.call();
-            break;
-          case 'settings':
-            onSettingsPressed.call();
-            break;
-        }
-      },
-      itemBuilder: (context) {
-        final items = <PopupMenuEntry<String>>[];
-
-        if (showFoldersToggle && onFoldersPressed != null) {
-          items.add(
-            PopupMenuItem(
-              value: 'folders',
-              child: ListTile(
-                leading: const Icon(Icons.folder_outlined),
-                title: Text(s.folders),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(32),
               ),
             ),
-          );
-        }
-
-        if (showTemplatesToggle && onTemplatesPressed != null) {
-          items.add(
-            PopupMenuItem(
-              value: 'templates',
-              child: ListTile(
-                leading: const Icon(Icons.library_books_outlined),
-                title: Text(s.templates),
-              ),
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 4),
+                  width: 32,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(context),
+                        tooltip: S.of(context).close,
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: MenuContent(
+                    scrollController: scrollController,
+                  ),
+                ),
+              ],
             ),
           );
-        }
-
-        if (showViewModeToggle && onViewModePressed != null) {
-          items.add(
-            PopupMenuItem(
-              value: 'view_mode',
-              child: ListTile(
-                leading: const Icon(Icons.grid_view_outlined),
-                title: Text(s.grid_view),
-              ),
-            ),
-          );
-        }
-
-        if (items.isNotEmpty) {
-          items.add(const PopupMenuDivider());
-        }
-
-        items.add(
-          PopupMenuItem(
-            value: 'settings',
-            child: ListTile(
-              leading: const Icon(Icons.settings_outlined),
-              title: Text(s.settings),
-            ),
-          ),
-        );
-
-        return items;
-      },
+        },
+      ),
     );
   }
 
@@ -339,8 +311,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     return AppBar(
       title: AnimatedSwitcher(
-        duration:
-            const Duration(milliseconds: 250),
+        duration: const Duration(milliseconds: 250),
         transitionBuilder: (Widget child, Animation<double> animation) {
           return SlideTransition(
             position: Tween<Offset>(
@@ -357,7 +328,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
             ? _buildSearchField(context)
             : Text(
                 title,
-                key: ValueKey('title'),
+                key: const ValueKey('title'),
                 style: centerTitle
                     ? textTheme.titleLarge
                         ?.copyWith(fontWeight: FontWeight.w500)
@@ -370,7 +341,6 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       scrolledUnderElevation: 3,
       backgroundColor: backgroundColor ?? colorScheme.surface,
-
       leading: isSearching
           ? IconButton(
               icon: const Icon(Icons.arrow_back_rounded),
@@ -380,13 +350,7 @@ class CommonAppBar extends StatelessWidget implements PreferredSizeWidget {
               },
               tooltip: s.close,
             )
-          : (showBackButton
-              ? IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  onPressed: onBack ?? () => Navigator.of(context).pop(),
-                  tooltip: s.back,
-                )
-              : null),
+          : null,
       actions: actions,
       shape: ContinuousRectangleBorder(
         borderRadius: bottomBorderRadius ?? BorderRadius.zero,

@@ -50,9 +50,6 @@ class CommonMainAppBar extends StatelessWidget implements PreferredSizeWidget {
       onTemplatesPressed: onTemplatesPressed,
       onViewModePressed: onViewModePressed,
       onSettingsPressed: onSettingsPressed,
-      showViewModeToggle: showViewModeToggle,
-      showTemplatesToggle: showTemplatesToggle,
-      showFoldersToggle: showFoldersToggle,
     );
   }
 
