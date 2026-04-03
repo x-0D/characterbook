@@ -17,7 +17,8 @@ class FlipKeepCardItem extends StatefulWidget {
   final VoidCallback? onTap;
   final VoidCallback? onContextMenuTap;
   final bool autoFlipEnabled;
-  final Duration autoFlipInterval;
+  final Duration minFlipInterval;
+  final Duration maxFlipInterval;
 
   const FlipKeepCardItem({
     super.key,
@@ -26,7 +27,8 @@ class FlipKeepCardItem extends StatefulWidget {
     this.onTap,
     this.onContextMenuTap,
     this.autoFlipEnabled = true,
-    this.autoFlipInterval = const Duration(seconds: 10),
+    this.minFlipInterval = const Duration(seconds: 3),
+    this.maxFlipInterval = const Duration(seconds: 8),
   });
 
   @override
@@ -41,6 +43,7 @@ class _FlipKeepCardState extends State<FlipKeepCardItem>
   bool _isFront = true;
   bool _isHovering = false;
   bool _isAnimating = false;
+  final Random _random = Random();
 
   @override
   void initState() {
@@ -53,55 +56,67 @@ class _FlipKeepCardState extends State<FlipKeepCardItem>
       CurvedAnimation(parent: _flipController, curve: Curves.easeInOut),
     );
 
-    if (widget.autoFlipEnabled) _startAutoFlip();
-  }
-
-  void _startAutoFlip() {
-    _flipTimer?.cancel();
-    final random = Random();
-    final initialDelay = Duration(seconds: random.nextInt(15) + 5);
-    _flipTimer = Timer(initialDelay, () {
-      if (mounted) _scheduleNextFlip();
-    });
+    if (widget.autoFlipEnabled) {
+      _scheduleNextFlip();
+    }
   }
 
   void _scheduleNextFlip() {
     _flipTimer?.cancel();
-    _flipTimer = Timer.periodic(widget.autoFlipInterval, (timer) {
-      if (mounted && !_isHovering && !_isAnimating) _flipCard();
-    });
-  }
+    if (!widget.autoFlipEnabled || _isHovering) return;
 
-  void _flipCard() {
-    if (_isAnimating) return;
-    _isAnimating = true;
-    final target = !_isFront;
+    final delayMs = _random.nextInt(
+          widget.maxFlipInterval.inMilliseconds -
+              widget.minFlipInterval.inMilliseconds +
+              1,
+        ) +
+        widget.minFlipInterval.inMilliseconds;
 
-    (target ? _flipController.forward() : _flipController.reverse()).then((_) {
-      if (mounted) _scheduleAutoReverse();
-    });
-
-    setState(() => _isFront = target);
-  }
-
-  void _scheduleAutoReverse() {
-    Timer(const Duration(seconds: 5), () {
+    _flipTimer = Timer(Duration(milliseconds: delayMs), () {
       if (mounted && !_isHovering && !_isAnimating) {
-        _flipCard();
-      } else {
-        _isAnimating = false;
+        _performFlip();
+      } else if (mounted) {
+        // Если условия не выполнены (например, наведение), попробуем позже
+        _scheduleNextFlip();
       }
     });
   }
 
+  Future<void> _performFlip() async {
+    if (_isAnimating) return;
+    _isAnimating = true;
+
+    final target = !_isFront;
+    if (target) {
+      await _flipController.forward();
+    } else {
+      await _flipController.reverse();
+    }
+
+    if (mounted) {
+      setState(() {
+        _isFront = target;
+      });
+      _isAnimating = false;
+      // Планируем следующий переворот
+      _scheduleNextFlip();
+    }
+  }
+
   void _onEnter() {
-    setState(() => _isHovering = true);
+    setState(() {
+      _isHovering = true;
+    });
     _flipTimer?.cancel();
   }
 
   void _onExit() {
-    setState(() => _isHovering = false);
-    if (widget.autoFlipEnabled) _scheduleNextFlip();
+    setState(() {
+      _isHovering = false;
+    });
+    if (widget.autoFlipEnabled && mounted) {
+      _scheduleNextFlip();
+    }
   }
 
   @override
