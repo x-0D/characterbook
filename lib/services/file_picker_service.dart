@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/race_model.dart';
 import 'package:characterbook/models/template_model.dart';
-import 'package:characterbook/ui/dialogs/error_dialog.dart';
+import 'package:characterbook/ui/widgets/dialogs/error_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

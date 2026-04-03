@@ -5,9 +5,9 @@ import 'package:characterbook/models/character_model.dart';
 import 'package:characterbook/models/race_model.dart';
 import 'package:characterbook/services/file_share_service.dart';
 import 'package:characterbook/services/pdf_export_serivce.dart';
-import 'package:characterbook/ui/dialogs/error_dialog.dart';
-import 'package:characterbook/ui/dialogs/loading_dialog.dart';
-import 'package:characterbook/ui/dialogs/success_dialog.dart';
+import 'package:characterbook/ui/widgets/dialogs/error_dialog.dart';
+import 'package:characterbook/ui/widgets/dialogs/loading_dialog.dart';
+import 'package:characterbook/ui/widgets/dialogs/success_dialog.dart';
 import 'package:flutter/material.dart';
 
 class PdfExportManager {

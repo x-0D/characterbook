@@ -89,14 +89,6 @@ class Character extends HiveObject {
     return '${timestamp}_$random';
   }
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Character && runtimeType == other.runtimeType && id == other.id;
-
-  @override
-  int get hashCode => id.hashCode;
-
   /// Сериализация в JSON для экспорта.
   Map<String, dynamic> toJson() {
     return {
@@ -253,4 +245,12 @@ class Character extends HiveObject {
   String get description => biography;
 
   Uint8List? get mainImage => imageBytes ?? referenceImageBytes;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Character && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

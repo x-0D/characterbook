@@ -8,8 +8,8 @@ import 'package:characterbook/repositories/character_repository.dart';
 import 'package:characterbook/services/file_share_service.dart';
 import 'package:characterbook/services/pdf_export_manager.dart';
 import 'package:characterbook/services/relationship_service.dart';
-import 'package:characterbook/ui/dialogs/error_dialog.dart';
-import 'package:characterbook/ui/dialogs/loading_dialog.dart';
+import 'package:characterbook/ui/widgets/dialogs/error_dialog.dart';
+import 'package:characterbook/ui/widgets/dialogs/loading_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 

@@ -53,7 +53,7 @@ void main() async {
   try {
     await HiveService.initHive();
 
-    if (!Hive.isAdapterRegistered(2)) {
+    if (!Hive.isAdapterRegistered(12)) {
       Hive.registerAdapter(RelationshipAdapter());
     }
 

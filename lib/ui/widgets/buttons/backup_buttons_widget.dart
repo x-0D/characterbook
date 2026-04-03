@@ -1,6 +1,6 @@
 import 'package:characterbook/generated/l10n.dart';
 import 'package:characterbook/services/backup_service.dart';
-import 'package:characterbook/ui/dialogs/loading_dialog.dart';
+import 'package:characterbook/ui/widgets/dialogs/loading_dialog.dart';
 import 'package:flutter/material.dart';
 
 class BackupButtons extends StatefulWidget {

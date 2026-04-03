@@ -1,4 +1,4 @@
-import 'package:characterbook/ui/dialogs/unsaved_changes_dialog.dart';
+import 'package:characterbook/ui/widgets/dialogs/unsaved_changes_dialog.dart';
 import 'package:flutter/material.dart';
 
 mixin UnsavedChangesHandler<T extends StatefulWidget> on State<T> {
