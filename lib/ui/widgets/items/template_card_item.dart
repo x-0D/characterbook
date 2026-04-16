@@ -38,7 +38,7 @@ class TemplateCardItem extends StatelessWidget {
         template.standardFields.length + template.customFields.length;
 
     return CommonCardItem(
-      id: template.key,
+      id: template.key.toString(),
       isSelected: isSelected,
       onTap: onTap,
       onLongPress: enableDrag ? null : onLongPress,

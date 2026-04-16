@@ -30,6 +30,7 @@ import 'package:characterbook/services/notification_service.dart';
 import 'package:characterbook/services/race_service.dart';
 import 'package:characterbook/services/relationship_service.dart';
 import 'package:characterbook/services/template_service.dart';
+import 'package:characterbook/ui/controllers/template_list_controller.dart';
 import 'package:characterbook/ui/navigation/app_navigation_bar.dart';
 import 'package:characterbook/ui/screens/characters/character_management_screen.dart';
 import 'package:characterbook/ui/screens/settings/settings_screen.dart';
@@ -63,8 +64,7 @@ void main() async {
     noteBox = await _openBoxWithRetry<Note>('notes');
     templateBox = await _openBoxWithRetry<QuestionnaireTemplate>('templates');
     settingsBox = await _openBoxWithRetry<ExportPdfSettings>('pdf_settings');
-    relationshipBox =
-        await _openBoxWithRetry<Relationship>('relationships');
+    relationshipBox = await _openBoxWithRetry<Relationship>('relationships');
 
     hiveInitialized = true;
   } catch (error) {
@@ -152,10 +152,10 @@ class CharacterBookApp extends StatelessWidget {
           Provider<RelationshipRepository>(
             create: (_) => RelationshipRepositoryHive(relationshipBox!),
           ),
+
         ProxyProvider<RelationshipRepository, RelationshipService>(
           update: (_, repo, __) => RelationshipService(repo),
         ),
-
         ProxyProvider2<CharacterRepository, RelationshipService, CharacterService>(
           update: (_, repo, relService, __) =>
               CharacterService(repo, relService),
@@ -171,6 +171,11 @@ class CharacterBookApp extends StatelessWidget {
         ),
         ProxyProvider<TemplateRepository, TemplateService>(
           update: (_, repo, __) => TemplateService(repo),
+        ),
+        ChangeNotifierProvider<TemplateListController>(
+          create: (context) => TemplateListController(
+            context.read<TemplateRepository>(),
+          ),
         ),
         
         ProxyProvider5<CharacterRepository, RaceRepository, FolderRepository,
